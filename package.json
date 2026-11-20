@@ -1,0 +1,13 @@
+{
+  "name": "1stprts-dev-tools",
+  "private": true,
+  "description": "Development tools for 1stPRTS (spec workflow). Not part of the game runtime.",
+  "license": "MIT",
+  "scripts": {
+    "spec:list": "openspec list",
+    "spec:validate": "openspec validate --all --strict"
+  },
+  "devDependencies": {
+    "@fission-ai/openspec": "2.1.1"
+  }
+}

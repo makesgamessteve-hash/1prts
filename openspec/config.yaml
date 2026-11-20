@@ -1,0 +1,46 @@
+schema: spec-driven
+
+# Project context: constraints that guide every OpenSpec artifact in this repo.
+context: |
+  1stPRTS is a first-person real-time strategy game. The concept lives in docs/concept/,
+  the architecture in docs/architecture/. Read them before proposing changes.
+
+  Hard constraints:
+  - Gameplay is shown only from the commander's first-person view (the "First-Person Contract",
+    docs/concept/01-vision-and-pillars.md). No feature may add an overhead, free or third-person
+    gameplay camera. Debug cameras are allowed only in developer builds and tests.
+  - The core engine is written in C11 using SDL3 and OpenGL (3.3 core on desktop, WebGL 2 on the web).
+    Game rules, content definitions, AI, UI layouts and missions are Lua 5.4 scripts in data/.
+  - No game content is compiled into the executable. Assets, scripts and shaders are loaded from
+    folders next to the binary (a packed .data file next to the .wasm on the web).
+  - Every change must work on Windows, Linux, macOS, web desktop, mobile web (touch) and WebXR,
+    or explicitly state why a platform is out of scope for that change.
+  - Code (C, Lua, GLSL, tools) is MIT. Art and content (everything else in data/) is CC BY 4.0
+    with per-asset entries in the pack's CREDITS.md.
+  - Quality gates: at least 95% line coverage for engine C code and for base-game Lua, automated
+    game tests for new player-facing behavior, all CI platforms green.
+  - The simulation must be deterministic for a given build (fixed tick, seeded RNG, no wall-clock time).
+
+rules:
+  proposal:
+    - State the impact on each target platform (Windows, Linux, macOS, web desktop, mobile web, WebXR).
+    - State which parts are engine (C) and which are scripts/data (Lua, assets).
+    - Always state what is out of scope.
+  specs:
+    - Requirements describe observable behavior of the game or engine, not C function names.
+    - Every player-facing requirement has at least one scenario that an automated game test can check.
+  design:
+    - Record alternatives considered for every new dependency, and its license.
+    - Explain how the design stays testable headless (without a window or GPU) where possible.
+  tasks:
+    - Each task group lands its own unit tests, game tests and docs; no trailing "write tests" group.
+    - Every task states how it is verified (test name, command, or observable result).
+
+operations:
+  apply:
+    guidance:
+      - Keep the build green on all platforms after every task group.
+      - Check coverage locally with the coverage preset before marking a task group done.
+  archive:
+    guidance:
+      - Archive only after CI is green and coverage gates pass.

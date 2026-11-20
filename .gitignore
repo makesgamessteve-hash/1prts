@@ -1,0 +1,25 @@
+# Build output
+/build/
+/out/
+CMakeUserPresets.json
+compile_commands.json
+
+# Tooling
+node_modules/
+.cache/
+*.gcda
+*.gcno
+*.gcov
+coverage/
+test-results/
+playwright-report/
+
+# Editors / OS
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+
+# Local agent settings
+.claude/settings.local.json
