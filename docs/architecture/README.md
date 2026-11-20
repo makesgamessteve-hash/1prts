@@ -149,9 +149,9 @@ SDL_AppIterate  (or the WebXR frame callback while an XR session is active, see 
 
 | Owned by C (engine) | Owned by Lua (data/base/scripts) |
 |---|---|
-| Everything that runs per frame or per entity in bulk: rendering, physics, collision, movement integration, pathfinding, sensor queries, projectile flight, audio mixing | Definitions (units, structures, weapons, factions, deck plans), match rules, economy, presence, succession |
-| Asset loading and the file system | AI: officer behaviors and the opposing commander |
-| The entity store and built-in components | Command interfaces: slate, map table, monitors, menus (via the UI API) |
+| Everything that runs per frame or per entity in bulk: rendering, physics, collision, movement integration, pathfinding, sight and detection queries, projectile flight, audio mixing | Definitions (units, buildings, weapons, spells, factions, deck plans), match rules, economy, presence, succession |
+| Asset loading and the file system | AI: captain behaviors and the opposing commander |
+| The entity store and built-in components | Command interfaces: field map, war table, scrying pools, menus (via the UI API) |
 | Determinism tools: tick, RNG streams, state hash | Missions, scenarios, campaign |
 | Lua hosting: sandbox, budgets, hot reload, error containment | Input action definitions and default bindings |
 

@@ -32,7 +32,7 @@ The commander SHALL walk, run, sprint (limited by stamina), crouch and jump, wit
 The commander's body SHALL collide with terrain, building geometry and props, slide along walls, step up ledges of up to 0.4 m, walk up stairs and slopes of up to 45 degrees, and SHALL NOT pass through closed doors or walls at any speed.
 
 #### Scenario: Stairs
-- **WHEN** the commander walks into the HQ stairwell and keeps moving forward
+- **WHEN** the commander walks into the keep's spiral stair and keeps moving forward
 - **THEN** they climb the stairs to the next floor without jumping
 
 #### Scenario: Wall at sprint speed
@@ -40,26 +40,26 @@ The commander's body SHALL collide with terrain, building geometry and props, sl
 - **THEN** they stay on the near side of the wall
 
 ### Requirement: Using objects
-The commander SHALL use interactive objects (such as doors, buttons and screens) by looking or pointing at them within reach and triggering the `use` action. The object's reaction SHALL be defined by scripts. An interaction prompt SHALL appear when an object can be used.
+The commander SHALL use interactive objects (such as doors, levers and the war table) by looking or pointing at them within reach and triggering the `use` action. The object's reaction SHALL be defined by scripts. An interaction prompt SHALL appear when an object can be used.
 
 #### Scenario: Opening a door
-- **WHEN** the commander stands within 2 m of a closed HQ door, looks at it and triggers `use`
+- **WHEN** the commander stands within 2 m of a closed oak door in the keep, looks at it and triggers `use`
 - **THEN** the door opens, plays its sound, and the doorway becomes passable
 
 ### Requirement: Moving platforms
-The commander SHALL ride moving platforms such as elevator cars, staying on the platform while it moves and being able to walk on it during the movement. The commander's parent reference frame SHALL become the platform while they are on it.
+The commander SHALL ride moving platforms such as lift platforms, staying on the platform while it moves and being able to walk on it during the movement. The commander's parent reference frame SHALL become the platform while they are on it.
 
-#### Scenario: Riding the HQ elevator
-- **WHEN** the commander enters the HQ elevator car, selects the top floor, and waits
-- **THEN** they arrive at the top floor standing in the car, and can walk out once the doors open
+#### Scenario: Riding the keep's hoist lift
+- **WHEN** the commander steps onto the keep's hoist lift, pulls the lever for the top floor, and waits
+- **THEN** they arrive at the top floor standing on the platform, and can walk off once the gate opens
 
 #### Scenario: Walking during movement
-- **WHEN** the commander walks across the elevator car while it is moving
-- **THEN** they move relative to the car at normal walking speed and do not fall through or slide off
+- **WHEN** the commander walks across the lift platform while it is moving
+- **THEN** they move relative to the platform at normal walking speed and do not fall through or slide off
 
 ### Requirement: Proving Ground map
-The base game SHALL include a Proving Ground map with terrain of at least 1 km × 1 km, a three-storey HQ building with doors, a stairwell, an elevator and a Command Center room with a placeholder map table, so that every requirement in this capability can be tested.
+The base game SHALL include a Proving Ground map with terrain of at least 1 km × 1 km, a three-storey keep with doors, a spiral stair, a hoist lift and a war room with a placeholder war table, so that every requirement in this capability can be tested.
 
-#### Scenario: Reaching the Command Center
+#### Scenario: Reaching the war room
 - **WHEN** a new Proving Ground session starts
-- **THEN** the commander can reach the Command Center on foot from the starting point by stairs or by elevator
+- **THEN** the commander can reach the war room on foot from the starting point by stairs or by lift

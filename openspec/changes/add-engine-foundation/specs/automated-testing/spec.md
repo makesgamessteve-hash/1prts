@@ -17,7 +17,7 @@ The executable SHALL run without a window, GPU or audio device when started in h
 The engine SHALL run automated game tests written as Lua scenario scripts that drive the game through the same actions as real input and check world state. Each scenario SHALL report pass or fail with a reason, the runner SHALL produce a machine-readable report, and SHALL exit non-zero if any scenario fails.
 
 #### Scenario: Failing scenario
-- **WHEN** a scenario expects the commander to be in the Command Center but they are still in the lobby when it times out
+- **WHEN** a scenario expects the commander to be in the war room but they are still in the great hall when it times out
 - **THEN** the scenario is reported as failed with the expected and actual cell, and the runner exits non-zero
 
 #### Scenario: Report for CI

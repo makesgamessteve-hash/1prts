@@ -1,149 +1,162 @@
 # 02 · The Commander
 
 The commander is the only character the player controls directly. Everything else is commanded.
+For the Crown the title is *Lord Marshal* or *Lady Marshal*. For the Wildborn it is *Huntlord*.
 
 ## 1. The body
 
 | Ability | Default value | Notes |
 |---|---|---|
-| Eye height | 1.70 m standing, 1.10 m crouched, seated height depends on the seat | Head bob can be turned off |
+| Eye height | 1.70 m standing, 1.10 m crouched, about 2.5 m on horseback | Head bob can be turned off |
 | Walk / run / sprint | 1.4 / 3.5 / 6.0 m/s | Sprint uses stamina |
-| Climb | Ladders, stairs, steps up to 0.4 m | Ladders are required on masts, ships and hatches |
-| Swim | 1.0 m/s on the surface | Falling overboard is survivable but costs time |
-| Zero-g | Push off and grab handholds, plus a small thruster pack | Stations and spacecraft only |
-| Moving platforms | Elevators, vehicle decks, ship decks, aircraft cargo bays, rotating station rings | Explained in [04](04-world-scale-and-theaters.md) |
-| Seats | Passenger seats and crew stations | See *Taking a station* below |
-| Health | Damage and bleeding; medics and medical bays heal | At 0: incapacitated, see *Succession* |
-| Self-defence | Sidearm and carbine | Enough to deal with a lone infiltrator, not to win a battle |
-| Gear | Flashlight, night-vision mode for binoculars, gas mask, pressure suit (space) | Gear changes happen at lockers |
+| Climb | Ladders, stairs, ropes, steps up to 0.4 m | Ladders on towers, masts, siege towers and in mines |
+| Ride | Horse (Crown) or great boar (Wildborn): trot / canter / gallop 4 / 8 / 12 m/s | Mount and dismount at any time. You can't use your hands for most tools while galloping |
+| Swim | 1.0 m/s on the surface | Armor slows you. Falling overboard costs time |
+| Weightless | Push off and grab handholds | Only in a floating citadel's aether core |
+| Moving platforms | Lift cages, ship decks, siege towers, the backs of walking beasts, skyship gondolas, drifting citadels | Explained in [04](04-world-scale-and-theaters.md) |
+| Seats and posts | Saddles, wagon benches, a ship's wheel, a trebuchet's release lever | See *Taking a post* below |
+| Health | Wounds and bleeding; healers and infirmaries treat them | At 0: you fall, see *Succession* |
+| Self-defence | Sword and buckler, light crossbow | Enough for a lone assassin, not for a battle |
+| Gear | Lantern, cloak (warmth and camouflage), signal horn | Changed in your quarters or at the armory |
 
 ## 2. Command tools
 
-The commander always carries four tools, plus the HUD. Each one balances power against reach.
+The commander always carries five tools. Each one balances power against reach.
 
-### 2.1 Command Slate (handheld)
-A rugged handheld computer with a small low-resolution screen. Raising it covers part of your
-view and slows you to walking speed.
+### 2.1 The field map (handheld)
+An enchanted folding map in a leather case. Sending-stone magic redraws it in faded ink as
+reports come in. Opening it covers part of your view and slows you to walking speed.
 
-- **Map**: the faction's tactical picture as received over the data link. Outside network
-  coverage it shows only what you have seen yourself.
-- **Units**: groups and units listed by callsign, with strength, supply and current order.
-- **Orders**: a small set: move, attack, hold, regroup, follow me, plus calling transport.
-- **Production and construction**: view queues, add to them, pick a structure for placement.
-- **Reports log**: the radio log in text form.
+- **Map**: your side's picture of the battlefield, as far as the stone network reaches.
+  Outside the network it shows only what you have seen yourself, sketched in pencil.
+- **Companies**: your units by name and banner (*Second Lance*, *Mill Watch*, *Galleon
+  Resolute*), with strength, supplies and current order.
+- **Orders**: a small set: move, attack, hold, regroup, follow me, plus "send my horse".
+- **Works**: building and training queues; view them, add to them, choose a building to place.
+- **Dispatches**: a log of reports in writing.
 
-The slate is the "anywhere" tool. It is never the best tool for a job.
+The field map is the "anywhere" tool. It is never the best tool for a job.
 
-### 2.2 Binoculars and laser designator
-Raise them to zoom (2×, 4×, 8×) and see a range readout. They have a night-vision mode.
+### 2.2 Spyglass and marking staff
+Raise the **spyglass** to zoom (2×, 4×, 8×). A brass range scale on the lens gives distance.
+The **marking staff** projects a beam of soft light. Your own troops can see the mark it leaves,
+and enemies can see the beam.
 
-- **Designate**: point at the ground or a target and issue a context order to the selected
-  group ("move here", "attack that", "fire mission here").
-- **Mark**: report a contact to the tactical picture. Your own eyes are a sensor.
-- **Place**: show a holographic outline of a structure where you are looking. Rotate it,
-  confirm it, and engineers are assigned.
+- **Mark an order**: point at the ground or a target and give a context order to the selected
+  company ("move here", "attack that", "loose arrows here").
+- **Mark a sighting**: report an enemy to the war table. Your own eyes are a scout.
+- **Place a building**: show a shimmering outline of a building where you point. Rotate it,
+  confirm it, and serfs are sent to build it.
 
-The designator is the precise tool, but it only works on things you can see.
+The staff is the precise tool, but it only works on things you can see.
 
-### 2.3 Radio
-Hold the radio key to open a two-ring radial menu:
-- **Ring 1, who**: all units, groups 1–9, a unit by callsign, the next or previous unit that
-  reported.
-- **Ring 2, what**: report status, hold, advance to my mark, fall back, regroup on me, fire
-  mission at my mark, execute go-code, cancel.
+### 2.3 Sending stone
+A palm-sized enchanted stone on your belt, linked to the stones carried by your captains. Hold
+the stone key to open a two-ring radial menu:
+- **Ring 1, who**: all companies, company groups 1–9, a company by name, the next or previous
+  company that reported.
+- **Ring 2, what**: report, hold, advance to my mark, fall back, rally on me, loose at my mark,
+  sound the signal (see *Signals* in [03](03-command-and-control.md)), cancel.
 
-Units reply by voice ("Anvil Two-One, copy, moving.") with subtitles. Radio is fast and simple.
-It depends on network range and can be jammed.
+Captains answer in whispered voices ("Second Lance, aye, riding."), with subtitles. Stones are
+fast and simple. They depend on the network's range, and enemy wards can muffle them.
 
-### 2.4 Your voice (face to face)
-Walk up to an officer, who is a sprite with visible rank insignia, and talk to them.
-- Give **detailed orders**: full mission orders with objective, constraints, timing and posture.
-- Get a **detailed status**: casualties, morale, crew skill, problems.
-- **Personnel actions**: promote, reassign crews, set unit doctrine.
-- **Rally**: this gives a strong temporary presence bonus.
+### 2.4 War horn and banner
+Your **horn** (or your banner bearer's) sends four simple signals, *advance*, *hold*, *fall back*
+and *rally*, to every company within earshot. Horn calls cannot be blocked, but enemies hear them
+too. Your **banner** shows where you are. Troops who can see it gain presence (see §4). So do
+enemy archers looking for a target.
 
-Face-to-face orders cannot be jammed and arrive instantly, but you have to be there.
+### 2.5 Your voice (face to face)
+Walk up to a captain, a sprite with visible badges of rank, and talk to them.
+- Give **full orders**: objective, route and limits, timing and posture.
+- Get a **full report**: wounded, morale, the crew's skill, what worries them.
+- **People**: promote, move crews between companies, set a company's standing orders.
+- **Rally**: a strong temporary presence bonus.
 
-### 2.5 Helmet HUD
-This is the minimal visor overlay from the First-Person Contract. It shows compass, health and
-stamina, link quality bars, active channel, selected group and subtitles. It can be switched
-off.
+Face-to-face orders cannot be muffled and arrive at once, but you have to be there.
+
+### 2.6 The HUD
+The minimal overlay from the First-Person Contract. It shows compass, health and stamina, the
+stone's link strength, the active channel, the selected company and subtitles. It can be
+switched off.
 
 ## 3. Command posts and stations
 
 Command posts are physical places that give you the strongest command tools. Using them is the
 main reason to stand somewhere safe and far from the action.
 
-| Command post | Where | Map table | Sensor fusion | Comms range bonus | Special |
+| Command post | Where | War table | Reports gathered | Stone range bonus | Special |
 |---|---|---|---|---|---|
-| **HQ Command Center** | HQ bunker | Large (3×2 m) | All faction networks | Hub | Full production and diplomacy; the succession anchor |
-| **Mobile Command Vehicle** | 14 m truck | Small (1×0.6 m) | Ground | Relay node | Drives with the front line |
-| **Command Crawler** | 60 m tracked base | Large | Ground and air | Hub | A mobile HQ; can be a succession anchor |
-| **Ship CIC** | Destroyers, carriers | Plot table | Sea and air | Naval hub | Naval and air command, launch and recovery |
-| **Airborne C2** | 45 m AWACS aircraft | Small | Air, long range | Wide-area relay | Hard to reach; must keep flying |
-| **Orbital Command Deck** | Orbital station | Planet globe | All, from above | Satellite relay | Orbital ops, satellite tasking, drops |
+| **War room** | Keep (Crown) or War Lodge (Wildborn) | Large (4×2.5 m) | Everything your side knows | Network hub | Full building and training orders; the succession anchor |
+| **Command wagon / war tent** | A wagon that unfolds into a tent | Small (1.5×1 m) | Local | Relay | Travels with the army |
+| **Behemoth howdah** | On the back of a Wildborn behemoth | Large | Everything | Hub | A moving war room; can be a succession anchor |
+| **Chart room** | Flagship galleon or bonehulk | Chart table | Sea and coast | Naval hub | Fleet orders, landings |
+| **Skyship bridge** | Dwarven sky galleon | Small | Sky and land below | Wide relay | Hard to reach; drifts with the wind |
+| **Citadel throne hall** | A woken floating citadel | Scrying floor | Everything below the citadel | Huge relay | Drop-gates, far-sight, sky bombardment |
 
-**The map table** is the main RTS interface. Its hologram is a real 3D object above the glass,
-so you can walk around it, lean in to zoom and look along a valley. Press *Use* to engage the
-table. The mouse then moves a pointer across the map surface and the movement keys pan the map.
-You can box-select, set waypoints, draw formations, place structures and queue production.
-Orders appear as grease-pencil lines. Buttons along the table edge choose the order type.
-In VR you reach in with your hands: grab to pan, pinch to scale, point and pull the trigger
-to order.
+**The war table** is the main RTS interface. Its illusion map is a real 3D object above the
+wood, so you can walk around it, lean in to zoom and look along a valley. Press *Use* to step up
+to the table. The mouse then moves a pointer across the map, and the movement keys pan it. You
+can sweep-select companies, set waypoints, draw formations, place buildings and queue training.
+Orders appear as glowing ink lines. Runes along the table edge choose the order type. In VR you
+reach into the illusion with your hands: grab to pan, pinch to scale, point and pull the trigger
+to give an order.
 
-**Stations** are seats or terminals with special functions, for example the foreman's terminal
-in a factory (production), the comms station (boost a relay, run electronic warfare), the
-sensor station (task radars and satellites) or the medical bay (heal).
+**Stations** are seats or desks with special functions, for example the mine foreman's
+tally board (gold output), the master builder's desk (construction order), the mage tower's
+scrying pool (look through a far-seeing spell), or the infirmary (healing).
 
 ## 4. Presence
 
-When the commander is close to units and workers, they perform better:
+When the commander and their banner are close to troops and workers, they perform better:
 
 | Who | Effect within ~50 m and line of sight (tunable) |
 |---|---|
-| Combat units | +morale, faster recovery from suppression, better accuracy |
-| Construction | +25% build speed |
-| Factories (on the factory floor) | +10% production speed |
-| Repair and damage control | +20% repair speed |
-| A ship whose bridge or CIC you are on | +crew efficiency and faster battle-stations readiness |
+| Fighting companies | +morale, recover faster when shaken, hit more often |
+| Builders | +25% building speed |
+| Workers at a mine, sawmill or forge (when you are inside) | +10% output |
+| Repairs and firefighting | +20% speed |
+| A ship whose quarterdeck you stand on | +crew drill, faster reloading |
 
 Presence is the central trade-off. The front line is where your bonus matters most, and it is
-also where you are most likely to be shot. Enemy forces can detect the commander, who is a
-high-value target, and the enemy AI will hunt you if you are exposed.
+also where you are most likely to be killed. The enemy can spot your banner, and their AI will
+send assassins, archers or wyvern riders if you are exposed.
 
 ## 5. Travel
 
 Moving the commander costs time, and that time is a strategic cost. There is no teleport.
 
 - **On foot**, for short distances.
-- **As a passenger** in any vehicle with a free seat. "Follow me" works in reverse: "Take me
-  there." A driver from the motor pool can be called from the slate.
-- **Liaison flights**: request a VTOL shuttle between command posts. You ride in the cabin and
-  can use the slate during the flight.
-- **Time compression** (single player only, optional): ×2/×4 while in transit if no hostile
-  contacts are within range.
+- **On horseback** (or boar-back): your own mount can be called with the field map. It is the
+  usual way to get around the field.
+- **As a passenger** on any wagon, ship, skyship, roc basket or behemoth with room. "Follow me"
+  works in reverse: "Take me there."
+- **Courier riders**: a guarded ride between command posts with an escort. You can read the
+  field map on the way.
+- **Time compression** (single player only, optional): ×2/×4 while travelling if no enemy is
+  within range.
 
-## 6. Taking a station
+## 6. Taking a post
 
-The commander can take over a crew station: drive a truck, man a tank gun, take the helm of a
-patrol boat, fly a VTOL. This is allowed because it is fun and makes the fantasy feel real. It
-has costs:
-- While at a station, you can only use the radio. No slate, no table, no designator.
-- The crew member normally at that station moves aside. A trained crew member usually does the
+The commander can take over a crew post: drive a wagon, steer a galleon, aim a trebuchet, fly a
+wyvern. This is allowed because it is fun and makes the fantasy feel real. It has costs:
+- While at a post, you can only use the sending stone and the horn. No field map, no war table,
+  no marking staff.
+- The crew member normally at that post moves aside. A trained crew member usually does the
   job better than you.
-- Controls are simplified, arcade-like and easy to learn.
+- Controls are simplified and easy to learn.
 
 ## 7. Succession (when the commander falls)
 
-If the commander's health reaches 0, they are incapacitated. If no medic reaches them in time,
-they die.
+If the commander's health reaches 0, they fall. If no healer reaches them in time, they die.
 
-1. The view fades to black and *"Command passes to your executive officer."* appears.
-2. After a delay (default 30 s), you continue as your **successor**, waking in the briefing
-   room of the highest-ranked surviving **succession anchor** (HQ or Command Crawler).
-3. Consequences: units near where you fell lose morale. For a short "handover" period (default
-   60 s), only face-to-face and command-table orders work, because the radio authentication
-   codes are being reissued.
+1. The view fades to black and *"Your banner passes to your second."* appears.
+2. After a delay (default 30 s), you continue as your **successor**, waking in the war room of
+   the most important surviving **succession anchor** (Keep, War Lodge or a behemoth).
+3. Consequences: companies near where you fell lose morale. For a short "handover" period
+   (default 60 s), the sending stones are silent while they are attuned to the new commander.
+   Only face-to-face orders, the war table and the horn work.
 4. You have a limited number of successors (default 3, set by the match rules). When the last
    one falls, or no succession anchor is left, you are **defeated**.
 

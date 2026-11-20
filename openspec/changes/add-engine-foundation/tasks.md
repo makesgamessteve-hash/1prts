@@ -57,11 +57,11 @@
 - [ ] 7.1 Implement the generated GL function loader, the gfx interface, the GL back end and the null back end; verify unit tests run against the null back end and a GL smoke test runs under Xvfb + llvmpipe
 - [ ] 7.2 Implement shader loading from data with the per-platform prelude, compile-error reporting with file and line, and the fallback shader; verify tests with a broken shader file (spec *Broken shader*, *Mod changes the look*)
 - [ ] 7.3 Implement textures (stb_image), the glTF 2.0 subset (cgltf) with marker nodes, and `.vox` greedy meshing (ogt_vox); verify loader unit tests on small fixture files, and a missing-model placeholder test (spec *Missing model*, *Voxel prop*)
-- [ ] 7.4 Implement the view list, camera-relative transforms, depth layers and the low-resolution scene target with nearest-neighbor integer upscale and the resolution presets; verify golden images for each preset and the near/far depth case (spec *Changing the preset*, *Slate and horizon in one view*, *Two views*)
+- [ ] 7.4 Implement the view list, camera-relative transforms, depth layers and the low-resolution scene target with nearest-neighbor integer upscale and the resolution presets; verify golden images for each preset and the near/far depth case (spec *Changing the preset*, *Field map and horizon in one view*, *Two views*)
 - [ ] 7.5 Implement per-vertex lighting, fog, vertex snapping, affine mapping, palette quantization with ordered dither and run-time toggles; verify golden images for each toggle state and the dusk preset (spec *Turning off dithering*, *Dusk lighting*)
 - [ ] 7.6 Implement 8-direction billboard sprites with animations and batching; verify a golden test from front, side and back angles (spec *Directional sprite*)
 - [ ] 7.7 Implement cells and portals, portal culling and the outside-in visibility rule; verify a unit test of the visible-cell set and a golden image of the closed and opened side-room door (spec *Closed door hides a room*)
-- [ ] 7.8 Implement offscreen views and render-target surfaces with the CRT material; verify a golden image of the map table screen (spec *Live monitor*)
+- [ ] 7.8 Implement offscreen views and render-target surfaces with the magic-surface material; verify a golden image of the war table surface (spec *Live war table*)
 - [ ] 7.9 Add render golden tests to `linux-coverage` with the 8-level / 0.5% tolerance, difference-image artifacts and `tools/golden/update`; verify a deliberate fog color change fails the test (spec *Visual regression*)
 
 ## 8. Input
@@ -78,23 +78,23 @@
 - [ ] 9.2 Implement the capsule character controller (sub-stepped sweeps, slide, step-up 0.4 m, 45° slope limit, ground probe, platform velocity); verify unit tests and scenario tests for stairs and sprinting into a wall (spec *Stairs*, *Wall at sprint speed*)
 - [ ] 9.3 Implement commander movement and eye height in Lua-tunable parameters (walk, run, sprint with stamina, crouch, jump); verify scenario tests (spec *Walking speed*, *Crouching lowers the view*)
 - [ ] 9.4 Implement the use/interaction system (look or pointer ray, reach, prompt, script callbacks) and doors (animation, collision update, portal state, sound); verify a scenario test (spec *Opening a door*)
-- [ ] 9.5 Implement moving platforms and the scripted HQ elevator (call buttons, car frame, doors per floor); verify scenario tests (spec *Riding the HQ elevator*, *Walking during movement*)
+- [ ] 9.5 Implement moving platforms and the scripted hoist lift in the keep (call levers, platform frame, gates per floor); verify scenario tests (spec *Riding the keep's hoist lift*, *Walking during movement*)
 - [ ] 9.6 Enforce the First-Person Contract: release builds have no camera other than the commander's, and developer builds have an observer camera labeled on screen; verify a release-build test that the observer command is unavailable and a developer-build test that the label is shown (spec *Release build*, *Developer observer camera*)
 
 ## 10. Proving Ground content and asset checks
 
 - [ ] 10.1 Implement greybox brushes (box, wedge, stairs, door frame, window frame) defined in Lua, generating meshes, collision, cells and portals (design D9); verify unit tests of the generated geometry
-- [ ] 10.2 Build the Proving Ground: ≥ 1 km × 1 km terrain, dusk lighting, the three-storey HQ (lobby, side rooms, stairwell, elevator, Command Center with a placeholder map table), a `.vox` crate, a person sprite and a generator room; verify the scenario test *Reaching the Command Center*
+- [ ] 10.2 Build the Proving Ground: ≥ 1 km × 1 km terrain, dusk lighting, the three-storey keep (great hall, side rooms, spiral stair, hoist lift, war room with a placeholder war table), a `.vox` crate, a person sprite and a forge room; verify the scenario test *Reaching the war room*
 - [ ] 10.3 Create the placeholder art (textures, sprite sheet, voxel crate, sounds, music loop, bitmap font) as original CC BY 4.0 work with `data/base/CREDITS.md` entries; verify the asset validator passes
 - [ ] 10.4 Implement `tools/validate-assets` (credits coverage, references resolve, formats parse, manifests valid) and add it to `checks`; verify it fails on an uncredited fixture file (spec *Uncredited asset detected*)
-- [ ] 10.5 Write the commander-is-there smoke scenario set (walk, stairs, door, elevator, table) and run it in CI on Windows, Linux, macOS and web; verify all report passed with the same final cell (spec *Same scenario result on desktop and web*)
+- [ ] 10.5 Write the commander-is-there smoke scenario set (walk, stairs, door, lift, war table) and run it in CI on Windows, Linux, macOS and web; verify all report passed with the same final cell (spec *Same scenario result on desktop and web*)
 
 ## 11. Audio
 
 - [ ] 11.1 Implement the mixer core (voices, buses, attenuation, equal-power panning, low-pass muffling) as device-independent C; verify unit tests on rendered buffers (spec *Sound to the left*, *Muting music*)
 - [ ] 11.2 Connect the mixer to SDL3 audio streams with the lock-free command queue, plus a null device for headless mode; verify a smoke test with a real device under CI where available and the null device otherwise
 - [ ] 11.3 Implement WAV and OGG loading, OGG streaming and script-controlled cross-fades; verify unit tests on fixture files (spec *Cross-fade*)
-- [ ] 11.4 Implement muffling between cells from portal state; verify a scenario test checking the voice's filter state when the generator room door closes (spec *Door closes on a noisy room*)
+- [ ] 11.4 Implement muffling between cells from portal state; verify a scenario test checking the voice's filter state when the forge room door closes (spec *Door closes on a noisy room*)
 - [ ] 11.5 Implement the browser audio unlock with queued start requests; verify a Playwright test that music starts after the first click (spec *First click starts music*)
 
 ## 12. UI, menus and developer console
@@ -107,7 +107,7 @@
 ## 13. Web platform and WebXR
 
 - [ ] 13.1 Spike the WebXR frame-driver handoff: `web/prts_xr.js` starts a session, pauses SDL's loop, drives `prts_frame()` from the XR session and resumes SDL's loop on end; verify with the `navigator.xr` mock in Playwright (spec *Entering VR*, *Session ended by the headset*)
-- [ ] 13.2 Implement the XR interface in `xr/` (session state, eye views into the renderer's view list, controller poses and buttons into the action mapper, pointer rays); verify unit tests with recorded pose fixtures (spec *Pressing the elevator button*)
+- [ ] 13.2 Implement the XR interface in `xr/` (session state, eye views into the renderer's view list, controller poses and buttons into the action mapper, pointer rays); verify unit tests with recorded pose fixtures (spec *Pulling the lift lever*)
 - [ ] 13.3 Implement XR body handling: head offset within the play area, collision push-back for the head, seated mode; verify unit tests (spec *Leaning toward a wall*)
 - [ ] 13.4 Implement comfort options (smooth and teleport movement, snap and smooth turn, vignette) and XR effect defaults; verify unit tests and a Playwright XR-mock test (spec *Teleport movement*, *Comfort defaults*)
 - [ ] 13.5 Implement XR availability detection and the "Enter VR" control, hidden when unsupported; verify Playwright tests with and without the mock (spec *No XR support*)

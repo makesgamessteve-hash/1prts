@@ -82,23 +82,23 @@ Each entity has `parent_frame` and a float local transform. Each frame also cach
 **double-precision world transform** that is updated once per tick, top-down. Rendering builds
 camera-relative float matrices from doubles. **Frame volumes** are trigger shapes attached to
 frames. When the commander's capsule center enters one, it is reparented with world transform and
-velocity preserved (spec: *Changing parent without a jump*). The HQ elevator car is the
-first kinematic frame, driven by a Lua script through `prts.frame` (target height, speed).
+velocity preserved (spec: *Changing parent without a jump*). The keep's hoist lift platform is
+the first kinematic frame, driven by a Lua script through `prts.frame` (target height, speed).
 
 ### D8 · Own character controller
 A capsule controller with swept collision (sub-stepped so it cannot tunnel at sprint speed),
 step-up up to 0.4 m, a 45° slope limit, ground probing and inherited platform velocity. Static
 geometry is stored in a per-mesh BVH. Terrain uses height-field queries. *Alternatives:* Jolt
 or Bullet (C++, large WebAssembly size, much more than a character needs); ODE (old API). Later
-milestones add vehicle kinematics on the same collision queries.
+milestones add kinematics for wagons, siege engines, mounts and ships on the same collision queries.
 
 ### D9 · Cells and portals from glTF markers and greybox brushes
 For M1, cells and portals are marked up in content: glTF nodes named `cell:<id>`,
 `portal:<a>:<b>` and `volume:frame:<id>`, or the same tags on **greybox brushes**. The Proving
-Ground HQ is built from **greybox brushes** defined in Lua (box, wedge, stairs, door frame,
+Ground keep is built from **greybox brushes** defined in Lua (box, wedge, stairs, door frame,
 window frame). They become meshes and collision when loaded and are textured from a small
 CC BY 4.0 texture set. This avoids hand-modeling a three-storey building and gives modders a fast
-blocking tool. glTF loading is still covered by props and the map table model. Deck plans
+blocking tool. glTF loading is still covered by props and the war table model. Deck plans
 (M3) will generate the same cell and portal data.
 
 ### D10 · UI: microui behind `prts_ui`

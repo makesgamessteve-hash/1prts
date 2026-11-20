@@ -31,8 +31,8 @@ Sounds SHALL be grouped into at least the buses master, effects, voice, music an
 Sounds playing in a different interior cell than the listener SHALL be quieter and duller when every portal between the two cells is closed, and SHALL become clear when a connecting portal opens.
 
 #### Scenario: Door closes on a noisy room
-- **WHEN** the generator room plays its loop and the commander closes the door between the generator room and the corridor
-- **THEN** the generator sound in the corridor becomes quieter and loses high frequencies
+- **WHEN** the forge room plays its hammering loop and the commander closes the door between the forge room and the corridor
+- **THEN** the forge sound in the corridor becomes quieter and loses high frequencies
 
 ### Requirement: Browser audio unlock
 On the web, audio SHALL start after the first user interaction as browsers require, without losing sounds that the game had requested to start before then.

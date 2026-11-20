@@ -2,7 +2,7 @@ schema: spec-driven
 
 # Project context: constraints that guide every OpenSpec artifact in this repo.
 context: |
-  1stPRTS is a first-person real-time strategy game. The concept lives in docs/concept/,
+  1stPRTS is a first-person fantasy real-time strategy game. The concept lives in docs/concept/,
   the architecture in docs/architecture/. Read them before proposing changes.
 
   Hard constraints:

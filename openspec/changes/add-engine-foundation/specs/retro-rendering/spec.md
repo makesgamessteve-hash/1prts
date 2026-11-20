@@ -14,7 +14,7 @@ The scene SHALL be rendered at a selectable internal resolution (presets 320×18
 - **THEN** the scene is rendered at 320×180 (aspect-adjusted) and shown with sharp pixel edges, without restarting the game
 
 ### Requirement: Retro effects can be toggled
-Nearest-neighbor texture filtering, vertex snapping, affine texture mapping, palette quantization with ordered dithering, distance fog and CRT screen effects SHALL each be switchable on or off at run time.
+Nearest-neighbor texture filtering, vertex snapping, affine texture mapping, palette quantization with ordered dithering, distance fog and in-world display effects SHALL each be switchable on or off at run time.
 
 #### Scenario: Turning off dithering
 - **WHEN** the player turns off palette quantization and dithering
@@ -52,23 +52,23 @@ Lighting SHALL be computed per vertex from a directional light, ambient light, a
 ### Requirement: Wide depth range
 The renderer SHALL draw objects from 0.05 m to at least 100 km from the viewer in the same view without visible depth fighting between surfaces at least 0.5% of their distance apart.
 
-#### Scenario: Slate and horizon in one view
-- **WHEN** the commander holds a placeholder slate in front of them while the horizon is 20 km away
-- **THEN** both the slate and distant terrain are drawn with correct occlusion and no flicker
+#### Scenario: Field map and horizon in one view
+- **WHEN** the commander holds a placeholder field map in front of them while the horizon is 20 km away
+- **THEN** both the field map and distant terrain are drawn with correct occlusion and no flicker
 
 ### Requirement: Interior visibility through portals
 Interiors SHALL be divided into cells connected by portals. From inside a cell, only cells visible through open portals SHALL be drawn. From outside, an interior SHALL be drawn only through its open portals and windows.
 
 #### Scenario: Closed door hides a room
-- **WHEN** the commander stands in the HQ lobby facing a closed door to a side room
+- **WHEN** the commander stands in the keep's great hall facing a closed door to a side room
 - **THEN** the side room's contents are not drawn, and opening the door makes them visible
 
 ### Requirement: In-world screens
-The renderer SHALL be able to draw additional views and user-interface content into textures shown on surfaces in the world, such as monitors and the map table, at their own low resolution and update rate.
+The renderer SHALL be able to draw additional views and user-interface content into textures shown on surfaces in the world, such as scrying pools and the war table, at their own low resolution and update rate.
 
-#### Scenario: Live monitor
-- **WHEN** the commander looks at the placeholder map table in the Command Center
-- **THEN** its screen shows a live, animated view rendered into the table's surface with the CRT effect
+#### Scenario: Live war table
+- **WHEN** the commander looks at the placeholder war table in the war room
+- **THEN** its surface shows a live, animated view rendered into the table with the magic-surface effect
 
 ### Requirement: Stereo-ready views
 The renderer SHALL render a list of views per frame, each with its own viewport, view and projection, so that the same scene can be drawn once for a flat screen or once per eye for XR.

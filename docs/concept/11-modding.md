@@ -1,20 +1,21 @@
 # 11 · Modding
 
-**Goal:** the base game is just the first mod. Anything it does, a mod can do too.
+**Goal:** the base game is just the first mod. Anything it does, a mod can do too, including a
+new faction, a new people or a new kind of magic.
 
 ## 1. What can be modded
 
 | Area | How | Files |
 |---|---|---|
-| Units, structures, weapons, factions | Lua definition tables | `scripts/defs/**.lua` |
-| Rules, victory conditions, economy, presence, succession | Lua | `scripts/game/**.lua` |
-| AI (officers and the opposing commander) | Lua | `scripts/ai/**.lua` |
-| Command interfaces (slate, table, monitors, menus) | Lua UI scripts | `scripts/ui/**.lua` |
+| Units, buildings, weapons, spells, factions | Lua definition tables | `scripts/defs/**.lua` |
+| Rules, victory conditions, economy, tiers and upgrades, presence, succession | Lua | `scripts/game/**.lua` |
+| AI (captains and the opposing commander) | Lua | `scripts/ai/**.lua` |
+| Command interfaces (field map, war table, scrying pools, menus) | Lua UI scripts | `scripts/ui/**.lua` |
 | Missions, campaigns, scenarios | Lua | `scripts/missions/**.lua` |
-| Interiors | Deck plans (text) and hero-room models | `interiors/**` |
+| Interiors (castles, mines, ships, behemoths, citadels) | Deck plans (text) and hero-room models | `interiors/**` |
 | Maps | Heightmaps, splat maps, placement scripts | `maps/**` |
 | Models, textures, sprites, voxels | glTF 2.0, PNG, sprite sheets with metadata, `.vox` | `models/`, `textures/`, `sprites/`, `voxels/` |
-| Sound, music, radio phrases | WAV, OGG, phrase tables | `sounds/`, `music/`, `radio/` |
+| Sound, music, voice phrases | WAV, OGG, phrase tables | `sounds/`, `music/`, `voices/` |
 | The look | GLSL shaders, palettes | `shaders/`, `palettes/` |
 | Controls | Action definitions, default bindings | `scripts/input/**.lua` |
 
@@ -32,7 +33,7 @@ data/
     scripts/           Lua (MIT)
     shaders/           GLSL (MIT)
     models/ textures/ sprites/ voxels/ palettes/
-    sounds/ music/ radio/ fonts/
+    sounds/ music/ voices/ fonts/
     interiors/ maps/
 mods/                  extra mods (a second mods folder lives in the user data directory)
 ```
@@ -43,10 +44,10 @@ the `.wasm` binary. It is not compiled into the binary, and it can be swapped wi
 ## 3. Mod manifest
 
 ```lua
--- data/mods/heavy_armor/mod.lua
+-- data/mods/heavy_cavalry/mod.lua
 return {
-  id          = "heavy_armor",
-  name        = "Heavy Armor Pack",
+  id          = "heavy_cavalry",
+  name        = "Heavy Cavalry Pack",
   version     = "1.2.0",
   api         = "1",                 -- engine scripting API major version
   depends     = { "base >= 0.1" },
@@ -65,75 +66,70 @@ return {
 ## 4. Example: a unit definition
 
 ```lua
--- scripts/defs/units/dir_mbt_bastion.lua
+-- scripts/defs/units/crown_knights.lua
 prts.def.unit {
-  id        = "dir.mbt.bastion",
-  name      = "Bastion Main Battle Tank",
-  faction   = "dir",
-  domain    = "ground",
-  size      = { 3.6, 2.6, 10.0 },         -- width, height, length in meters
-  model     = "models/dir/mbt_bastion.glb",
-  interior  = "interiors/dir/mbt_bastion/interior.glb",
-  crew      = {
-    { role = "commander", station = "turret.commander" },
-    { role = "gunner",    station = "turret.gunner" },
-    { role = "loader",    station = "turret.loader" },
-    { role = "driver",    station = "hull.driver" },
+  id         = "crown.knights",
+  name       = "Knights",
+  faction    = "crown",
+  domain     = "field",
+  members    = 4,                               -- one lance of four riders
+  sprite     = "sprites/crown/knight_mounted.lua",
+  crew       = { { role = "knight", count = 4 } },
+  mobility   = { type = "mounted", max_speed_kmh = 40, stamina = 120 },
+  armor      = { melee = 8, pierce = 6, fire = 2 },
+  weapons    = {
+    { weapon = "crown.lance", charge_bonus = 2.0 },
+    { weapon = "crown.longsword" },
   },
-  mobility  = { type = "tracked", max_speed_kmh = 60, fuel_l = 1400 },
-  armor     = { front = 600, side = 250, rear = 120, top = 80 },
-  weapons   = { { weapon = "dir.gun.120mm", mount = "turret.main", ammo = 40 } },
-  sensors   = { { type = "optics", range_m = 4000 } },
-  subsystems = {
-    propulsion = { compartments = { "engine" } },
-    weapons    = { compartments = { "turret" } },
-    comms      = { compartments = { "turret" } },
-  },
-  cost      = { alloy = 180, fuel = 40, build_time_s = 90 },
+  sight_m    = 300,
+  upgrades   = { "crown.lantern_knights" },
+  trained_at = "crown.stables",
+  cost       = { gold = 250, timber = 60, folk = 4, train_time_s = 70 },
 }
 ```
 
 ## 5. Example: a deck plan
 
 ```lua
--- interiors/dir/destroyer_kestrel/deck2.lua
+-- interiors/crown/war_galleon/gun_deck_lower.lua
 prts.def.deckplan {
-  id     = "dir.destroyer.kestrel.deck2",
-  cell   = 2.0,  height = 2.8,
-  kit    = "kits/dir_naval",
+  id     = "crown.war_galleon.gun_deck_lower",
+  cell   = 2.0,  height = 2.0,
+  kit    = "kits/crown_ship",
   legend = {
-    ["#"] = "wall", ["."] = "floor", ["+"] = "hatch",
-    ["^"] = "ladder_up", ["v"] = "ladder_down", ["c"] = "console", ["b"] = "bunk",
+    ["#"] = "hull", ["."] = "deck", ["+"] = "hatch",
+    ["^"] = "ladder_up", ["v"] = "ladder_down",
+    ["g"] = "cannon", ["k"] = "powder_kegs", ["b"] = "hammock",
   },
   tiles = [[
     ###################
-    #ccc..c#ccc#bb.bb.#
-    #......+.c.+......#
-    #ccc..c#...#bb.bb.#
+    #ggg..g#kkk#bb.bb.#
+    #......+.k.+......#
+    #ggg..g#...#bb.bb.#
     ####+#########+####
     #^...............v#
     ###################
   ]],
-  compartments = [[
+  rooms = [[
     ###################
-    #AAAAAA#RRR#BBBBBB#
-    #AAAAAA+RRR+BBBBBB#
-    #AAAAAA#RRR#BBBBBB#
+    #GGGGGG#PPP#BBBBBB#
+    #GGGGGG+PPP+BBBBBB#
+    #GGGGGG#PPP#BBBBBB#
     ####+#########+####
-    #PPPPPPPPPPPPPPPPP#
+    #WWWWWWWWWWWWWWWWW#
     ###################
   ]],
   zones = {
-    A = { name = "Combat Information Center", subsystem = "command", hero_room = "cic" },
-    R = { name = "Radar Room",                subsystem = "sensors.radar" },
-    B = { name = "Berthing 2-1",              subsystem = "crew" },
-    P = { name = "Main Passageway" },
+    G = { name = "Forward Battery", system = "guns", hero_room = "battery_fwd" },
+    P = { name = "Powder Room",     system = "guns.powder", fire_risk = "high" },
+    B = { name = "Crew Berths",     system = "crew" },
+    W = { name = "Main Passage" },
   },
 }
 ```
 
-The engine builds the geometry from the kit, the collision, the crew navigation graph and the
-compartments for damage control from this one file.
+From this one file the engine builds the geometry from the kit, the collision, the crew
+navigation graph and the rooms used for fire and flooding.
 
 ## 6. Scripting rules
 

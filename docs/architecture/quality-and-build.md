@@ -38,22 +38,22 @@ null audio, fixed seed, isolated user directory). They drive the game through th
 layer** that real input uses, so they test what a player can actually do.
 
 ```lua
--- tests/game/scenarios/hq_elevator.lua
+-- tests/game/scenarios/keep_lift.lua
 return prts.test.scenario {
-  name = "commander rides the HQ elevator to the Command Center",
+  name = "commander rides the keep's hoist lift to the war room",
   map  = "maps/proving_ground",
   seed = 1234,
   run  = function(t)
     local cmdr = t.commander()
-    t.place(cmdr, "markers/hq_lobby_elevator")
-    t.input.press("use")                                  -- call the elevator
-    t.wait_until(function() return t.door_open("hq.elevator.ground") end, 15)
+    t.place(cmdr, "markers/keep_hall_lift")
+    t.input.press("use")                                  -- pull the call lever
+    t.wait_until(function() return t.door_open("keep.lift.gate_ground") end, 15)
     t.input.hold("move_forward", 1.5)                     -- simulated seconds
-    t.wait_until(function() return t.parent_frame(cmdr) == "hq.elevator.car" end, 5)
-    t.input.press("use")                                  -- choose the top floor
-    t.wait_until(function() return t.door_open("hq.elevator.floor3") end, 30)
+    t.wait_until(function() return t.parent_frame(cmdr) == "keep.lift.platform" end, 5)
+    t.input.press("use")                                  -- lever: top floor
+    t.wait_until(function() return t.door_open("keep.lift.gate_floor3") end, 30)
     t.input.hold("move_forward", 2.0)
-    t.expect(t.in_cell(cmdr, "hq.floor3.command_center")).is_true()
+    t.expect(t.in_cell(cmdr, "keep.floor3.war_room")).is_true()
     t.expect(t.parent_frame(cmdr)).equals("world")
   end,
 }

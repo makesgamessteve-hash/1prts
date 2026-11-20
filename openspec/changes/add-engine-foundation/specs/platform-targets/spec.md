@@ -33,7 +33,7 @@ The project SHALL build with Emscripten into a web bundle of an HTML page, a Jav
 All platforms SHALL run the same base game from the same data content. Platform differences SHALL be limited to presentation defaults (resolution, draw distance, simulation detail radius) and the available input schemes.
 
 #### Scenario: Same scenario result on desktop and web
-- **WHEN** the Proving Ground elevator scenario is run on a desktop build and on the web build
+- **WHEN** the Proving Ground lift scenario is run on a desktop build and on the web build
 - **THEN** both runs report the scenario as passed with the same final cell for the commander
 
 ### Requirement: Package layout

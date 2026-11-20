@@ -3,7 +3,7 @@
 ## Why
 
 1stPRTS has a concept (`docs/concept/`) and an architecture (`docs/architecture/`) but no code.
-Every later milestone (RTS core, crewed vehicles, economy, air/sea, orbit) depends on the same
+Every later milestone (RTS core, mounts and siege engines, economy, water and sky, floating citadels) depends on the same
 base: a portable C engine, Lua scripting with assets outside the binary, a retro renderer that
 handles stereo, first-person movement through interiors and on moving platforms, and test
 infrastructure that can enforce 95% coverage and automated game tests on every platform. The
@@ -19,10 +19,10 @@ means those risks surface before any gameplay depends on them.
   `scripts/main.lua`.
 - New **base game data** `data/base/` containing the boot script, input action definitions,
   shaders, placeholder art (CC BY 4.0 with `CREDITS.md`) and the **Proving Ground** map: terrain,
-  a three-storey HQ building with doors, stairs, an elevator and a placeholder map table that
-  shows a live in-world screen.
+  a three-storey keep with doors, a spiral stair, a hoist lift and a placeholder war table whose
+  surface shows a live rendered view.
 - **First-person commander**: walk, run, crouch, jump, collide, use doors, take stairs, ride the
-  elevator. The view is always the commander's eyes.
+  hoist lift. The view is always the commander's eyes.
 - **Input**: keyboard and mouse, gamepad, **touch** (switches automatically on mobile web), and
   **WebXR** controllers, all mapped to Lua-defined actions.
 - **WebXR**: enter and exit an immersive VR session in the browser, with stereo rendering,
@@ -56,8 +56,8 @@ means those risks surface before any gameplay depends on them.
   native executables. Web desktop and mobile web share one Emscripten build, and mobile gets
   touch controls. WebXR uses the same web build in headsets whose browsers support immersive VR.
 - **Engine vs. scripts**: everything in "What Changes" that renders, simulates, loads or tests is
-  engine C code. The boot flow, the action list, the Proving Ground setup, the map table screen
-  content and the door/elevator logic are Lua and data.
+  engine C code. The boot flow, the action list, the Proving Ground setup, the war table surface
+  content and the door and lift logic are Lua and data.
 - **Dependencies** (all permissive; details and alternatives in `design.md`): SDL 3 (zlib),
   Lua 5.4 (MIT), cgltf (MIT), stb_image and stb_vorbis (MIT/public domain), ogt_vox (MIT),
   microui (MIT), utest.h (Unlicense, tests only), Playwright (Apache-2.0, dev only), gcovr (BSD-3, CI only).
@@ -65,6 +65,6 @@ means those risks surface before any gameplay depends on them.
   `third_party/`, `CMakeLists.txt`, `CMakePresets.json`, `.github/workflows/`.
 
 ### Out of scope
-RTS gameplay (units, orders, pathfinding, the tactical picture, the real map-table interface),
-enterable vehicles and ships, rotating or zero-g frames, deck-plan compiler, crew, economy,
+RTS gameplay (units, orders, pathfinding, the battlefield picture, the real war-table interface),
+mounts, enterable wagons, engines, ships and creatures, weightless volumes, deck-plan compiler, crew, economy,
 multiplayer, native (non-web) VR, zip mod archives, the in-game editor, localization.

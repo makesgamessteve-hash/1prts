@@ -14,11 +14,11 @@
 - **Built-in components** live in C, in packed arrays per component type:
   `transform` (frame-relative), `frame` (if the entity is a reference frame), `body`
   (velocity, mass), `collider`, `render` (mesh, sprite or voxel), `light`, `audio_source`,
-  `door`, `platform` (elevators, decks), `seat`, `trigger`, `script`.
+  `door`, `platform` (lifts, decks), `seat`, `trigger`, `script`.
 - **Script components**: each entity can carry Lua-owned data in a table that is stored by
   the engine. The data must be **plain** (numbers, strings, booleans, nested tables, handles) so
   it can be saved. Functions and userdata are rejected when saving.
-- More component types (weapons, sensors, crew, cargo, production…) arrive with the
+- More component types (weapons, sight, crew, cargo, gathering, production…) arrive with the
   milestones that need them. Each one goes through an OpenSpec change.
 
 ## 3. Reference frames
@@ -27,18 +27,18 @@ Big moving things with people inside need **nested reference frames**
 ([concept 04 §4](../concept/04-world-scale-and-theaters.md)).
 
 ```
-world frame (per theater: planet surface, orbit)
- └─ carrier frame            moves and rotates with the ship
-     ├─ hangar elevator frame   moves up and down relative to the carrier
-     │   └─ aircraft frame       parked on the elevator
-     │       └─ commander        sitting in the cockpit
-     └─ commander (walking on the flight deck)
+world frame
+ └─ behemoth frame           walks, sways and turns with the beast
+     ├─ flank lift frame       a rope lift moving up and down the beast's side
+     │   └─ supply cart         standing on the lift platform
+     │       └─ commander       sitting on the cart
+     └─ commander (walking between the huts on its back)
 ```
 
 - Every entity has a **parent frame** and a **local transform** in single-precision floats,
   relative to that parent. Frames can nest to any depth (practical depth ≤ 6).
-- **World positions** use **double precision** (`prts_dvec3`). A 32 km map or an orbital
-  scene would show visible float jitter far from the origin, so the world position of each
+- **World positions** use **double precision** (`prts_dvec3`). A 32 km map with a high
+  sky 6 km up would show visible float jitter far from the origin, so the world position of each
   frame is kept in doubles.
 - **Rendering is camera-relative**: transforms are combined in double precision relative to
   the camera, then turned into float. Precision stays good near the viewer at any distance from
@@ -46,21 +46,22 @@ world frame (per theater: planet surface, orbit)
 - **Physics runs in the frame of the entity's parent.** The commander walking on a moving deck
   collides with the deck's geometry in deck space, so they do not slip or fall through. The
   frame's own motion is applied when moving to the parent's space.
-- **Changing parent**: stepping off a ramp, onto an elevator car, or through an airlock into a
-  station's ring changes an entity's parent. Its world transform stays the same and its velocity
+- **Changing parent**: stepping off a gangplank, onto a lift platform, or across a skyship's
+  boarding bridge into a floating citadel changes an entity's parent. Its world transform stays the same and its velocity
   is converted, so there is no pop or jump. Parent changes come from **frame volumes**
   (triggers that say "inside this volume you belong to frame F").
-- **Gravity is set per frame**: planet gravity for the world frame; for rotating frames (station
-  rings) it comes from the rotation (centripetal "down"), and in zero-g volumes there is none.
-  The character controller asks the frame for gravity at its position.
-- **M1 scope**: the frame tree, camera-relative rendering, parent changes, and the **elevator**
-  in the HQ as the first moving frame. Vehicles, ships and rotating frames come in M3/M6.
+- **Gravity is set per frame**: normal gravity for almost every frame, and none inside
+  **weightless volumes** (a floating citadel's aether core). The character controller asks the
+  frame for gravity at its position, so other rules can be added without changing it.
+- **M1 scope**: the frame tree, camera-relative rendering, parent changes, and the **hoist lift**
+  in the keep as the first moving frame. Wagons, siege towers, ships, creatures and citadels come
+  in M3–M6.
 
 ## 4. Cells and portals (interiors)
 
 - Each interior is split into **cells** (rooms or groups of rooms) joined by **portals**
   (doorways, hatches, windows, open ramps). The outdoor world is one cell as well.
-- Cells are **children of their vehicle's or building's frame**, so interiors move with their
+- Cells are **children of their ship's, beast's or building's frame**, so interiors move with their
   hull.
 - Portals are used for **visibility** (only cells you can see through portals are drawn),
   **audio** (sound passes through open portals and is muffled by closed ones), and later
@@ -75,7 +76,7 @@ To keep huge, crewed machines affordable (from M3 onward):
 | Level | Entities simulated | Example |
 |---|---|---|
 | **Embodied** | Full entities with transforms, sprites, navigation | Crew of the ship the commander is on |
-| **Rostered** | Records only (role, station, state); no transform | Crew of other active units |
+| **Rostered** | Records only (role, post, state); no transform | Crew of other active units |
 | **Aggregated** | Counts and averages per formation | Distant fleet reserves |
 
 Switching levels is **deterministic** and depends only on simulation state (where the commander

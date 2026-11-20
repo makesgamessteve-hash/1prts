@@ -2,69 +2,76 @@
 
 ## 1. The setting
 
-**Year 2231. The Halvorsen system.** **Veyra** is a terraformed, habitable moon of the gas giant
-**Orun**. A hundred and forty years ago, the **Veyra Colonial Charter** settled it under one hard
-rule, the **Ninth Clause**:
+**Veyra** is a land of river valleys, dark pine forests, chalk downs and a stormy coast. Above it,
+when the clouds part, you can see the silhouettes of **floating citadels** drifting in the high
+sky.
 
-> *No machine shall think, decide or kill on its own. Every machine requires human hands.*
+Six centuries ago, the **High Imperium** ruled Veyra from those citadels. Its sky-mages bound
+great **aetherstones** to lift whole fortresses into the air, and for three hundred years no
+power on the ground could touch them. Then came the **Skyfall**. Nobody agrees on why, but in a
+single night the aetherstones failed, and most of the citadels fell. The craters are still
+there, now lakes ringed with ruins. A handful of citadels stayed aloft, dark and silent,
+drifting on the high winds ever since.
 
-The terraforming of Veyra was done by autonomous machines, the **Custodians**, that were
-shut down and buried when the Charter took effect. Since then, everything on Veyra has been
-built for people to run. That is why there are so many crews.
-
-### Why the technology looks retro (in-world)
-The Ninth Clause banned advanced autonomous computing. Veyran technology took a different path:
-- Displays are **CRTs and vector screens**. Map tables are vector holograms, green or amber.
-- Computers are simple, rugged and slow. Data links are narrow, which is why reports are
-  short and contacts get stale.
-- Every machine, from a tank to an orbital cruiser, needs a **human crew**.
-- Drones are **remote-piloted** from ground stations, never autonomous.
-
-So the retro look and the manned machines come from the same in-world rule as the game's art
-direction.
+Today two peoples fight over Veyra's gold, its forests and its aether, and over the chance to
+wake a citadel and rule the sky again.
 
 ### Tone
-Grounded military science fiction with a used, industrial feel. Concrete, steel, diesel, ozone.
-War seen through the eyes of the person who has to send other people into it. The tone avoids
-glorifying war: crews have names, and losses are counted.
+Grounded high fantasy with mud on its boots. Wooden palisades and stone keeps, torchlight,
+banners in the rain, the creak of a galleon's timbers. Magic is real but rare and costly. War is
+seen through the eyes of the person who has to send others into it. Soldiers have names, and
+losses are counted. Neither side is purely good or evil.
+
+### The look of magic
+Magic shows up as **glowing lines of light**: the war table's illusion map, the shimmer of a
+marking beam, runes on a ward, the threads of the stone network. This fits the retro art style
+(line-drawn holograms in the renderer) and makes all magical displays look like they belong to
+the same world.
 
 ## 2. Factions
 
-### The Directorate of Veyra (DIR)
-The administration that took over from the Charter government. It controls the industrial
-lowlands and the old orbital infrastructure.
+### The Crown of Esterholt
+A human kingdom of walled towns and river ports, allied with the dwarves of the **Ironhollow
+Holds**, who trade powder and engineering for gold.
 
 | Aspect | Description |
 |---|---|
-| Doctrine | Deliberate, fortified, combined arms; win by industry and attrition |
-| Strengths | Heavy armor, fortified HQs, big ships (carriers, cruisers), good orbital starting position |
-| Weaknesses | Slow to redeploy; depends on fixed infrastructure; large personnel needs |
-| Signature units | Fortress HQ, *Bastion* MBT, *Kestrel*-class destroyer, *Sovereign*-class carrier, High Guard station |
-| Visual language | Poured concrete, olive and ochre, chunky slab armor, stenciled numbers, amber vector displays |
-| Radio voice | Formal, procedural ("DVS Kestrel, Directorate Command, execute.") |
-| Ship prefix | DVS (Directorate Veyra Ship) |
+| Doctrine | Fortify, hold, then strike with heavy cavalry and siege; win by organization and firepower |
+| Strengths | Stone keeps and walls, knights, crossbows, dwarven bombards, war galleons, skyships |
+| Weaknesses | Slow to move; needs farms and roads; expensive units |
+| Signature units | Lantern Knights, siege tower, war galleon, dwarven skyship, sky galleon |
+| Workers | Serfs |
+| Visual language | Whitewashed stone, blue and gold heraldry, steel plate, timber-framed houses, golden magic lines |
+| Voice | Formal and loyal ("Aye, my lord." "By your command, Marshal.") |
+| Commander title | Lord or Lady Marshal |
 
-### The Free Hollows Compact (FHC)
-A coalition of miners, canyon towns and asteroid-belt spacers who reject Directorate rule.
+### The Wildborn Clans
+A confederation of hill and forest clans: the big, tusked **Ghorr**, the small, clever **Kobb**,
+and the giants of the ridges who fight beside them. They follow the herds and the seasons, and
+they remember the High Imperium as conquerors.
 
 | Aspect | Description |
 |---|---|
-| Doctrine | Mobile, dispersed, raiding; win by tempo and by striking logistics |
-| Strengths | Command Crawlers (mobile HQs), fast vehicles, EW, cheaper crews, rail-launched spacecraft |
-| Weaknesses | Lighter armor, converted civilian hulls, fewer heavy hitters |
-| Signature units | Command Crawler, *Jackal* raider, converted bulk-carrier "Hollow Ark", mass-driver launch rail, asteroid-tug gunships |
-| Visual language | Rust, teal and hazard stripes, rivets, welded add-on armor, green phosphor displays |
-| Radio voice | Informal, clipped ("Ark, it's Dune-Six, we're in, go go.") |
-| Ship prefix | FHS (Free Hollows Ship) |
+| Doctrine | Move, raid, burn; win by speed, numbers and striking the enemy's gatherers and farms |
+| Strengths | Mobile war camp on the behemoth, boar riders, giants, fire, shamans, wyverns, rocs and drakes |
+| Weaknesses | Timber palisades that burn; fewer ranged units; little artillery apart from the giants |
+| Signature units | Behemoth, ridge giant, bonehulk, serpent rider, elder drake |
+| Workers | Kobb |
+| Visual language | Hide, bone and carved wood, ochre and moss-green paint, antler totems, green spirit-fire magic lines |
+| Voice | Rough and proud ("Hrah! We go." "The Huntlord speaks!") |
+| Commander title | Huntlord |
 
-Both factions share core roles (infantry, tank, APC, artillery…) so balance and AI stay
-manageable. Asymmetry comes from signature units, doctrine bonuses and their command posts
-(the fixed Fortress HQ against the mobile Crawler).
+Both factions fill the same classic roles (worker, melee, ranged, cavalry, caster, siege,
+saboteur, flyer, transport, warship), so balance and AI stay manageable. Asymmetry comes from
+signature units, building styles (stone against timber and fire) and their command posts (the
+fixed keep against the walking behemoth).
 
 ### The Custodians (later milestone)
-Dormant terraforming machines. As the war scars Veyra (craters, burning refineries, orbital
-debris), they wake up and act on their own. The Custodians are the one autonomous force on
-Veyra. They have no commander, no crews and no interiors that make sense to people.
-- Built from **voxels**, so they look clearly alien next to the low-poly human machines.
-- They "terraform" the battlefield: reshape terrain, take back structures, absorb wrecks.
-- They give the campaign a third act and give skirmish an optional neutral or hostile side.
+The ancient guardians of the floating citadels: constructs of stone and aether, built by the
+High Imperium. Waking a citadel wakes them too. They have no commander, no crews and no
+interiors fit for people.
+- Built from **voxels**, so they look clearly different from the low-poly people and beasts of
+  Veyra.
+- They "repair" the land the way the Imperium wanted it: they rebuild ruins, reclaim aether
+  wells and drive both sides away from the citadels.
+- They give the campaign its last act and give skirmish an optional neutral or hostile side.

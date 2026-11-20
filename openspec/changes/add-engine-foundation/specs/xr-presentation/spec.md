@@ -32,11 +32,11 @@ In XR, the commander's view SHALL follow the tracked head pose relative to the c
 - **THEN** the view does not pass through the wall's surface
 
 ### Requirement: XR controllers
-XR controller input SHALL be mapped to the same actions as other input schemes. Each controller SHALL show a pointer ray that can use interactive objects, such as doors, elevator buttons and the map table.
+XR controller input SHALL be mapped to the same actions as other input schemes. Each controller SHALL show a pointer ray that can use interactive objects, such as doors, lift levers and the war table.
 
-#### Scenario: Pressing the elevator button
-- **WHEN** the player points a controller ray at the elevator call button and presses the trigger
-- **THEN** the elevator is called exactly as if the `use` action had been triggered on it
+#### Scenario: Pulling the lift lever
+- **WHEN** the player points a controller ray at the hoist lift's call lever and presses the trigger
+- **THEN** the lift is called exactly as if the `use` action had been triggered on it
 
 ### Requirement: Comfort options
 XR SHALL support smooth thumbstick movement and teleport movement, snap and smooth turning, an optional comfort vignette during movement, and a seated mode. Vertex snapping and screen-wide retro effects that cause discomfort SHALL be off by default in XR.

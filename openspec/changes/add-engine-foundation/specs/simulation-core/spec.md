@@ -22,7 +22,7 @@ Rendering SHALL interpolate entity transforms between the last two simulation ti
 
 #### Scenario: High refresh display
 - **WHEN** the game renders at 120 frames per second while the simulation runs at 30 ticks per second
-- **THEN** a moving elevator car appears at a different interpolated position on each rendered frame
+- **THEN** a moving lift platform appears at a different interpolated position on each rendered frame
 
 ### Requirement: Deterministic simulation per build
 For a given build, the same starting state, seed and sequence of simulation inputs SHALL produce the same simulation state at every tick, bit for bit.
@@ -56,12 +56,12 @@ Entities SHALL be identified by handles that combine an index and a generation. 
 Every entity SHALL have a parent reference frame and a transform relative to it. Frames SHALL nest, so an entity moves with every frame it is parented under. Moving an entity to another parent SHALL keep its world position, orientation and velocity unchanged.
 
 #### Scenario: Riding a moving frame
-- **WHEN** an entity stands still on an elevator car frame while the car rises 10 meters
-- **THEN** the entity's world height increases by 10 meters and its position relative to the car stays the same
+- **WHEN** an entity stands still on a lift platform frame while the platform rises 10 meters
+- **THEN** the entity's world height increases by 10 meters and its position relative to the platform stays the same
 
 #### Scenario: Changing parent without a jump
-- **WHEN** an entity moving at 1 m/s steps from the world frame into an elevator car's frame volume
-- **THEN** its parent becomes the car and its world position and world velocity are unchanged at the moment of the switch
+- **WHEN** an entity moving at 1 m/s steps from the world frame into a lift platform's frame volume
+- **THEN** its parent becomes the platform and its world position and world velocity are unchanged at the moment of the switch
 
 ### Requirement: Large-world precision
 World positions SHALL be stored with double precision, and transforms SHALL be resolved relative to the viewer for rendering, so objects near the viewer show no visible jitter anywhere within at least 100 km of the world origin.

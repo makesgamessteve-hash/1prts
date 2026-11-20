@@ -90,7 +90,7 @@
 | `prts.input` | Action definitions, action states, input contexts, the active scheme (kbm, gamepad, touch, xr) |
 | `prts.audio` | Play positional sounds, music, set bus volumes |
 | `prts.ui` | Immediate-mode UI for screens and world surfaces |
-| `prts.render` | Render settings (retro preset, effects), camera-feed views for monitors |
+| `prts.render` | Render settings (retro preset, effects), far-view surfaces (scrying pools) |
 | `prts.scene` | Load a map or scene, spawn prefabs |
 | `prts.save` | Save and load slots (user area) |
 | `prts.test` | Test helpers: assertions, simulated input, running ticks (only in test mode) |

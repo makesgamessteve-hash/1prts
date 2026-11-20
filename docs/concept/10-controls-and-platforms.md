@@ -16,9 +16,9 @@ in defaults (resolution, draw distance, how many crew are fully simulated).
 
 ## 2. Action-based controls
 
-The game reads **actions** (e.g. `move`, `look`, `use`, `slate`, `binoculars`, `radio`,
-`order_confirm`), not raw keys. Actions are defined in Lua. Bindings are stored in a user
-config file and can be remapped in the options menu.
+The game reads **actions** (e.g. `move`, `look`, `use`, `field_map`, `spyglass`, `stone`,
+`horn`, `order_confirm`), not raw keys. Actions are defined in Lua. Bindings are stored in a
+user config file and can be remapped in the options menu.
 
 ### Keyboard and mouse (default)
 | Action | Binding |
@@ -26,58 +26,66 @@ config file and can be remapped in the options menu.
 | Move / look | WASD / mouse |
 | Run / sprint (hold) | Shift |
 | Crouch / jump or climb | Ctrl / Space |
-| Use, interact, sit, engage table | E |
-| Slate (toggle) | Tab |
-| Binoculars (hold) / zoom | Right mouse / mouse wheel |
-| Designate / mark (with binoculars) | Left mouse / middle mouse |
-| Radio menu (hold) | Q |
-| Select group 1–9 / assign group | 1–9 / Ctrl + 1–9 |
-| Go-code broadcast | G |
-| Flashlight / night vision | F / N |
+| Use, interact, sit, mount, step up to the war table | E |
+| Field map (toggle) | Tab |
+| Spyglass (hold) / zoom | Right mouse / mouse wheel |
+| Mark order / mark sighting (with the spyglass or staff) | Left mouse / middle mouse |
+| Sending stone menu (hold) | Q |
+| Horn signals (hold for menu) | H |
+| Select company group 1–9 / assign group | 1–9 / Ctrl + 1–9 |
+| Give the signal (for orders waiting on a signal) | G |
+| Lantern | F |
+| Call your mount | R |
 | Menu | Esc |
 
-At a **map table**: the mouse moves a pointer on the map, WASD pans, the wheel zooms, Q and E
-rotate, left mouse selects (drag for a box), right mouse gives a context order. Edge buttons
-pick explicit order types.
+At the **war table**: the mouse moves a pointer on the map, WASD pans, the wheel zooms, Q and E
+rotate, left mouse selects (drag to sweep-select), right mouse gives a context order. The
+runes on the table edge pick explicit order types.
 
 ### Gamepad
-Left stick to move and right stick to look. Triggers handle binoculars and designate. Bumpers
-open the radio and slate. Face buttons handle use, jump, crouch and cancel. At a table, the
-right stick moves the pointer.
+Left stick to move and right stick to look. Triggers handle the spyglass and marking. Bumpers
+open the sending stone and field map. Face buttons handle use, jump, crouch and cancel. At the
+war table, the right stick moves the pointer.
 
 ### Touch (mobile web)
 The web build **switches to touch controls on its own** when it detects a touch-first device,
 and switches back if a mouse or keyboard is used.
 - **Left half of the screen**: floating virtual stick for movement.
 - **Right half**: drag to look, tap to use or select.
-- **Context buttons** (bottom right): Slate, Binoculars, Radio, Crouch, Run. They only show
-  when they can be used.
-- **Radio**: press and hold, then slide to pick from the radial menu.
-- **Slate and map table**: tap to select, drag for box select, pinch to zoom, two-finger drag
-  to pan, long-press for the context order menu.
-- **Designator**: while in binoculars, tap a target, then pick an order from the radial menu.
+- **Context buttons** (bottom right): Field map, Spyglass, Stone, Horn, Crouch, Run, Mount. They
+  only show when they can be used.
+- **Sending stone and horn**: press and hold, then slide to pick from the radial menu.
+- **Field map and war table**: tap to select, drag to sweep-select, pinch to zoom, two-finger
+  drag to pan, long-press for the context order menu.
+- **Marking**: while looking through the spyglass, tap a target, then pick an order from the
+  radial menu.
 - Touch controls are drawn as a screen overlay. This is the one intended exception to the
   diegetic rule, and the screen overlay is kept to a minimum.
 
 ### WebXR
 VR is a natural fit for a physical commander.
 - **Locomotion**: smooth movement with the thumbstick or teleport (comfort option). Snap or
-  smooth turning. Optional comfort vignette. A seated mode.
-- **Map table**: reach into the hologram. Grab with both hands to pan, rotate or scale. Point
-  and pull the trigger to select and order.
-- **Slate**: held in the off hand (or worn on the wrist). Use it with the pointer from the
-  other hand.
-- **Binoculars**: raise the controller to your eyes, or press the binocular button.
-- **Ladders and handholds**: grab with your hands. Zero-g movement is hand over hand.
-- **Radio**: a radial menu on the controller.
+  smooth turning. Optional comfort vignette. A seated mode. Riding uses smooth movement with a
+  stronger vignette.
+- **War table**: reach into the illusion. Grab with both hands to pan, rotate or scale. Point
+  and pull the trigger to select and give orders.
+- **Field map**: held in the off hand like a real map. Use it with the pointer from the other
+  hand.
+- **Spyglass**: raise the controller to your eye, or press the spyglass button.
+- **Marking staff**: point the controller; the beam comes out of the staff in your hand.
+- **Ladders, ropes and handholds**: grab with your hands. Weightless movement in the aether core
+  is hand over hand.
+- **Sending stone and horn**: radial menus on the controller. Raise the horn to your mouth to
+  sound it.
 - Retro vertex wobble and screen effects are **off** in VR for comfort.
 
 ## 3. Accessibility
 
 - Full remapping of keyboard, mouse, gamepad and touch.
-- Subtitles for all radio and dialogue, with a radio log.
-- Colorblind-safe symbols (shape and color together) and selectable palettes.
-- Any retro effect can be turned off. FOV slider. Head bob and camera shake can be turned off.
+- Subtitles for all voices, stone messages and horn signals, with a dispatch log.
+- Colorblind-safe sigils (shape and color together) and selectable palettes.
+- Any retro effect can be turned off. FOV slider. Head bob, mount sway and camera shake can be
+  turned off.
 - Hold-to-press actions can be changed to toggles.
-- Scalable UI on screens and slate, plus a high-contrast table mode.
+- Scalable UI on the field map and war table, plus a high-contrast table mode.
 - Game speed options (single player) and a command pause rule.

@@ -3,96 +3,101 @@
 ## 1. Scale rules
 
 - **1 world unit = 1 meter.** No exceptions.
-- People are 1.6–1.9 m tall. Doors are 0.9 × 2.1 m, ship hatches 0.7 × 1.6 m, airlocks 1.2 × 2.0 m.
-- Building storeys are 3.0–4.0 m (industrial halls 12–20 m). Ship decks are 2.6–3.0 m.
-  Station ring decks are 3.0 m.
-- Vehicles, ships, aircraft and spacecraft use believable real-world sizes (see
+- Humans are 1.6–1.9 m tall, Ghorr 2.1–2.4 m, Kobb 1.1 m, ridge giants 6 m.
+- Doors are 1.0 × 2.2 m, castle gates 4 × 5 m, ship hatches 0.8 × 1.4 m.
+- Storeys are 3.0–4.0 m; great halls 8–14 m; mine galleries 2.5 m; ship decks 1.9–2.2 m (sailors duck).
+- Ships, siege engines, beasts and flying creatures use believable sizes (see
   [05](05-units-structures-interiors.md)).
-- **Distances are compressed, sizes and speeds are not.** Bases sit closer together than in a
-  real campaign so that a match fits into 45–90 minutes. A tank is still 10 m long and still does
-  60 km/h.
+- **Distances are compressed, sizes and speeds are not.** Keeps sit closer together than in a
+  real war so that a match fits into 45–90 minutes. A knight still gallops at about 40 km/h, and
+  a galleon still sails at 15 km/h.
 
 ## 2. Theaters
 
-A match is played over up to four connected theaters.
+A match is played over up to four layers of one continuous world.
 
 | Theater | Space | Content |
 |---|---|---|
-| **Ground** | The map region (see sizes below) | Terrain, rivers, forests, settlements, roads, bases |
-| **Sea** | The coastal and open-water part of the region | Ports, shipyards, fleets, submarines, amphibious landings |
-| **Air** | Above the region, up to about 20 km altitude | Helicopters, VTOLs, jets, airlifters, AWACS, drones |
-| **Orbit** | A separate connected space scene above the region | Satellites, shuttles, gunships, cruisers, orbital stations |
+| **Field** | The map region (see sizes below) | Hills, forests, rivers, fords, villages, roads, mines, keeps |
+| **Water** | Rivers, lakes and the coast | Harbors, fleets, landings, serpent riders, aether springs in the shallows |
+| **Sky** | Above the region, up to about 2 km | Balloons, wyverns, rocs, skyships, drakes |
+| **High sky** | 3–6 km up, above the clouds | Floating citadels, sky galleons, elder drakes |
 
-Ground, sea and air share one continuous world. Orbit is its own scene, linked through
-**spaceports** (launch and landing) and through **orbit-to-ground effects**: recon passes, comms
-relay, drop pods and orbital strikes.
+All four layers are **one world**, so there is no loading between them. The high sky is cold,
+windy and hard to reach. Only skyships, rocs and drakes go that high, plus the lift-stones of a
+woken citadel.
 
 ### Map sizes
 
 | Size | Area | Typical use | Platforms |
 |---|---|---|---|
-| S | 8 × 8 km | 1v1, ground and air | All, including mobile web |
-| M | 16 × 16 km | 1v1 and 2v2 with sea | Desktop, web desktop, XR |
-| L | 32 × 32 km | 4 players, full combined arms | Desktop |
+| S | 8 × 8 km | 1v1, field and sky | All, including mobile web |
+| M | 16 × 16 km | 1v1 and 2v2 with water | Desktop, web desktop, XR |
+| L | 32 × 32 km | 4 players, every theater | Desktop |
 
 ### Travel times (why the commander rides)
 
 | Mode | Speed | Crossing 8 km |
 |---|---|---|
 | On foot (run) | 12 km/h | 40 min |
-| Truck / MCV | 70 km/h | 7 min |
-| Helicopter / VTOL | 250 km/h | 2 min |
-| Jet | 900 km/h | 32 s |
-| Destroyer | 55 km/h | 9 min |
+| Horseback (gallop, with rests) | 30 km/h | 16 min |
+| Wagon on a road | 10 km/h | 48 min |
+| Wyvern | 90 km/h | 5 min |
+| Skyship | 50 km/h | 10 min |
+| Galleon (good wind) | 15 km/h | 32 min |
 
-## 3. Orbit
+## 3. The high sky and the floating citadels
 
-- The battlefield is on **Veyra**, a habitable moon of the gas giant **Orun** (see
-  [08](08-setting-and-factions.md)). Orun fills a large part of the sky and is a major visual
-  landmark.
-- **Low orbit** passes over the region. **Satellites** have **pass windows**: they can image the
-  region or relay comms only while overhead. Orbital periods are compressed for gameplay
-  (default: one pass every ~12 minutes of match time).
-- **High Guard** is a station-keeping position above the region where orbital stations and big
-  ships sit. They are always in contact and always in reach of each other.
-- **Ascent and descent** feel seamless from inside. You stay in the shuttle cabin and watch the
-  sky darken through the windows. In the engine, the craft is handed from the air theater to
-  the orbit theater at the boundary (100 km).
-- Space movement uses **simplified Newtonian flight**: momentum and thrust, with no real orbital
-  mechanics during tactical flight. Orbits are scheduled tracks.
+- Centuries ago the High Imperium ruled from **floating citadels** held up by great
+  **aetherstones**. When the Imperium fell (the **Skyfall**), most citadels crashed. A few still
+  **drift**, dark and silent, high above the land (see [08](08-setting-and-factions.md)).
+- Each drifting citadel follows a **slow, predictable track** over the map. Its passes over
+  key areas work like spy-satellite passes in a modern game: when a citadel passes overhead it
+  can watch, drop troops or bombard; at other times it is out of reach.
+- A side that **wakes** a citadel (by bringing aether and mages to its core) can **steer** it
+  slowly and use its throne hall as a command post. Waking and holding a citadel is the late-game
+  goal on large maps.
+- Flying up is seamless. You stand on the skyship's deck as the ground falls away, pass through
+  the cloud layer and see the citadel's silhouette grow until you dock.
 
 ## 4. Moving interiors and reference frames
 
-Because big things move while people are inside them, the world is built from **nested
+Big things move while people are inside them, so the world is built from **nested
 reference frames**:
 
-- Standing on a carrier's flight deck at 30 knots, you move with the ship. Wind and spray are
-  effects only.
-- Standing in the cargo bay of a flying airlifter, you can walk around. On landing, the ramp
-  lowers and you walk out onto the ground.
-- In an elevator, you ride the car. In a rotating station ring, **spin gravity** pulls you
-  "down" towards the outer hull. Climb a spoke and it fades. In the hub you float.
-- **Vehicles inside vehicles**: a tank drives into an airlifter's cargo bay, which flies to a
-  landing ship's deck, and the commander can be sitting inside the tank the whole time.
+- Walking the deck of a galleon as it rolls in the swell, you move with the ship.
+- Climbing the ladders inside a siege tower as it is pushed toward the wall, you stay inside it.
+- Riding a lift cage down the mine shaft, you go down with the cage.
+- Walking among the huts on a behemoth's back, you sway with every step the beast takes.
+- Standing in a roc's basket or a skyship's gondola, you fly with it.
+- In a citadel's **aether core**, you float.
+- **Things inside things**: a catapult is loaded onto a galleon, the galleon lands at a beach,
+  and the commander was below decks the whole time.
 
-How this works technically: [architecture/simulation.md](../architecture/simulation.md#reference-frames).
+How this works technically: [architecture/simulation.md](../architecture/simulation.md#3-reference-frames).
 
 ## 5. Environment
 
-- **Day/night cycle**: one game day is 60 minutes by default (adjustable). Night needs lights,
-  flares and night vision. Orun's reflected light makes "Orun-lit nights" brighter than
-  moonlight.
-- **Weather**: clear, overcast, rain, fog, dust storm, snow (depending on map). Weather affects
-  visual range, sensor performance, flight operations and the sea state.
-- **Sea state** (0–6) affects naval speed, flight-deck operations and small boats.
-- **Terrain** affects movement (roads, off-road, swamp, forest), line of sight for radio and
-  eyes, and cover.
+- **Day/night cycle**: one game day is 60 minutes by default (adjustable). Nights need torches,
+  lanterns and watch fires. Veyra has **two moons**, the pale Ilen and the red Corvane. A night
+  with both full is almost as bright as dusk. A night with neither is truly dark.
+- **Weather**: clear, overcast, rain, fog, storm, snow (depending on map). Weather affects sight,
+  archery, sailing, flying and fire.
+- **Wind**: direction and strength affect ships, skyships, arrows and how fire spreads.
+- **Terrain** affects movement (roads, open ground, mud, forest, marsh), line of sight for eyes
+  and sending stones, and cover.
+- **Forests are a resource and a battlefield.** Trees are cut down for timber and do not grow
+  back during a match. Forests block sight and slow horses. Forests can burn.
 
-## 6. Destruction
+## 6. Destruction and fire
 
-- **Structures and vehicles** have damage states: *intact → damaged* (smoke and fire sprites,
-  missing panels, systems down) *→ wrecked* (a wreck model that blocks paths and can be salvaged).
-- **Interiors** take damage per **compartment**: fire, flooding, breaches, vacuum in space,
-  power loss. Damage control crews respond (see [05](05-units-structures-interiors.md)).
-- **Terrain** gets crater decals and scorch marks. Deformable voxel terrain is an optional later
-  feature (see [09](09-art-and-audio-direction.md)).
+- **Buildings, ships and engines** have damage states: *intact → damaged* (smoke, flames,
+  missing timbers, posts out of action) *→ ruined* (a wreck that blocks paths and can be
+  salvaged for timber and gold).
+- **Fire** is a real threat. Wooden buildings, ships, palisades and forests catch fire from fire
+  arrows, firepots, dragon breath and spells. Fire spreads with the wind. Workers and crews put
+  it out with buckets and sand. Stone does not burn, which is why stone keeps cost more.
+- **Interiors** take damage **room by room**: fire, flooding (ships), collapse, smoke. Crews
+  respond (see [05](05-units-structures-interiors.md)).
+- **Terrain** gets scorch marks and craters. Deformable voxel terrain (dug trenches, collapsed
+  mine tunnels) is an optional later feature (see [09](09-art-and-audio-direction.md)).

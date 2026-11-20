@@ -26,7 +26,7 @@ projection and a target framebuffer:
 - Flat screen: 1 view.
 - WebXR: 2 views (one per eye), drawn into the `XRWebGLLayer` framebuffer that the XR runtime
   provides, with view and projection matrices from `XRFrame.getViewerPose()`.
-- In-world screens (monitors showing camera feeds): extra **offscreen views** that render into
+- In-world surfaces (scrying pools and mirrors showing far-away places): extra **offscreen views** that render into
   textures at low resolution, drawn before the main views and capped per frame.
 
 Because stereo is in the design from the start, XR does not need a separate renderer.
@@ -35,19 +35,19 @@ Because stereo is in the design from the start, XR does not need a separate rend
 
 ```
 1. Shadow-free scene, depth-layered (far → near), into the low-res scene target:
-     a. Sky/space layer      gradient dome, stars, Orun, sun        (no depth)
+     a. Sky layer            gradient dome, stars, moons, sun, distant citadels (no depth)
      b. Far layer            far terrain chunks, impostors, ocean   (own depth range, then clear depth)
      c. Near layer           near terrain, structures, units, sprites (own depth range, then clear depth)
-     d. Interior/instrument  current cell + portal-visible cells, held items (slate, binoculars)
-2. Transparent and effects  sprites (smoke, fire), holograms (map table vector lines), particles
+     d. Interior/instrument  current cell + portal-visible cells, held items (field map, spyglass)
+2. Transparent and effects  sprites (smoke, fire), illusions (war table light lines), particles
 3. Retro post-process       palette quantization + ordered dither (optional), fog already applied
 4. Upscale                  nearest-neighbor blit to the window or XR framebuffer (integer scale when possible)
-5. Overlay                  helmet HUD, touch controls (flat screen only), developer console
+5. Overlay                  minimal HUD, touch controls (flat screen only), developer console
 ```
 
 **Depth layers** replace a single huge depth range. WebGL 2 has no clip control, so reversed-Z
 gives little benefit there. Splitting the scene into layers by distance keeps depth precision
-good from 0.05 m (the slate in your hand) to hundreds of kilometers (orbital views).
+good from 0.05 m (the field map in your hand) to tens of kilometers (views from the high sky).
 
 ## 4. Retro look implementation
 
@@ -60,14 +60,15 @@ good from 0.05 m (the slate in your hand) to hundreds of kilometers (orbital vie
 | Gouraud lighting | Per-vertex directional, ambient and point lights, plus baked vertex color |
 | Fog | Per-vertex linear or exponential fog, colored per theater and time of day |
 | Palette + dither | Post pass: a 3D lookup texture maps colors to the theater palette, and a Bayer matrix adds dithering |
-| CRT screens | Screen materials apply a curvature, scanline and phosphor shader to render-target textures |
+| Magic surfaces | Display materials apply a shimmer, ripple and glow shader to render-target textures (war table, scrying pools) |
 
 ## 5. Geometry types
 
 - **Meshes**: glTF 2.0 (`.glb`/`.gltf`), using a subset: positions, normals, UVs, vertex colors,
   materials (base color texture plus factors), node hierarchy, and named **marker nodes** (seats,
-  doors, stations, portals, frame volumes, light points). Rigid parts can be animated (doors,
-  turrets, elevator cars). Skinning is not needed, because people are sprites.
+  doors, posts, portals, frame volumes, light points). Rigid parts can be animated (doors,
+  lift platforms, trebuchet arms, and the segmented bodies of giants, wyverns and the behemoth).
+  Skinning is not needed: people are sprites and large creatures are rigid-part models.
 - **Terrain**: chunked heightfield (4 m spacing by default), with geometric LOD per chunk,
   skirts to hide seams, and splat texturing.
 - **Sprites**: camera-facing billboards. People use **8-direction** sheets, and the frame is
@@ -77,8 +78,8 @@ good from 0.05 m (the slate in your hand) to hundreds of kilometers (orbital vie
   baked in), then drawn like any other mesh.
 - **Deck plans** (from M3): compiled into kit-piece instances, then merged into per-cell static
   meshes.
-- **Holograms**: the map table and the designator's placement outlines are line and thin-quad
-  geometry with additive blending and flicker.
+- **Illusions**: the war table's map and the marking staff's placement outlines are line and
+  thin-quad geometry with additive blending and a soft shimmer.
 
 ## 6. Visibility and LOD
 
@@ -94,7 +95,7 @@ good from 0.05 m (the slate in your hand) to hundreds of kilometers (orbital vie
 ## 7. UI rendering
 
 - An **immediate-mode UI** module draws into either the screen overlay or a **world-space
-  surface** (a render target mapped onto a monitor, slate or table).
+  surface** (a render target mapped onto a scrying pool, the field map or the war table).
 - Input reaches world-space UI by **ray casting** from the commander's eyes (mouse/gamepad),
   the touch point, or the XR controller ray onto the surface's UV space.
 - Text uses **bitmap fonts** (PNG atlas plus a metrics file) from `data/`.
