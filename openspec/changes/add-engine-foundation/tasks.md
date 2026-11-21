@@ -4,7 +4,7 @@
 
 - [x] 1.1 Add the top-level `CMakeLists.txt`, `CMakePresets.json` (dev, release, coverage, sanitize, web-dev, web-release) and the folder layout from `docs/architecture/README.md §2`; verify `cmake --list-presets` shows all presets
 - [x] 1.2 Fetch SDL3 through `FetchContent` pinned to a release tag, with a `PRTS_USE_SYSTEM_SDL3` option; verify a configure succeeds both ways on Linux
-- [ ] 1.3 Vendor Lua 5.4, cgltf, stb_image, stb_vorbis, ogt_vox, microui and utest.h under `third_party/<lib>/` with their license files; verify each builds with warnings off and `tools/check-third-party-licenses` finds a license per library
+- [x] 1.3 Vendor Lua 5.4, cgltf, stb_image, stb_vorbis, ogt_vox, microui and utest.h under `third_party/<lib>/` with their license files; verify each builds with warnings off and `tools/check-third-party-licenses` finds a license per library
 - [x] 1.4 Add strict warning flags for engine code (GCC/Clang/MSVC) and `.clang-format` / `.clang-tidy`; verify an empty `prts_core` library builds warning-free on all three compilers
 - [ ] 1.5 Add GitHub Actions workflows with jobs `linux-coverage`, `linux-sanitize`, `windows`, `macos`, `web`, `checks`, `package` (initially build-only); verify all jobs are green on a pull request
 
@@ -68,8 +68,8 @@
 
 - [x] 8.1 Implement device state collection (keyboard, mouse with relative mode, gamepads with hot-plug, touch fingers) on SDL3 events; verify unit tests with synthetic events (spec *Gamepad hot-plug*)
 - [x] 8.2 Implement the action mapper (button and axis actions, input contexts, per-scheme bindings) and Lua action definitions in `data/base/scripts/input/`; verify C and Lua tests, including a mod adding an action (spec *Mod adds an action*)
-- [ ] 8.3 Implement binding overrides saved in `config.lua` in the user area; verify a test that a rebind survives a restart (spec *Rebinding use*)
-- [ ] 8.4 Implement scheme detection and switching on the last-used device, with scheme-changed events to scripts and the web start-up hint from the JS glue; verify unit tests and Lua tests (spec *Prompt update*, *Tablet with a keyboard*)
+- [x] 8.3 Implement binding overrides saved in `config.lua` in the user area; verify a test that a rebind survives a restart (spec *Rebinding use*)
+- [x] 8.4 Implement scheme detection and switching on the last-used device, with scheme-changed events to scripts and the web start-up hint from the JS glue; verify unit tests and Lua tests (spec *Prompt update*, *Tablet with a keyboard*)
 - [ ] 8.5 Implement the touch overlay (floating stick, look drag, tap to use, context buttons) with its layout defined in Lua; verify unit tests of multi-touch handling (spec *Touch movement and look*) and the Playwright mobile-emulation test (spec *Phone browser*, *Emulated phone*)
 
 ## 9. Physics and commander
@@ -77,15 +77,15 @@
 - [ ] 9.1 Implement collision queries (BVH per static mesh, height-field terrain, ray and capsule sweeps); verify unit tests on fixture geometry
 - [ ] 9.2 Implement the capsule character controller (sub-stepped sweeps, slide, step-up 0.4 m, 45° slope limit, ground probe, platform velocity); verify unit tests and scenario tests for stairs and sprinting into a wall (spec *Stairs*, *Wall at sprint speed*)
 - [x] 9.3 Implement commander movement and eye height in Lua-tunable parameters (walk, run, sprint with stamina, crouch, jump); verify scenario tests (spec *Walking speed*, *Crouching lowers the view*)
-- [ ] 9.4 Implement the use/interaction system (look or pointer ray, reach, prompt, script callbacks) and doors (animation, collision update, portal state, sound); verify a scenario test (spec *Opening a door*)
+- [x] 9.4 Implement the use/interaction system (look or pointer ray, reach, prompt, script callbacks) and doors (animation, collision update, portal state, sound); verify a scenario test (spec *Opening a door*)
 - [x] 9.5 Implement moving platforms and the scripted hoist lift in the keep (call levers, platform frame, gates per floor); verify scenario tests (spec *Riding the keep's hoist lift*, *Walking during movement*)
-- [ ] 9.6 Enforce the First-Person Contract: release builds have no camera other than the commander's, and developer builds have an observer camera labeled on screen; verify a release-build test that the observer command is unavailable and a developer-build test that the label is shown (spec *Release build*, *Developer observer camera*)
+- [x] 9.6 Enforce the First-Person Contract: release builds have no camera other than the commander's, and developer builds have an observer camera labeled on screen; verify a release-build test that the observer command is unavailable and a developer-build test that the label is shown (spec *Release build*, *Developer observer camera*)
 
 ## 10. Proving Ground content and asset checks
 
 - [ ] 10.1 Implement greybox brushes (box, wedge, stairs, door frame, window frame) defined in Lua, generating meshes, collision, cells and portals (design D9); verify unit tests of the generated geometry
 - [ ] 10.2 Build the Proving Ground: ≥ 1 km × 1 km terrain, dusk lighting, the three-storey keep (great hall, side rooms, spiral stair, hoist lift, war room with a placeholder war table), a `.vox` crate, a person sprite and a forge room; verify the scenario test *Reaching the war room*
-- [ ] 10.3 Create the placeholder art (textures, sprite sheet, voxel crate, sounds, music loop, bitmap font) as original CC BY 4.0 work with `data/base/CREDITS.md` entries; verify the asset validator passes
+- [x] 10.3 Create the placeholder art (textures, sprite sheet, voxel crate, sounds, music loop, bitmap font) as original CC BY 4.0 work with `data/base/CREDITS.md` entries; verify the asset validator passes
 - [x] 10.4 Implement `tools/validate-assets` (credits coverage, references resolve, formats parse, manifests valid) and add it to `checks`; verify it fails on an uncredited fixture file (spec *Uncredited asset detected*)
 - [ ] 10.5 Write the commander-is-there smoke scenario set (walk, stairs, door, lift, war table) and run it in CI on Windows, Linux, macOS and web; verify all report passed with the same final cell (spec *Same scenario result on desktop and web*)
 
@@ -99,10 +99,10 @@
 
 ## 12. UI, menus and developer console
 
-- [ ] 12.1 Implement `prts_ui` over microui with bitmap fonts, screen overlay and world-surface targets, with ray-cast input onto surfaces; verify unit tests of hit testing and UV mapping
-- [ ] 12.2 Implement the front-end menu, options (video presets and effects, audio buses, controls rebinding) and the Credits screen in Lua; verify Lua tests of the menu logic and a scenario test that the Credits screen lists base and mod entries (spec *Credits screen*, *Settings persist*)
-- [ ] 12.3 Implement the developer console (log view, Lua command line, reload all scripts) in developer builds; verify a scenario test running `prts.log.info(prts.api_version)` (spec *Running a command*)
-- [ ] 12.4 Add the in-game save of settings changes for retro preset and effects; verify a restart test (spec *Settings persist*)
+- [x] 12.1 Implement `prts_ui` over microui with bitmap fonts, screen overlay and world-surface targets, with ray-cast input onto surfaces; verify unit tests of hit testing and UV mapping
+- [x] 12.2 Implement the front-end menu, options (video presets and effects, audio buses, controls rebinding) and the Credits screen in Lua; verify Lua tests of the menu logic and a scenario test that the Credits screen lists base and mod entries (spec *Credits screen*, *Settings persist*)
+- [x] 12.3 Implement the developer console (log view, Lua command line, reload all scripts) in developer builds; verify a scenario test running `prts.log.info(prts.api_version)` (spec *Running a command*)
+- [x] 12.4 Add the in-game save of settings changes for retro preset and effects; verify a restart test (spec *Settings persist*)
 
 ## 13. Web platform and WebXR
 
