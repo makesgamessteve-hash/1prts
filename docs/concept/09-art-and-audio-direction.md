@@ -27,6 +27,7 @@ Everything is drawn at a **low internal resolution** and scaled up with sharp pi
 | Vertex (Gouraud) lighting with baked vertex color | On | On |
 | Distance fog | On | On |
 | Magic-surface shader on in-world displays (war table, scrying pools) | On | On |
+| Underwater tint and caustics | On | On (softer) |
 | Scanlines on the whole screen | Off | Off |
 
 ## 2. Asset budgets (guidelines)
@@ -42,21 +43,25 @@ Everything is drawn at a **low internal resolution** and scaled up with sharp pi
 | Modular interior kit piece | 10–200 | Kit atlas (256² – 512²) |
 | Terrain | Chunked height grid, 4 m spacing | Tiled 64² texture set and a splat map |
 | Trees | Crossed-sprite or low-poly cards, many instances | Foliage atlas |
+| Tunnel and cavern kit piece | 20–400 | Rock and fungus atlas |
+| Reef and kelp props | Cards and low-poly instances | Reef atlas |
 
 - **Level of detail**: 2–3 levels per large model, plus an **impostor sprite** for far
   distances. This keeps 16 km views over valleys cheap.
-- **Palette**: each region type (green valleys, marsh, winter highlands, the high sky) has a
-  256-color palette. Faction colors are reserved ramps within it.
+- **Palette**: each region type (green valleys, marsh, winter highlands, coast and reef, under
+  water, the deep caverns, the storm layer, the high sky) has a 256-color palette. Faction colors are reserved ramps within it.
 
 ## 3. Sprites, creatures and animation
 
 People and person-sized creatures are **billboard sprites**.
-- **People** (humans, dwarves, Ghorr, Kobb) and **mounted units**: 8 view directions. Animation
+- **People** (humans, dwarves, Ghorr, Kobb, Durrow, Hesk) and **mounted units**: 8 view directions. Animation
   sets: idle, walk, run, crouch, climb, sit, work (mine, chop, hammer), carry (sack, log), attack,
-  shoot or throw, cast, hit, fall, and for riders also gallop and rear.
+  shoot or throw, cast, hit, fall, and for riders also gallop and rear. Swimmers also have swim,
+  dive and surface; Durrow also have dig.
 - Role, rank and faction are readable from the sprite: helmet or headdress shape, color, banner.
-- **Large creatures** (ridge giants, wyverns, rocs, elder drakes, the behemoth) are **low-poly
-  models made of rigid parts** (head, neck, body, legs, wings), animated part by part the way
+- **Large creatures** (ridge giants, wyverns, rocs, elder drakes, the behemoth, the tunnel wyrm,
+  olm brutes, giant beetles, lantern moths, albatrosses, mantas, reef crabs) are **low-poly
+  models made of rigid parts** (head, neck, body, legs, wings, segments), animated part by part the way
   late-1990s games did it. No skinning is needed, and the look stays chunky and retro.
 - **Effects**: fire, smoke, magic and dust are sprite-sheet animations with additive or
   alpha-tested blending.
@@ -68,8 +73,8 @@ People and person-sized creatures are **billboard sprites**.
   beasts of Veyra.
 - **Modder-friendly props**: voxel models (`.vox` files) are converted to meshes when loaded. It
   is the easiest way for non-modelers to add content.
-- **Deformable ground** (later, optional): voxel patches for siege trenches, sapper tunnels and
-  collapsing mine galleries.
+- **Deformable ground** (later, optional): voxel patches for siege trenches, tunnels dug at run
+  time (Gloam tunnel roads, sapper tunnels) and collapsing galleries.
 
 ## 5. Lighting and sky
 
@@ -78,6 +83,11 @@ People and person-sized creatures are **billboard sprites**.
   flashes and lightning.
 - Skies are gradient domes with a sprite cloud layer. The two moons, Ilen (pale) and Corvane
   (red), and the dark shapes of drifting citadels are big landmarks in the sky.
+- **Underground**, the only light is glowstone (blue-violet), torches and lanterns. Deep caverns
+  are lit in pools, with darkness between them.
+- **Under water**, light fades and turns blue-green with depth. Shafts of light and caustic
+  sprites play over the reef near the surface.
+- In the **storm layer**, everything is grey cloud lit by lightning flashes.
 - Interiors have **lighting states**: day (shafts of light through windows), night (torchlight),
   alarm (lanterns lit, bells), on fire (orange flicker and smoke).
 
@@ -85,8 +95,8 @@ People and person-sized creatures are **billboard sprites**.
 
 - All gameplay UI is **diegetic**: the war table's illusion map, the field map's ink, dispatches,
   shop signs, banners and painted marks.
-- Bitmap fonts in a few sizes. The Crown's displays are golden lines, the Wildborn's are
-  green spirit fire.
+- Bitmap fonts in a few sizes. The Crown's displays are golden lines, the Wildborn's green spirit
+  fire, the Gloam's blue-violet glowstone, the Brine League's turquoise.
 - The HUD uses thin lines and a small bitmap font, and keeps to the edges of the view.
 
 ## 7. Audio
@@ -95,16 +105,20 @@ People and person-sized creatures are **billboard sprites**.
   gives a lo-fi feel without making sounds hard to make out.
 - **Positional 3D sound** with distance falloff. **Interior muffling**: sound from outside is
   filtered through walls and hulls, and each interior has its own ambience (crackling hearths,
-  creaking timbers, dripping mine water, the behemoth's heartbeat).
+  creaking timbers, dripping mine water, the behemoth's heartbeat). Tunnels and caverns echo.
+  Under water, everything is muffled and low, with the creak of hulls overhead.
 - **Unit voices** are a big part of the genre's charm. Acknowledgements ("Aye, my lord!",
-  "Hrah!") and reports are built from phrase pieces (*name + verb + object + direction*), so
+  "Hrah!", "Below, and onward.", "Aye aye, Admiral!") and reports are built from phrase pieces (*name + verb + object + direction*), so
   messages can be generated and are easy to mod or localize. There are always subtitles.
 - **Sending-stone voices** go through a whispery filter with a little echo and crackle, and get
   worse near hush wards and on weak links.
-- **Horns, drums and bells** are gameplay sounds: horn signals, the Wildborn's war drums
-  carrying across valleys, a castle's alarm bell.
+- **Horns, drums, bells and thunder** are gameplay sounds: horn signals, the Wildborn's war drums
+  carrying across valleys, a castle's alarm bell, the hum of a Gloam echo pillar, the thunder of a
+  Weatherwright's storm.
 - **Music**: a synth and tracker-inspired fantasy soundtrack (pipes, drums, choir pads, lutes)
-  that adapts to the situation (calm, tension, battle, siege). Each faction has its own themes.
+  that adapts to the situation (calm, tension, battle, siege). Each of the four factions has its own themes (strings and brass for the Crown, drums and
+  horns for the Wildborn, low choirs and chimes for the Gloam, shanties and fiddles for the Brine
+  League).
 - **Formats**: WAV and OGG Vorbis. Tracker modules are a possible later addition.
 
 ## 8. Licensing of art

@@ -17,7 +17,7 @@ in defaults (resolution, draw distance, how many crew are fully simulated).
 ## 2. Action-based controls
 
 The game reads **actions** (e.g. `move`, `look`, `use`, `field_map`, `spyglass`, `stone`,
-`horn`, `order_confirm`), not raw keys. Actions are defined in Lua. Bindings are stored in a
+`horn`, `dispatch`, `lens`, `ward`, `ledger`, `lantern`, `order_confirm`), not raw keys. Actions are defined in Lua. Bindings are stored in a
 user config file and can be remapped in the options menu.
 
 ### Keyboard and mouse (default)
@@ -34,7 +34,11 @@ user config file and can be remapped in the options menu.
 | Horn signals (hold for menu) | H |
 | Select company group 1–9 / assign group | 1–9 / Ctrl + 1–9 |
 | Give the signal (for orders waiting on a signal) | G |
-| Lantern | F |
+| Signal lantern: light on/off (tap) / shutter signals (hold for menu) | F |
+| Dispatch case | J |
+| Scrying lens (hold) | V |
+| Ward charm (squeeze) | X |
+| Quartermaster's ledger (toggle) | L |
 | Call your mount | R |
 | Menu | Esc |
 
@@ -44,7 +48,9 @@ runes on the table edge pick explicit order types.
 
 ### Gamepad
 Left stick to move and right stick to look. Triggers handle the spyglass and marking. Bumpers
-open the sending stone and field map. Face buttons handle use, jump, crouch and cancel. At the
+open the sending stone and field map. Face buttons handle use, jump, crouch and cancel. The
+d-pad opens the **pouch** radial menu (dispatch case, scrying lens, ward charm, ledger, signal
+lantern) and the horn. At the
 war table, the right stick moves the pointer.
 
 ### Touch (mobile web)
@@ -52,8 +58,8 @@ The web build **switches to touch controls on its own** when it detects a touch-
 and switches back if a mouse or keyboard is used.
 - **Left half of the screen**: floating virtual stick for movement.
 - **Right half**: drag to look, tap to use or select.
-- **Context buttons** (bottom right): Field map, Spyglass, Stone, Horn, Crouch, Run, Mount. They
-  only show when they can be used.
+- **Context buttons** (bottom right): Field map, Spyglass, Stone, Horn, Crouch, Run, Mount, and a
+  **Pouch** button for the other five tools. They only show when they can be used.
 - **Sending stone and horn**: press and hold, then slide to pick from the radial menu.
 - **Field map and war table**: tap to select, drag to sweep-select, pinch to zoom, two-finger
   drag to pan, long-press for the context order menu.
@@ -69,12 +75,14 @@ VR is a natural fit for a physical commander.
   stronger vignette.
 - **War table**: reach into the illusion. Grab with both hands to pan, rotate or scale. Point
   and pull the trigger to select and give orders.
-- **Field map**: held in the off hand like a real map. Use it with the pointer from the other
-  hand.
+- **Field map, ledger and dispatch case**: held in the off hand like the real thing. Use them
+  with the pointer from the other hand.
+- **Scrying lens**: raise it to your eye. **Ward charm**: squeeze it at your chest. **Signal
+  lantern**: hold it up and open the shutters with the trigger.
 - **Spyglass**: raise the controller to your eye, or press the spyglass button.
 - **Marking staff**: point the controller; the beam comes out of the staff in your hand.
 - **Ladders, ropes and handholds**: grab with your hands. Weightless movement in the aether core
-  is hand over hand.
+  is hand over hand. Swimming and diving use smooth movement with the comfort vignette.
 - **Sending stone and horn**: radial menus on the controller. Raise the horn to your mouth to
   sound it.
 - Retro vertex wobble and screen effects are **off** in VR for comfort.
@@ -84,7 +92,8 @@ VR is a natural fit for a physical commander.
 - Full remapping of keyboard, mouse, gamepad and touch.
 - Subtitles for all voices, stone messages and horn signals, with a dispatch log.
 - Colorblind-safe sigils (shape and color together) and selectable palettes.
-- Any retro effect can be turned off. FOV slider. Head bob, mount sway and camera shake can be
+- Any retro effect can be turned off. A brightness boost for tunnels, caverns and deep water.
+  FOV slider. Head bob, mount sway and camera shake can be
   turned off.
 - Hold-to-press actions can be changed to toggles.
 - Scalable UI on the field map and war table, plus a high-contrast table mode.

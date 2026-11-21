@@ -1,0 +1,566 @@
+/* 1stPRTS engine: game scripting API (prts.scene, entity, input, commander, render). MIT License. */
+#include <lauxlib.h>
+#include <math.h>
+#include <string.h>
+
+#include "app/engine_internal.h"
+
+static const char *REG_EDATA = "prts.edata";
+
+/* --- argument helpers ---------------------------------------------------------- */
+
+static float field_number(lua_State *L, int t, const char *key, float def)
+{
+    lua_getfield(L, t, key);
+    float v = lua_isnumber(L, -1) ? (float)lua_tonumber(L, -1) : def;
+    lua_pop(L, 1);
+    return v;
+}
+
+static bool field_bool(lua_State *L, int t, const char *key, bool def)
+{
+    lua_getfield(L, t, key);
+    bool v = lua_isnil(L, -1) ? def : lua_toboolean(L, -1);
+    lua_pop(L, 1);
+    return v;
+}
+
+static const char *field_string(lua_State *L, int t, const char *key, const char *def)
+{
+    lua_getfield(L, t, key);
+    const char *v = lua_isstring(L, -1) ? lua_tostring(L, -1) : def;
+    lua_pop(L, 1); /* the string stays alive in the table */
+    return v;
+}
+
+/* Reads {x, y, z} or {x=, y=, z=} from table field `key` (or from index t itself if key is NULL). */
+static bool read_vec3(lua_State *L, int t, const char *key, prts_vec3 *out)
+{
+    if (key) lua_getfield(L, t, key);
+    else lua_pushvalue(L, t);
+    bool ok = lua_istable(L, -1);
+    if (ok) {
+        int v = lua_gettop(L);
+        lua_rawgeti(L, v, 1);
+        lua_rawgeti(L, v, 2);
+        lua_rawgeti(L, v, 3);
+        if (lua_isnumber(L, -3)) {
+            *out = prts_v3((float)lua_tonumber(L, -3), (float)lua_tonumber(L, -2), (float)lua_tonumber(L, -1));
+        } else {
+            *out = prts_v3(field_number(L, v, "x", 0), field_number(L, v, "y", 0), field_number(L, v, "z", 0));
+        }
+        lua_pop(L, 3);
+    }
+    lua_pop(L, 1);
+    return ok;
+}
+
+static prts_vec3 check_vec3(lua_State *L, int t, const char *key)
+{
+    prts_vec3 v = prts_v3(0, 0, 0);
+    if (!read_vec3(L, t, key, &v)) luaL_error(L, "field '%s' must be a {x, y, z} table", key);
+    return v;
+}
+
+prts_entity prts_engine_check_entity(lua_State *L, int idx)
+{
+    prts_engine *e = prts_engine_from_lua(L);
+    prts_entity ent = (prts_entity)luaL_checkinteger(L, idx);
+    if (!prts_world_alive(e->world, ent)) luaL_error(L, "stale entity handle");
+    return ent;
+}
+
+static prts_entity opt_entity(lua_State *L, int t, const char *key)
+{
+    lua_getfield(L, t, key);
+    prts_entity ent = PRTS_ENTITY_NONE;
+    if (!lua_isnil(L, -1)) ent = prts_engine_check_entity(L, -1);
+    lua_pop(L, 1);
+    return ent;
+}
+
+static int material_index(lua_State *L, prts_engine *e, int t)
+{
+    const char *id = field_string(L, t, "material", NULL);
+    if (!id) return luaL_error(L, "field 'material' is required");
+    int m = prts_scene_find_material(e->scene, id);
+    if (m < 0) return luaL_error(L, "unknown material '%s'", id);
+    return m;
+}
+
+/* --- prts.scene ------------------------------------------------------------------ */
+
+static int l_scene_material(lua_State *L)
+{
+    prts_engine *e = prts_engine_from_lua(L);
+    luaL_checktype(L, 1, LUA_TTABLE);
+    prts_material m;
+    memset(&m, 0, sizeof(m));
+    const char *id = field_string(L, 1, "id", NULL);
+    if (!id) return luaL_error(L, "field 'id' is required");
+    strncpy(m.id, id, sizeof(m.id) - 1);
+    strncpy(m.texture, field_string(L, 1, "texture", ""), sizeof(m.texture) - 1);
+    m.tint = prts_v3(1, 1, 1);
+    read_vec3(L, 1, "tint", &m.tint);
+    m.uv_scale = field_number(L, 1, "uv_scale", 2.0f);
+    m.emissive = field_bool(L, 1, "emissive", false);
+    lua_pushinteger(L, prts_scene_material(e->scene, &m));
+    return 1;
+}
+
+static int l_scene_box(lua_State *L)
+{
+    prts_engine *e = prts_engine_from_lua(L);
+    luaL_checktype(L, 1, LUA_TTABLE);
+    prts_aabb b = prts_aabb_make(check_vec3(L, 1, "min"), check_vec3(L, 1, "max"));
+    int m = material_index(L, e, 1);
+    prts_entity owner = opt_entity(L, 1, "entity");
+    if (field_bool(L, 1, "visible", true)) prts_scene_add_box(e->scene, b, m, owner, field_number(L, 1, "tile", 2.0f));
+    int id = -1;
+    if (field_bool(L, 1, "solid", true)) id = prts_cworld_add_box(e->cworld, b, owner);
+    lua_pushinteger(L, id);
+    return 1;
+}
+
+static int l_scene_prism(lua_State *L)
+{
+    prts_engine *e = prts_engine_from_lua(L);
+    luaL_checktype(L, 1, LUA_TTABLE);
+    prts_vec3 base = check_vec3(L, 1, "base");
+    float r = field_number(L, 1, "radius", 1.0f), top = field_number(L, 1, "top_radius", 0.0f);
+    float h = field_number(L, 1, "height", 1.0f);
+    int sides = (int)field_number(L, 1, "sides", 6.0f);
+    prts_entity owner = opt_entity(L, 1, "entity");
+    prts_scene_add_prism(e->scene, base, r, top, h, sides, material_index(L, e, 1), owner);
+    if (field_bool(L, 1, "solid", false)) {
+        float rr = fmaxf(r, top) * 0.7f;
+        prts_aabb b = prts_aabb_make(prts_v3(base.x - rr, base.y, base.z - rr), prts_v3(base.x + rr, base.y + h, base.z + rr));
+        prts_cworld_add_box(e->cworld, b, owner);
+    }
+    return 0;
+}
+
+static int l_scene_terrain(lua_State *L)
+{
+    prts_engine *e = prts_engine_from_lua(L);
+    luaL_checktype(L, 1, LUA_TTABLE);
+    prts_terrain_params p;
+    p.size = field_number(L, 1, "size", 1024.0f);
+    p.spacing = field_number(L, 1, "spacing", 4.0f);
+    p.seed = (uint64_t)field_number(L, 1, "seed", 1.0f);
+    p.height = field_number(L, 1, "height", 20.0f);
+    p.octaves = (int)field_number(L, 1, "octaves", 4.0f);
+    p.material = material_index(L, e, 1);
+    if (p.size < p.spacing * 2.0f || p.spacing <= 0.0f) return luaL_error(L, "terrain size/spacing out of range");
+    prts_terrain_flat flats[32];
+    int n = 0;
+    lua_getfield(L, 1, "flats");
+    if (lua_istable(L, -1)) {
+        int ft = lua_gettop(L);
+        for (int i = 1; n < 32 && lua_rawgeti(L, ft, i) == LUA_TTABLE; i++) {
+            int f = lua_gettop(L);
+            prts_terrain_flat fl = {field_number(L, f, "x", 0), field_number(L, f, "z", 0), field_number(L, f, "radius", 10),
+                                    field_number(L, f, "height", 0), field_number(L, f, "blend", 10)};
+            flats[n++] = fl;
+            lua_pop(L, 1);
+        }
+        lua_pop(L, 1);
+    }
+    lua_pop(L, 1);
+    prts_scene_terrain(e->scene, &p, flats, n);
+    prts_cworld_set_heightfield(e->cworld, e->scene->terrain);
+    return 0;
+}
+
+static int l_scene_height(lua_State *L)
+{
+    prts_engine *e = prts_engine_from_lua(L);
+    lua_pushnumber(L, prts_scene_height(e->scene, (float)luaL_checknumber(L, 1), (float)luaL_checknumber(L, 2)));
+    return 1;
+}
+
+static int l_scene_light(lua_State *L)
+{
+    prts_engine *e = prts_engine_from_lua(L);
+    luaL_checktype(L, 1, LUA_TTABLE);
+    prts_light l = {check_vec3(L, 1, "pos"), prts_v3(1, 0.8f, 0.5f), field_number(L, 1, "radius", 8.0f)};
+    read_vec3(L, 1, "color", &l.color);
+    prts_scene_add_light(e->scene, l);
+    return 0;
+}
+
+static int l_scene_marker(lua_State *L)
+{
+    prts_engine *e = prts_engine_from_lua(L);
+    const char *name = luaL_checkstring(L, 1);
+    prts_vec3 p = check_vec3(L, 2, NULL);
+    prts_scene_add_marker(e->scene, name, prts_dv3_from_v3(p), (float)luaL_optnumber(L, 3, 0.0));
+    return 0;
+}
+
+static int l_scene_marker_pos(lua_State *L)
+{
+    prts_engine *e = prts_engine_from_lua(L);
+    const prts_marker *m = prts_scene_find_marker(e->scene, luaL_checkstring(L, 1));
+    if (!m) return 0;
+    lua_pushnumber(L, m->pos.x);
+    lua_pushnumber(L, m->pos.y);
+    lua_pushnumber(L, m->pos.z);
+    lua_pushnumber(L, m->yaw);
+    return 4;
+}
+
+static int l_scene_zone(lua_State *L)
+{
+    prts_engine *e = prts_engine_from_lua(L);
+    const char *name = luaL_checkstring(L, 1);
+    luaL_checktype(L, 2, LUA_TTABLE);
+    luaL_checktype(L, 3, LUA_TTABLE);
+    prts_aabb b = prts_aabb_make(check_vec3(L, 2, NULL), check_vec3(L, 3, NULL));
+    prts_scene_add_zone(e->scene, name, b);
+    return 0;
+}
+
+static int l_scene_env(lua_State *L)
+{
+    prts_engine *e = prts_engine_from_lua(L);
+    luaL_checktype(L, 1, LUA_TTABLE);
+    prts_scene_env *env = &e->scene->env;
+    read_vec3(L, 1, "sun_dir", &env->sun_dir);
+    read_vec3(L, 1, "sun_color", &env->sun_color);
+    read_vec3(L, 1, "ambient", &env->ambient);
+    read_vec3(L, 1, "fog_color", &env->fog_color);
+    read_vec3(L, 1, "sky_horizon", &env->sky_horizon);
+    read_vec3(L, 1, "sky_zenith", &env->sky_zenith);
+    env->fog_near = field_number(L, 1, "fog_near", env->fog_near);
+    env->fog_far = field_number(L, 1, "fog_far", env->fog_far);
+    env->stars = field_number(L, 1, "stars", env->stars);
+    env->moons = field_bool(L, 1, "moons", env->moons);
+    e->scene->revision++;
+    return 0;
+}
+
+static int l_scene_illusion(lua_State *L)
+{
+    prts_engine *e = prts_engine_from_lua(L);
+    luaL_checktype(L, 1, LUA_TTABLE);
+    prts_vec3 center = check_vec3(L, 1, "center");
+    prts_vec3 color = prts_v3(1.0f, 0.8f, 0.35f);
+    read_vec3(L, 1, "color", &color);
+    lua_getfield(L, 1, "area");
+    luaL_checktype(L, -1, LUA_TTABLE);
+    int a = lua_gettop(L);
+    float x0 = field_number(L, a, "x0", -500), z0 = field_number(L, a, "z0", -500);
+    float x1 = field_number(L, a, "x1", 500), z1 = field_number(L, a, "z1", 500);
+    lua_pop(L, 1);
+    prts_scene_add_contours(e->scene, opt_entity(L, 1, "entity"), center, field_number(L, 1, "size_x", 2.0f),
+                            field_number(L, 1, "size_z", 2.0f), field_number(L, 1, "relief", 0.3f), x0, z0, x1, z1,
+                            (int)field_number(L, 1, "levels", 8), color);
+    return 0;
+}
+
+/* --- prts.entity ------------------------------------------------------------------- */
+
+static int l_entity_spawn(lua_State *L)
+{
+    prts_engine *e = prts_engine_from_lua(L);
+    luaL_checktype(L, 1, LUA_TTABLE);
+    prts_entity ent = prts_world_spawn(e->world, field_string(L, 1, "name", NULL));
+    prts_entity parent = opt_entity(L, 1, "parent");
+    prts_vec3 pos = prts_v3(0, 0, 0);
+    read_vec3(L, 1, "pos", &pos);
+    prts_world_set_parent(e->world, ent, parent);
+    prts_world_set_local(e->world, ent, prts_dv3_from_v3(pos), field_number(L, 1, "yaw", 0.0f));
+    prts_world_set_usable(e->world, ent, field_bool(L, 1, "usable", false));
+    prts_cworld_sync(e->cworld, e->world);
+    lua_pushinteger(L, (lua_Integer)ent);
+    return 1;
+}
+
+static int l_entity_pos(lua_State *L)
+{
+    prts_engine *e = prts_engine_from_lua(L);
+    prts_dvec3 p = prts_world_pos(e->world, prts_engine_check_entity(L, 1));
+    lua_pushnumber(L, p.x);
+    lua_pushnumber(L, p.y);
+    lua_pushnumber(L, p.z);
+    return 3;
+}
+
+static int l_entity_local_pos(lua_State *L)
+{
+    prts_engine *e = prts_engine_from_lua(L);
+    prts_dvec3 p = prts_world_local_pos(e->world, prts_engine_check_entity(L, 1));
+    lua_pushnumber(L, p.x);
+    lua_pushnumber(L, p.y);
+    lua_pushnumber(L, p.z);
+    return 3;
+}
+
+static int l_entity_yaw(lua_State *L)
+{
+    prts_engine *e = prts_engine_from_lua(L);
+    lua_pushnumber(L, prts_world_local_yaw(e->world, prts_engine_check_entity(L, 1)));
+    return 1;
+}
+
+static int l_entity_move_to(lua_State *L)
+{
+    prts_engine *e = prts_engine_from_lua(L);
+    prts_entity ent = prts_engine_check_entity(L, 1);
+    prts_vec3 target = check_vec3(L, 2, NULL);
+    prts_world_move_to(e->world, ent, prts_dv3_from_v3(target), (float)luaL_checknumber(L, 3));
+    return 0;
+}
+
+static int l_entity_rotate_to(lua_State *L)
+{
+    prts_engine *e = prts_engine_from_lua(L);
+    prts_entity ent = prts_engine_check_entity(L, 1);
+    prts_world_rotate_to(e->world, ent, (float)luaL_checknumber(L, 2), (float)luaL_checknumber(L, 3));
+    return 0;
+}
+
+static int l_entity_moving(lua_State *L)
+{
+    prts_engine *e = prts_engine_from_lua(L);
+    lua_pushboolean(L, prts_world_moving(e->world, prts_engine_check_entity(L, 1)));
+    return 1;
+}
+
+static int l_entity_set_solid(lua_State *L)
+{
+    prts_engine *e = prts_engine_from_lua(L);
+    prts_cworld_set_owner_enabled(e->cworld, prts_engine_check_entity(L, 1), lua_toboolean(L, 2));
+    return 0;
+}
+
+static int l_entity_name(lua_State *L)
+{
+    prts_engine *e = prts_engine_from_lua(L);
+    lua_pushstring(L, prts_world_name(e->world, prts_engine_check_entity(L, 1)));
+    return 1;
+}
+
+static int l_entity_find(lua_State *L)
+{
+    prts_engine *e = prts_engine_from_lua(L);
+    prts_entity ent = prts_world_find(e->world, luaL_checkstring(L, 1));
+    if (ent == PRTS_ENTITY_NONE) return 0;
+    lua_pushinteger(L, (lua_Integer)ent);
+    return 1;
+}
+
+static int l_entity_alive(lua_State *L)
+{
+    prts_engine *e = prts_engine_from_lua(L);
+    lua_pushboolean(L, prts_world_alive(e->world, (prts_entity)luaL_checkinteger(L, 1)));
+    return 1;
+}
+
+static int l_entity_despawn(lua_State *L)
+{
+    prts_engine *e = prts_engine_from_lua(L);
+    prts_entity ent = prts_engine_check_entity(L, 1);
+    prts_cworld_set_owner_enabled(e->cworld, ent, false);
+    prts_world_despawn(e->world, ent);
+    return 0;
+}
+
+/* Per-entity script data: a plain Lua table kept by the engine. */
+static int l_entity_data(lua_State *L)
+{
+    prts_entity ent = prts_engine_check_entity(L, 1);
+    lua_getfield(L, LUA_REGISTRYINDEX, REG_EDATA);
+    if (lua_isnil(L, -1)) {
+        lua_pop(L, 1);
+        lua_newtable(L);
+        lua_pushvalue(L, -1);
+        lua_setfield(L, LUA_REGISTRYINDEX, REG_EDATA);
+    }
+    if (lua_rawgeti(L, -1, (lua_Integer)ent) != LUA_TTABLE) {
+        lua_pop(L, 1);
+        lua_newtable(L);
+        lua_pushvalue(L, -1);
+        lua_rawseti(L, -3, (lua_Integer)ent);
+    }
+    return 1;
+}
+
+/* --- prts.input ------------------------------------------------------------------- */
+
+static void bind_list(lua_State *L, prts_engine *e, const char *id, const char *field, prts_binding_kind kind)
+{
+    lua_getfield(L, 1, field);
+    if (lua_istable(L, -1)) {
+        int t = lua_gettop(L);
+        for (int i = 1; lua_rawgeti(L, t, i) != LUA_TNIL; i++) {
+            bool ok;
+            if (kind == PRTS_BIND_KEY) {
+                ok = prts_input_bind(e->input, id, kind, lua_tostring(L, -1), 0, 1.0f);
+            } else if (lua_istable(L, -1)) {
+                int b = lua_gettop(L);
+                ok = prts_input_bind(e->input, id, kind, NULL, (int)field_number(L, b, "code", 0),
+                                     field_number(L, b, "scale", 1.0f));
+            } else {
+                ok = prts_input_bind(e->input, id, kind, NULL, (int)lua_tointeger(L, -1), 1.0f);
+            }
+            if (!ok) luaL_error(L, "action '%s': invalid %s binding #%d", id, field, i);
+            lua_pop(L, 1);
+        }
+        lua_pop(L, 1);
+    }
+    lua_pop(L, 1);
+}
+
+static int l_input_action(lua_State *L)
+{
+    prts_engine *e = prts_engine_from_lua(L);
+    luaL_checktype(L, 1, LUA_TTABLE);
+    const char *id = field_string(L, 1, "id", NULL);
+    if (!id) return luaL_error(L, "field 'id' is required");
+    prts_input_define(e->input, id);
+    prts_input_clear_bindings(e->input, id);
+    bind_list(L, e, id, "keys", PRTS_BIND_KEY);
+    bind_list(L, e, id, "mouse_buttons", PRTS_BIND_MOUSE_BUTTON);
+    bind_list(L, e, id, "mouse_axes", PRTS_BIND_MOUSE_AXIS);
+    bind_list(L, e, id, "pad_buttons", PRTS_BIND_PAD_BUTTON);
+    bind_list(L, e, id, "pad_axes", PRTS_BIND_PAD_AXIS);
+    return 0;
+}
+
+static int l_input_value(lua_State *L)
+{
+    lua_pushnumber(L, prts_input_value(prts_engine_from_lua(L)->input, luaL_checkstring(L, 1)));
+    return 1;
+}
+
+static int l_input_down(lua_State *L)
+{
+    lua_pushboolean(L, prts_input_down(prts_engine_from_lua(L)->input, luaL_checkstring(L, 1)));
+    return 1;
+}
+
+static int l_input_scheme(lua_State *L)
+{
+    lua_pushstring(L, prts_input_scheme_name(prts_input_scheme_active(prts_engine_from_lua(L)->input)));
+    return 1;
+}
+
+/* --- prts.commander ------------------------------------------------------------------ */
+
+static void read_params(lua_State *L, int t, prts_commander_params *p)
+{
+    p->walk_speed = field_number(L, t, "walk_speed", p->walk_speed);
+    p->run_speed = field_number(L, t, "run_speed", p->run_speed);
+    p->sprint_speed = field_number(L, t, "sprint_speed", p->sprint_speed);
+    p->crouch_speed = field_number(L, t, "crouch_speed", p->crouch_speed);
+    p->jump_speed = field_number(L, t, "jump_speed", p->jump_speed);
+    p->eye_stand = field_number(L, t, "eye_stand", p->eye_stand);
+    p->eye_crouch = field_number(L, t, "eye_crouch", p->eye_crouch);
+    p->step_height = field_number(L, t, "step_height", p->step_height);
+    p->reach = field_number(L, t, "reach", p->reach);
+    p->look_sensitivity = field_number(L, t, "look_sensitivity", p->look_sensitivity);
+}
+
+static int l_commander_spawn(lua_State *L)
+{
+    prts_engine *e = prts_engine_from_lua(L);
+    luaL_checktype(L, 1, LUA_TTABLE);
+    prts_commander_params p;
+    prts_commander_params_default(&p);
+    read_params(L, 1, &p);
+    prts_dvec3 pos = prts_dv3(0, 0, 0);
+    float yaw = field_number(L, 1, "yaw", 0.0f);
+    const char *marker = field_string(L, 1, "marker", NULL);
+    prts_vec3 v;
+    if (marker) {
+        const prts_marker *m = prts_scene_find_marker(e->scene, marker);
+        if (!m) return luaL_error(L, "unknown marker '%s'", marker);
+        pos = m->pos;
+        yaw = m->yaw;
+    } else if (read_vec3(L, 1, "pos", &v)) {
+        pos = prts_dv3_from_v3(v);
+    }
+    if (e->has_commander) prts_world_despawn(e->world, e->commander.entity);
+    prts_entity ent = prts_world_spawn(e->world, "commander");
+    prts_world_set_local(e->world, ent, pos, 0.0f);
+    prts_commander_init(&e->commander, ent, &p);
+    e->commander.yaw = yaw;
+    e->has_commander = true;
+    lua_pushinteger(L, (lua_Integer)ent);
+    return 1;
+}
+
+static int l_commander_entity(lua_State *L)
+{
+    prts_engine *e = prts_engine_from_lua(L);
+    if (!e->has_commander) return 0;
+    lua_pushinteger(L, (lua_Integer)e->commander.entity);
+    return 1;
+}
+
+static int l_commander_view(lua_State *L)
+{
+    prts_engine *e = prts_engine_from_lua(L);
+    lua_pushnumber(L, e->commander.yaw);
+    lua_pushnumber(L, e->commander.pitch);
+    lua_pushnumber(L, e->commander.eye);
+    lua_pushboolean(L, e->commander.on_ground);
+    return 4;
+}
+
+/* --- prts.render ------------------------------------------------------------------ */
+
+static int l_render_settings(lua_State *L)
+{
+    prts_engine *e = prts_engine_from_lua(L);
+    if (lua_istable(L, 1)) {
+        prts_render_settings *r = &e->render;
+        const char *preset = field_string(L, 1, "preset", NULL);
+        if (preset && !prts_res_preset_parse(preset, &r->preset)) return luaL_error(L, "unknown preset '%s'", preset);
+        r->dither = field_bool(L, 1, "dither", r->dither);
+        r->snap = field_bool(L, 1, "snap", r->snap);
+        r->affine = field_bool(L, 1, "affine", r->affine);
+        r->fog = field_bool(L, 1, "fog", r->fog);
+        r->crosshair = field_bool(L, 1, "crosshair", r->crosshair);
+        r->fov_y = field_number(L, 1, "fov", r->fov_y * 180.0f / (float)PRTS_PI) * (float)PRTS_PI / 180.0f;
+    }
+    lua_createtable(L, 0, 6);
+    lua_pushinteger(L, prts_res_preset_lines(e->render.preset));
+    lua_setfield(L, -2, "lines");
+    lua_pushboolean(L, e->render.dither);
+    lua_setfield(L, -2, "dither");
+    lua_pushboolean(L, e->render.snap);
+    lua_setfield(L, -2, "snap");
+    lua_pushboolean(L, e->render.fog);
+    lua_setfield(L, -2, "fog");
+    lua_pushstring(L, prts_gfx_info(e->gfx));
+    lua_setfield(L, -2, "renderer");
+    return 1;
+}
+
+void prts_engine_open_game_api(prts_engine *e)
+{
+    static const prts_script_fn scene[] = {
+        {"material", l_scene_material}, {"box", l_scene_box},       {"prism", l_scene_prism},
+        {"terrain", l_scene_terrain},   {"height", l_scene_height}, {"light", l_scene_light},
+        {"marker", l_scene_marker},     {"marker_pos", l_scene_marker_pos}, {"zone", l_scene_zone},
+        {"env", l_scene_env},           {"illusion", l_scene_illusion}, {NULL, NULL}};
+    static const prts_script_fn entity[] = {
+        {"spawn", l_entity_spawn},   {"pos", l_entity_pos},         {"local_pos", l_entity_local_pos},
+        {"yaw", l_entity_yaw},       {"move_to", l_entity_move_to}, {"rotate_to", l_entity_rotate_to},
+        {"moving", l_entity_moving}, {"set_solid", l_entity_set_solid}, {"name", l_entity_name},
+        {"find", l_entity_find},     {"alive", l_entity_alive},     {"despawn", l_entity_despawn},
+        {"data", l_entity_data},     {NULL, NULL}};
+    static const prts_script_fn input[] = {
+        {"action", l_input_action}, {"value", l_input_value}, {"down", l_input_down}, {"scheme", l_input_scheme}, {NULL, NULL}};
+    static const prts_script_fn commander[] = {
+        {"spawn", l_commander_spawn}, {"entity", l_commander_entity}, {"view", l_commander_view}, {NULL, NULL}};
+    static const prts_script_fn render[] = {{"settings", l_render_settings}, {NULL, NULL}};
+    prts_script_register(e->script, "scene", scene);
+    prts_script_register(e->script, "entity", entity);
+    prts_script_register(e->script, "input", input);
+    prts_script_register(e->script, "commander", commander);
+    prts_script_register(e->script, "render", render);
+}

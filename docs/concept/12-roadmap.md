@@ -12,11 +12,13 @@ pass the quality gates (≥ 95% unit-test coverage, automated game tests green; 
 | **M1** | Proving Ground | Engine foundation: walk around a test map and up a three-storey keep on every platform | `add-engine-foundation` |
 | **M2** | First Command | RTS core: workers, gold and timber, soldiers, orders, pathfinding, the battlefield picture, field map, war table, sending stone, marking staff, horn, a basic AI | `add-command-core` |
 | **M3** | Ride Out | Mounts for the commander and cavalry; crewed wagons and siege engines you can enter; nested moving reference frames; posts; deck plans; crew levels of detail | `add-mounts-and-engines` |
-| **M4** | Hold and Harvest | Full economy (aether, food and folk, tiers, upgrades), construction stages, fire, the Wildborn as the second faction, the behemoth, a base-building AI | `add-economy-and-second-faction` |
+| **M4** | Hold and Harvest | Full economy (aether, food and folk, powder and bone, the six-tier system, upgrades), construction stages, fire, the Wildborn as the second faction, the behemoth, a base-building AI | `add-economy-and-second-faction` |
 | **M5** | Sail and Wing | Water and sky: ships from cog to galleon and bonehulk, harbors, flyers (balloons, wyverns, rocs, skyships), ship-scale interiors and damage control | `add-water-and-sky-theaters` |
-| **M6** | Skyfall | The high sky: drifting floating citadels, waking and steering them, the aether core, drop-gates, far-sight, sky galleons and elder drakes | `add-high-sky-citadels` |
-| **M7** | Every Screen | Polish for touch and WebXR (hands), mobile and headset performance, accessibility | `polish-touch-and-xr` |
-| **M8** | Release 1.0 | Campaign, Custodians, editor tools, modding documentation, localization | several |
+| **M6** | Skyfall | The storm layer and the high sky: drifting floating citadels, waking and steering them, the aether core, drop-gates, far-sight, sky galleons and elder drakes | `add-high-sky-citadels` |
+| **M7** | Hollow Roads | The tunnels and deep caverns; the Gloam Courts as the third faction (stone and glowstone, tunnel wyrm, Sunken Throne); undermining | `add-underground-and-gloam-courts` |
+| **M8** | Deep Water | Under the water; the Brine League as the fourth faction (pearls, Tidehold, diving bells, wind-barques); market towns and lighthouses | `add-underwater-and-brine-league` |
+| **M9** | Every Screen | Polish for touch and WebXR (hands), mobile and headset performance, accessibility | `polish-touch-and-xr` |
+| **M10** | Release 1.0 | Campaign, Custodians, editor tools, modding documentation, localization | several |
 
 ## M1 · Proving Ground (detailed in OpenSpec)
 
@@ -57,8 +59,8 @@ Full specification: [`openspec/changes/add-engine-foundation/`](../../openspec/c
   a gold mine.
 
 ## M4 · Hold and Harvest
-- Aether, food and folk, tiers 1–3, upgrades, construction stages, stone and timber buildings, fire
-  and firefighting.
+- Aether, food and folk, powder and bone, the six-tier system (tier 5–6 content fills in with M5
+  and M6), upgrades, construction stages, stone and timber buildings, fire and firefighting.
 - Presence bonuses and succession.
 - The Wildborn Clans as the second faction, including the behemoth as a moving war lodge;
   an AI that builds and expands.
@@ -74,13 +76,32 @@ Full specification: [`openspec/changes/add-engine-foundation/`](../../openspec/c
 ## M6 · Skyfall
 - Drifting floating citadels on tracks over the map; waking and steering them; the weightless
   aether core; the throne hall's scrying floor; drop-gates and sky bombardment; far-sight.
-- Sky galleons and elder drakes (tier 3).
+- The storm layer: cloud deck, lightning, winds.
+- Sky galleons and elder drakes (tier 6).
 - **Exit:** the *Storm the Citadel* scenario, and a citadel phase in M/L skirmishes.
 
-## M7 · Every Screen
+## M7 · Hollow Roads
+- Tunnels and deep caverns as theaters: tunnel kit and cavern pieces, cells and portals for
+  visibility and sound, digging tunnel routes, collapse and flooding.
+- The Gloam Courts: delvers, stone and glowstone, the 21 units and 15 building types from
+  [05](05-units-structures-interiors.md), echo pillars, the Sunken Throne and the tunnel wyrm's
+  gondola as command posts, Glimmer-wright and Mycel keeper spells.
+- Deep mine shafts (tier 4) so every faction can reach the caverns; glowstone grottos.
+- **Exit:** the *Under the Hill* scenario, and four-way skirmishes with three factions.
+
+## M8 · Deep Water
+- Under the water as a theater: swimming and diving (breath charm), underwater fog and light,
+  reefs, pearl beds, sunken wrecks.
+- The Brine League: dockhands and pearl divers, pearls, the 21 units and 14 building types from
+  [05](05-units-structures-interiors.md), the Tidehold and diving bells as command posts,
+  wind-barques in the storm layer, Weatherwright and Tidecantor spells.
+- Neutral market towns (trade, rumor network) and lighthouses.
+- **Exit:** the *Reef War* scenario, and full four-faction skirmishes on L maps.
+
+## M9 · Every Screen
 - Touch interface usability pass; WebXR hand tracking; comfort options for riding and flying;
   performance work for mobile and standalone headsets; full accessibility pass.
 
-## M8 · Release 1.0
+## M10 · Release 1.0
 - *The Skyfall Wars* campaign; the Custodians; first-person map and scenario editor;
   modding guide and API reference; localization framework.

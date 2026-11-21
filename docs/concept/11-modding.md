@@ -150,4 +150,4 @@ navigation graph and the rooms used for fire and flooding.
 - **In-game developer console** (M1): run Lua, reload scripts, inspect entities.
 - **Asset validator** (M1): checks manifests, credits coverage, references and formats.
 - **Deck-plan preview** (M3): walk through a deck plan while editing it, with live reload.
-- **Map and scenario editor** (M8): a first-person editor in the engine, plus text formats.
+- **Map and scenario editor** (M10): a first-person editor in the engine, plus text formats.

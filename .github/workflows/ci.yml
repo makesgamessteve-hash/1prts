@@ -1,0 +1,88 @@
+# 1stPRTS continuous integration. See docs/architecture/quality-and-build.md.
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+env:
+  OPENSPEC_TELEMETRY: "0"
+
+jobs:
+  linux-coverage:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install build, display and coverage tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ninja-build libx11-dev libxext-dev libxrandr-dev libxcursor-dev libxi-dev \
+            libxss-dev libxfixes-dev libxtst-dev libxkbcommon-dev libegl-dev libgl-dev libgles-dev \
+            libasound2-dev libpulse-dev libdrm-dev libgbm-dev xvfb libgl1-mesa-dri
+          pip install gcovr
+      - name: Configure and build (coverage)
+        run: |
+          cmake --preset coverage
+          cmake --build --preset coverage
+      - name: Unit, Lua, scenario and rendered tests (Xvfb + Mesa llvmpipe)
+        run: xvfb-run -a -s "-screen 0 1280x720x24" ctest --preset coverage
+      - name: C coverage gate (>= 95% lines)
+        run: gcovr --root . --filter 'engine/src/' --object-directory build/coverage --fail-under-line 95 --txt
+      - name: Lua coverage gate (>= 95% lines)
+        run: python3 -I tools/coverage/lua_gate.py build/coverage/lua-coverage --min 95
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: screenshots-linux
+          path: build/coverage/screenshots/
+
+  linux-sanitize:
+    runs-on: ubuntu-24.04
+    env:
+      ASAN_OPTIONS: detect_leaks=0
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install build and display tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ninja-build clang libx11-dev libxext-dev libxrandr-dev libxcursor-dev libxi-dev \
+            libxss-dev libxfixes-dev libxtst-dev libxkbcommon-dev libegl-dev libgl-dev libgles-dev \
+            libasound2-dev libpulse-dev xvfb libgl1-mesa-dri
+      - run: cmake --preset sanitize && cmake --build --preset sanitize
+      - run: xvfb-run -a -s "-screen 0 1280x720x24" ctest --preset sanitize
+
+  windows:
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ilammy/msvc-dev-cmd@v1
+      - run: cmake --preset release -DCMAKE_C_COMPILER=cl
+      - run: cmake --build --preset release
+      - name: Headless tests (Lua and scenarios)
+        run: ctest --test-dir build/release -E "render_tour|prts_unit_tests" --output-on-failure
+      - run: build/release/bin/prts_tests.exe
+
+  macos:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - run: brew install ninja
+      - run: cmake --preset release && cmake --build --preset release
+      - name: Unit, Lua and scenario tests (headless)
+        run: ctest --test-dir build/release -E render_tour --output-on-failure
+
+  checks:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci
+      - name: OpenSpec
+        run: npx openspec validate --all --strict
+      - name: Engine layering rules
+        run: python3 -I tools/check_layering.py
+      - name: Asset credits and references
+        run: python3 -I tools/validate_assets.py

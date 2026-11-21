@@ -1,0 +1,1 @@
+error("fails on purpose")

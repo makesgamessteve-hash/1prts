@@ -1,8 +1,9 @@
 # 1stPRTS — Game Concept
 
 > **1stPRTS** (First-Person Real-Time Strategy), working title.
-> A fantasy real-time strategy game. You lead a kingdom's war across field, forest, sea and sky,
-> and you see it only through your commander's eyes.
+> A fantasy real-time strategy game. You lead one of four peoples in a war across field, forest,
+> sea and sky, through tunnels and under the waves, and you see it only through your commander's
+> eyes.
 
 This folder is the game design concept. It describes **what** we build and **why**.
 The technical side is in [`../architecture/`](../architecture/README.md). Binding requirements
@@ -14,31 +15,34 @@ You are the Lord Marshal of a fantasy realm at war. There is no eye in the sky o
 battlefield. You stand in the war room of your keep and lean over an enchanted war table where
 glowing lines of light trace the valley. You ride out on horseback with your banner bearer. You
 climb a watchtower to study an enemy warband through a spyglass, and mark it with a beam from
-your marking staff so your knights know where to charge. Serfs fell trees and carry sacks of gold
-up from the mine. Every keep, mine, war galleon, siege tower, airship and floating citadel is
-built at real size, has a real crew, and you can walk inside it: down the mine shaft in a lift
-cage, below decks on a 55 m galleon while the cannons fire, onto the back of a 50 m walking
-beast-fortress. Your orders travel by enchanted sending stones, war horns, banners and
-messengers, and they can be delayed, muffled by wards or intercepted. When you are near your
-troops they fight harder. It also makes you a target.
+your marking staff so your knights know where to charge. Serfs fell trees and carry sacks of
+gold up from the mine. Every keep, mine, war galleon, siege tower, airship, underground court,
+floating raft-city and floating citadel is built at real size, has a real crew, and you can walk
+inside it: down the mine shaft in a lift cage, below decks on a 55 m galleon while the cannons
+fire, onto the back of a 50 m walking beast-fortress. Your orders travel by enchanted sending
+stones, war horns, banners and messengers, and they can be delayed, muffled by wards or
+intercepted. When you are near your troops they fight harder. It also makes you a target.
+Or lead the Wildborn Clans as their Huntlord, the Gloam Courts deep underground as their High
+Delver, or the Brine League's fleets above and below the waves as their Tide-Admiral.
 
 ## Documents
 
 | # | Document | Contents |
 |---|---|---|
 | 01 | [Vision & Pillars](01-vision-and-pillars.md) | Design pillars, the First-Person Contract, audience, non-goals |
-| 02 | [The Commander](02-the-commander.md) | Your body, your command tools, command posts, presence, succession |
+| 02 | [The Commander](02-the-commander.md) | Your body, your ten command tools, twelve kinds of command post, presence, succession |
 | 03 | [Command & Control](03-command-and-control.md) | Chain of command, orders, the sending-stone network, fog of war, AI captains |
-| 04 | [World, Scale & Theaters](04-world-scale-and-theaters.md) | Real scale, maps, field/sea/sky/high sky, moving interiors, time, fire |
-| 05 | [Units, Structures & Interiors](05-units-structures-interiors.md) | Both factions' rosters with real sizes and crews, interiors, crews, damage |
-| 06 | [Economy & Logistics](06-economy-and-logistics.md) | Gold, timber, aether, food; workers hauling; construction; tiers |
+| 04 | [World, Scale & Theaters](04-world-scale-and-theaters.md) | Real scale, maps, eight theaters from the deep caverns to the high sky, moving interiors, time, fire |
+| 05 | [Units, Structures & Interiors](05-units-structures-interiors.md) | All four factions' rosters (84 units, 58 building types) with real sizes and crews, 8 neutral places, interiors, crews, damage |
+| 06 | [Economy & Logistics](06-economy-and-logistics.md) | Ten resources (six per faction), workers hauling, construction, six tiers |
 | 07 | [Modes & Match Flow](07-modes-and-match-flow.md) | Skirmish, campaign, victory, sample match timeline, multiplayer outlook |
-| 08 | [Setting & Factions](08-setting-and-factions.md) | Veyra and the Skyfall, the Crown of Esterholt, the Wildborn Clans, the Custodians |
+| 08 | [Setting & Factions](08-setting-and-factions.md) | Veyra and the Skyfall; the Crown of Esterholt, the Wildborn Clans, the Gloam Courts, the Brine League; the Custodians |
 | 09 | [Art & Audio Direction](09-art-and-audio-direction.md) | Retro fantasy 3D rules, budgets, sprites, voxels, sound and music |
 | 10 | [Controls & Platforms](10-controls-and-platforms.md) | Keyboard/mouse, gamepad, touch, WebXR, accessibility, targets |
 | 11 | [Modding](11-modding.md) | What can be modded, mod layout, examples |
-| 12 | [Roadmap](12-roadmap.md) | Milestones M0–M8, each one an OpenSpec change |
+| 12 | [Roadmap](12-roadmap.md) | Milestones M0–M10, each one an OpenSpec change |
 | 13 | [Open Questions](13-open-questions.md) | Decisions that are still open, with the default we'll use |
+| 14 | [Magic & Spells](14-magic-and-spells.md) | The 24 spells of the eight caster types, counters, rituals |
 
 ## A match in six scenes
 

@@ -1,0 +1,27 @@
+-- exercises the scenario helpers
+return {
+  run = function(t)
+    local c = t.commander()
+    t.expect(t.headless(), "headless").is_true()
+    t.expect(type(t.hash()), "hash").equals("string")
+    t.expect(t.tick() >= 0, "tick").is_true()
+    t.place(1, 0, 40)
+    t.place(1, 0, 40, 0.5, 0.1)
+    t.face(0, 1, 30)
+    t.ticks()
+    t.ticks(0)
+    t.expect(t.parent(c), "parent").equals("world")
+    t.expect(t.target(), "nothing usable here").equals(nil)
+    t.expect(pcall(t.place, "no_such_marker"), "bad marker").equals(false)
+    t.expect(pcall(t.face, "no_such_entity"), "bad entity").equals(false)
+    t.expect(pcall(t.in_zone, c, "no_such_zone"), "bad zone").equals(false)
+    t.expect(pcall(t.input.hold, "no_such_action", 1), "bad action").equals(false)
+    t.expect(pcall(t.wait_until, function() return false end, 0.1), "times out").equals(false)
+    t.expect(1.0, "near").near(1.05, 0.1)
+    t.expect(pcall(function() t.expect(false).is_true() end), "is_true fails").equals(false)
+    t.expect(pcall(function() t.expect(1).near(5, 0.1) end), "near fails").equals(false)
+    t.expect(pcall(t.screenshot, "../escape"), "path in screenshot name").equals(false)
+    t.expect(pcall(t.screenshot, ""), "empty screenshot name").equals(false)
+    t.screenshot("skipped_when_headless")
+  end,
+}

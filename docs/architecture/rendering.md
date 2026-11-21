@@ -87,6 +87,9 @@ good from 0.05 m (the field map in your hand) to tens of kilometers (views from 
 - **Portal culling** for interiors: start from the camera's current cell and go through open
   portals, narrowing the screen rectangle at each step. When outdoors, a building's interior
   cells are drawn only if they can be seen through an open portal or a window.
+- **Underground and under water**: tunnels and caverns are portal-culled like interiors, and
+  water volumes switch to a short fog distance and a blue-green tint, so both theaters stay cheap
+  to draw.
 - **Distance LOD** for meshes (2–3 levels plus an impostor) and terrain chunks. LOD bias is
   set per platform.
 - **Budgets** (web desktop reference): ≤ 1,500 draw calls, ≤ 1.5 M triangles per view,

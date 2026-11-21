@@ -9,7 +9,7 @@ the battlefield** that is the commander's only view of the war.
 
 ```
 Commander (player)
- └─ Marshals / war-leaders     e.g. "Northern Host", "the Harbor Fleet"
+ └─ Marshals / war-leaders     e.g. "Northern Host", "the Harbor Fleet", "the Deep Host"
      └─ Captains               company captains, ship masters, flight leaders, the mine foreman
          └─ Companies          a squad of men-at-arms, a lance of knights, one galleon, a wyvern flight
              └─ Crew           soldiers, serfs, gunners, sailors, handlers, cooks
@@ -23,7 +23,7 @@ Commander (player)
   - *Caution*: when the company pulls back, retreats or calls for help.
 - Leaders gain experience by surviving. Losing a veteran captain hurts.
 - Every company has a **name and banner** (*Second Lance*, *Mill Watch*, *Galleon Resolute*,
-  *Grey Wolves*), used in reports, on the field map and on the war table.
+  *Grey Wolves*, *Basalt Third*, *Sloop Gannet*), used in reports, on the field map and on the war table.
 
 ## 2. Orders
 
@@ -31,10 +31,10 @@ Commander (player)
 
 | Category | Orders |
 |---|---|
-| Movement | Move, Follow, Patrol, Board / Disembark (ships, skyships, rocs, the behemoth), Take off / Land |
+| Movement | Move, Follow, Patrol, Board / Disembark (ships, skyships, rocs, the behemoth, the wyrm, diving bells), Take off / Land, Dive / Surface, Tunnel (dig a route) |
 | Combat | Attack, Attack-move, Defend area, Hold, Loose at area (archers and siege), Charge, Intercept |
-| Tasks | Scout, Escort, Screen, Blockade, Storm (assault a building room by room, later milestone) |
-| Work | Build, Repair, Gather (gold, timber, aether), Haul, Fight fires, Heal |
+| Tasks | Scout, Escort, Screen, Blockade, Undermine, Storm (assault a building room by room, later milestone) |
+| Work | Build, Repair, Gather (gold, timber, aether, stone, glowstone, pearls, bone), Dig, Haul, Fight fires, Heal |
 | Posture | When to fight (hold, defend yourself, attack freely), stance (bold, steady, wary), stealth (lights out, no horns) |
 
 ### Full orders
@@ -62,18 +62,22 @@ still apply.
 | Sending stone menu | Stone network | Presets | Whole network | Yes |
 | Marking staff + stone | Stone network | Context order | Line of sight | Yes |
 | Horn | Speed of sound | 4 signals | Earshot (~2 km) | No (but the enemy hears it) |
+| Signal lantern | Light | 4 signals | Sight; up to ~5 km at night or over water | No (but the enemy can see it) |
 | Banner | Light | Presence, "rally here" | Sight | No |
-| Messenger (rider or bird) | Travel time | Full written orders | Any | Can be killed or **captured, and your orders read** |
+| Messenger (rider, bird, tunnel runner or swimmer, sent with the dispatch case) | Travel time | Full written orders | Any | Can be killed or **captured, and your orders read** (unless written in cipher) |
 
 ### The sending-stone network
-- Sending stones talk to each other only within a few kilometres. **Beacon spires** (Crown) and
-  **drum towers** (Wildborn) relay over longer distances. Mage towers, the war room, flagships,
+- Sending stones talk to each other only within a few kilometres. **Beacon spires** (Crown),
+  **drum towers** (Wildborn), **echo pillars** (Gloam) and **signal masts** (Brine) relay over
+  longer distances. Mage towers, the war room, flagships,
   skyships and citadels are hubs.
 - Links need rough **line of sight** over terrain. Hills and ridges block them, and towers, sky
-  craft and citadels help get past.
+  craft and citadels help get past. Stones carry badly through more than about 30 m of rock or
+  deep water: companies in the tunnels, the deep caverns or under the water need an echo pillar,
+  a mine shaft, a diving bell or a Tidecantor nearby to stay in touch.
 - Each hop adds a little **delay**. Normal play sees about 0.2–2 s, much more under
   interference.
-- **Hush wards** cast by enemy mages and shamans weaken stones nearby. Voices crackle, the field
+- **Hush wards** (Crown magisters) and **Stillsong** (Wildborn shamans) weaken enemy stones nearby. Voices crackle, the field
   map's ink smears, and links can fail. This is the fantasy equivalent of jamming.
 - **Cut off?** A company that cannot reach a hub keeps its last order, then follows standing
   orders. You can still reach it face to face, with the horn, or by **messenger**.
@@ -95,7 +99,7 @@ over the stone network.
 | False | Planted by illusions or a captured messenger | Looks the same as a real one |
 
 Sigils show **what kind** of thing it is by **shape** (foot ▭, horse ◆, sky ∧, water ◡,
-building ▣) and **whose** it is by **shape and color** together, so the map works for
+under water ≈, underground ▽, building ▣) and **whose** it is by **shape and color** together, so the map works for
 colorblind players.
 
 ### Sources
@@ -104,11 +108,18 @@ colorblind players.
 - **Spyglasses and watchtowers**: longer sight.
 - **Scouts**: outriders, wolf runners, observation balloons.
 - **Familiars**: scout birds sent out by mages and seers. What they see is shown in a scrying
-  pool at the mage tower or the spirit lodge.
-- **Sense magic**: mages and shamans feel spells being cast and sending stones in use nearby,
-  as a direction and rough distance. This even works on the enemy commander's stone.
-- **Far-sight**: a powerful ritual at the mage tower (or from a woken citadel) that shows a
-  wide area once, with a long cooldown. Its timing works like a scheduled spy-satellite pass.
+  pool at the mage tower or the spirit lodge, or through the commander's scrying lens.
+- **Echoes** (Gloam): echo hounds and the Echo Call spell hear movement through rock, even in
+  tunnels nobody can see into.
+- **Tremor sense** (Hesk): the Hesk feel ships, swimmers and beasts moving in the water around them.
+- **Rumors**: a held market town passes on what traders have heard, as rumored sightings over a
+  wide area.
+- **Sense magic**: casters feel spells being cast and sending stones in use nearby,
+  as a direction and rough distance. This even works on the enemy commander's stone, unless a ward charm hides it.
+- **Far-sight**: a powerful ritual at a far-sight building (the Arcanum, spirit lodge, crystal
+  sanctum or storm tower, or a woken citadel) that shows a wide area once, with a long cooldown.
+  The Gloam version (deep-sight) shows the ground below instead, and the Brine version
+  (storm-eye) sees farther over the sea. Its timing works like a scheduled spy-satellite pass.
 
 ### Reports
 Companies report on their own: enemy sighted, under attack, losses, objective reached, low on

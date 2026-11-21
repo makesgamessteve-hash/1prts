@@ -63,6 +63,11 @@ world frame
   (doorways, hatches, windows, open ramps). The outdoor world is one cell as well.
 - Cells are **children of their ship's, beast's or building's frame**, so interiors move with their
   hull.
+- **Tunnels and deep caverns** use cells and portals too: a tunnel is a chain of cells, and a
+  cavern is one or more large cells. Underground theaters are therefore drawn and heard like big
+  interiors, while staying part of the one continuous world.
+- **Water volumes** (lakes, the sea) are frame volumes with their own rules: buoyancy and
+  swimming instead of normal gravity, and short underwater fog for rendering.
 - Portals are used for **visibility** (only cells you can see through portals are drawn),
   **audio** (sound passes through open portals and is muffled by closed ones), and later
   **atmosphere** (flooding, fire spread, vacuum) and **crew navigation**.
@@ -114,7 +119,7 @@ is, alert levels, a hysteresis timer), never on rendering. Tests can force any l
 
 ## 8. Networking (future)
 
-Not part of M1–M8 scope (open question Q6). The design keeps both options open:
+Not part of M1–M10 scope (open question Q6). The design keeps both options open:
 - **Lockstep** (send commands, the simulation runs on every machine) would need cross-platform
   determinism.
 - **Server-authoritative snapshots** (the server simulates and clients interpolate) would cost

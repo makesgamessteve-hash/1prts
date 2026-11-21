@@ -1,0 +1,47 @@
+-- A guided look around the Proving Ground that saves screenshots (when run with a window,
+-- for example: 1stprts --hidden --size 1920x1080 --scenario tests/game/scenarios/tour.lua --out shots).
+-- Headless, the screenshots are skipped and the tour is a smoke test of the routes.
+return {
+  name = "Proving Ground tour",
+  max_seconds = 90,
+  run = function(t)
+    local c = t.commander()
+    t.place("start", 0.05)
+    t.ticks(3)
+    t.screenshot("01_approach_at_dusk")
+    t.place(-52, 0, 108, -0.44, 0.06)
+    t.ticks(3)
+    t.screenshot("02_keep_and_cottages")
+    t.place("keep_door")
+    t.face("keep.door", 1.1, 1.6, 0)
+    t.input.press("use")
+    t.ticks(40)
+    t.look(0, 0)
+    t.screenshot("03_open_door")
+    t.place("hall_view", -0.05)
+    t.ticks(3)
+    t.screenshot("04_great_hall")
+    t.place("forge_door")
+    t.face("keep.forge.door", 0.6, 1.4, 0)
+    t.input.press("use")
+    t.ticks(40)
+    t.place(-6.0, 0.2, -5.0)
+    t.face(-9.7, 1.0, -8.2)
+    t.ticks(3)
+    t.screenshot("05_forge")
+    t.place("stair_base", 0.15)
+    t.ticks(3)
+    t.screenshot("06_stairs")
+    t.place("war_room_view", -0.38)
+    t.ticks(3)
+    t.screenshot("07_war_room")
+    t.place(-1.4, 9.2, 5.0, -0.25, -0.62)
+    t.ticks(3)
+    t.screenshot("08_war_table_illusion")
+    t.place(0, 13.7, 8.4, 0, -0.05)
+    t.look(math.pi, -0.08)
+    t.ticks(3)
+    t.screenshot("09_battlements")
+    t.expect(t.in_zone(c, "keep.great_hall"), "on the roof, not in the hall").equals(false)
+  end,
+}

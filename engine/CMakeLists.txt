@@ -1,0 +1,13 @@
+# libprts: the 1stPRTS core engine (C11). No game content is compiled in.
+file(GLOB_RECURSE PRTS_ENGINE_SOURCES CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/src/*.c)
+add_library(prts STATIC ${PRTS_ENGINE_SOURCES})
+target_include_directories(prts PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_link_libraries(prts PUBLIC prts_lua prts_stb SDL3::SDL3)
+if(PRTS_DEV)
+  target_compile_definitions(prts PUBLIC PRTS_DEV=1 PRTS_SOURCE_DATA_DIR="${CMAKE_SOURCE_DIR}/data")
+endif()
+if(UNIX AND NOT APPLE AND NOT EMSCRIPTEN)
+  target_link_libraries(prts PUBLIC m)
+endif()
+prts_set_warnings(prts)
+prts_set_coverage(prts)

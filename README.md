@@ -8,9 +8,18 @@ size with real crews, and you can walk inside every one of them. Orders travel b
 sending stones, war horns, banners, messengers and face-to-face conversations. The look is retro
 3D: low-poly models, sprites and voxels.
 
-> **Status: concept phase (M0).** No code yet. This repository holds the game concept, the
-> architecture and the first OpenSpec change (M1 · Proving Ground), ready for review before
-> implementation starts.
+> **Status: M1 (engine foundation) in progress.** The C engine boots, loads all content
+> from `data/`, and renders the **Proving Ground** test map in first person on Linux (OpenGL 3.3).
+> You can walk around, open doors, climb the stairs and ride the hoist lift to the war room. 24 of
+> the 75 M1 tasks are done; web, touch, WebXR, audio and UI come next (see
+> [`tasks.md`](openspec/changes/add-engine-foundation/tasks.md)).
+
+![The Proving Ground at dusk](docs/screenshots/01_approach_at_dusk.png)
+
+| | | |
+|---|---|---|
+| ![Great hall](docs/screenshots/04_great_hall.png) | ![Forge](docs/screenshots/05_forge.png) | ![Stairs](docs/screenshots/06_stairs.png) |
+| ![Countryside](docs/screenshots/02_keep_and_cottages.png) | ![War table](docs/screenshots/08_war_table_illusion.png) | ![Battlements](docs/screenshots/09_battlements.png) |
 
 ## Read this first
 
@@ -23,8 +32,9 @@ sending stones, war horns, banners, messengers and face-to-face conversations. T
 
 ## Key facts
 
-- **Engine**: C11, SDL3, OpenGL 3.3 core / WebGL 2. No game content compiled in.
+- **Engine**: C11, SDL3, OpenGL 3.3 core / WebGL 2. No game content compiled in (`engine/`, `apps/`).
 - **Game**: Lua 5.4 scripts plus assets in `data/`, next to the executable. Fully moddable.
+- **Design scope**: four playable factions, 84 unit types and 58 building types (see the concept).
 - **Platforms**: Windows, Linux, macOS, web (Emscripten), mobile web with automatic touch
   controls, and WebXR.
 - **Quality**: ≥ 95% unit-test coverage (C and Lua), automated headless game tests, determinism
@@ -41,10 +51,39 @@ npx openspec show add-engine-foundation
 npx openspec validate --strict
 ```
 
-## Building
+## Building and running
 
-There is nothing to build yet. Build, run and test instructions arrive with milestone M1
-(task 14.4 in [`tasks.md`](openspec/changes/add-engine-foundation/tasks.md)).
+Requirements: CMake ≥ 3.24, Ninja, a C11 compiler (GCC, Clang or MSVC) and Git. SDL 3 is
+downloaded and built automatically. On Linux you also need the X11/Wayland, GL and audio
+development packages SDL 3 lists (`libx11-dev libxext-dev libxrandr-dev libxcursor-dev libxi-dev
+libxss-dev libxfixes-dev libxtst-dev libxkbcommon-dev libegl-dev libgl-dev`).
+
+```sh
+cmake --preset dev            # or: release
+cmake --build --preset dev
+./build/dev/bin/1stprts       # data/ is copied next to the executable
+```
+
+Controls: WASD to move, mouse to look, Shift to run, Alt to sprint, Ctrl to crouch, Space to
+jump, E to use (doors, lift levers), Esc to quit. `1stprts --help` lists the command-line options.
+
+### Tests
+
+```sh
+cmake --preset coverage && cmake --build --preset coverage
+xvfb-run -a ctest --preset coverage                          # C, Lua, scenario and rendered tests
+gcovr --filter engine/src/ --object-directory build/coverage --fail-under-line 95
+python3 -I tools/coverage/lua_gate.py build/coverage/lua-coverage --min 95
+python3 -I tools/check_layering.py && python3 -I tools/validate_assets.py
+```
+
+Automated game tests are Lua scenarios in [`tests/game/scenarios/`](tests/game/scenarios/).
+They run headless (`1stprts --headless --scenario <file>`), or with a window to save
+screenshots:
+
+```sh
+xvfb-run -a ./build/dev/bin/1stprts --size 1920x1080 --scenario tests/game/scenarios/tour.lua --out shots
+```
 
 ## License
 

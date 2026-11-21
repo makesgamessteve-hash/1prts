@@ -54,7 +54,8 @@ Lua 5.4 is vendored and compiled as C (MIT). One `lua_State` hosts all scripts. 
 files run with their own `_ENV` table that falls back to a shared read-only global table, so
 definitions can be shared and merged by id. The VM is built with a fixed `luai_makeseed` for
 reproducible table order. Budgets use `lua_sethook` with `LUA_MASKCOUNT` every 1,000
-instructions, checking a high-resolution timer against the entry point's soft and hard limits.
+instructions. The hard limit is counted in **Lua instructions, not time**, so an interrupted
+script is interrupted at the same point on every run (this keeps the simulation deterministic).
 *Alternatives:* LuaJIT (no WebAssembly support, so two runtimes); one VM per mod (makes shared
 definitions and cross-mod overrides complicated); other languages such as Wren or Squirrel
 (Lua was requested).
@@ -86,7 +87,10 @@ velocity preserved (spec: *Changing parent without a jump*). The keep's hoist li
 the first kinematic frame, driven by a Lua script through `prts.frame` (target height, speed).
 
 ### D8 · Own character controller
-A capsule controller with swept collision (sub-stepped so it cannot tunnel at sprint speed),
+*As built in M1:* an axis-aligned box collider with per-axis sweeps (exact, so there is no
+tunnelling), sliding, step-up up to 0.4 m, and riding platforms through reference frames.
+Static geometry is a flat list of boxes plus the terrain height grid. A capsule and a BVH
+remain the plan once interiors grow. *Original plan:* a capsule controller with swept collision (sub-stepped so it cannot tunnel at sprint speed),
 step-up up to 0.4 m, a 45° slope limit, ground probing and inherited platform velocity. Static
 geometry is stored in a per-mesh BVH. Terrain uses height-field queries. *Alternatives:* Jolt
 or Bullet (C++, large WebAssembly size, much more than a character needs); ODE (old API). Later
@@ -166,6 +170,13 @@ step copies `data/` next to release and package outputs.
 (Emscripten-only, not built in the Linux coverage job), `engine/src/xr/xr_webxr.c`
 (Emscripten-only). Everything else in `engine/src/` counts. Third-party code is not
 measured.
+
+### D18 · Baked sun and sky visibility (added during implementation)
+There are no real-time shadows. When the map loads, every vertex casts one ray towards the sun
+and one straight up against the collision world. The results are stored per vertex and scale the
+sun and ambient light in the shader. This keeps keep interiors from being lit by the sun and
+gives a late-1990s "lightmapped" look at almost no run-time cost. *Alternative:* shadow maps
+(costly on mobile and WebGL 2, and less retro).
 
 ## Risks / Trade-offs
 
