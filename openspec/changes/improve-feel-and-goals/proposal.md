@@ -52,7 +52,7 @@ prototype that lacks spark". The causes were concrete:
 - **Fixes:**
   - The keep's upper landing gets standing headroom.
   - The sun bake walks the collision tree along each ray and stops at the first hit. Same
-    result, load time 4.1 s → 0.9 s.
+    result, load time 4.1 s → 0.8 s.
   - Saves store the commander's velocity, jump buffer and coyote time (snapshot format 2).
 - **Audio:** sounds can be played at a pitch (0.5–2).
 
