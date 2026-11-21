@@ -71,6 +71,11 @@ definitions and cross-mod overrides complicated); other languages such as Wren o
 
 All loaders run inside the job system and return CPU-side data. Only `gfx/` uploads to the GPU.
 
+*As built (M1):* `.vox` uses an own parser (`scene/vox.c`: models, palette and the scene graph
+with hidden nodes and layers) because the ogt_vox header is C++ only. WAV uses an own RIFF
+reader in `audio/`. Loaders run on the main thread at load time; the job system exists but
+nothing large enough to need it is loaded yet.
+
 ### D6 · Own small entity store, not an ECS library
 Entities are `uint32 index + uint32 generation` handles. Components are packed arrays with
 sparse index maps, iterated in index order for determinism. *Alternative:* flecs (MIT, C99,
@@ -89,8 +94,9 @@ the first kinematic frame, driven by a Lua script through `prts.frame` (target h
 ### D8 · Own character controller
 *As built in M1:* an axis-aligned box collider with per-axis sweeps (exact, so there is no
 tunnelling), sliding, step-up up to 0.4 m, and riding platforms through reference frames.
-Static geometry is a flat list of boxes plus the terrain height grid. A capsule and a BVH
-remain the plan once interiors grow. *Original plan:* a capsule controller with swept collision (sub-stepped so it cannot tunnel at sprint speed),
+Static boxes are in one BVH for the whole map (boxes owned by moving entities are checked one
+by one), plus the terrain height grid with a 45° slope limit. A capsule remains the plan once
+characters need rounder bodies. *Original plan:* a capsule controller with swept collision (sub-stepped so it cannot tunnel at sprint speed),
 step-up up to 0.4 m, a 45° slope limit, ground probing and inherited platform velocity. Static
 geometry is stored in a per-mesh BVH. Terrain uses height-field queries. *Alternatives:* Jolt
 or Bullet (C++, large WebAssembly size, much more than a character needs); ODE (old API). Later
@@ -104,6 +110,12 @@ window frame). They become meshes and collision when loaded and are textured fro
 CC BY 4.0 texture set. This avoids hand-modeling a three-storey building and gives modders a fast
 blocking tool. glTF loading is still covered by props and the war table model. Deck plans
 (M3) will generate the same cell and portal data.
+
+*As built (M1):* cells and portals are declared in Lua next to the brushes
+(`prts.scene.cell`, `prts.scene.portal`, `prts.scene.cells{...}` for the geometry that follows);
+glTF `cell:`/`portal:` node tags are not read yet. glTF nodes named `marker_<name>` become
+scene markers. The brushes are Lua helpers in `lib/build.lua` (box, wall with openings, door
+and window frames, straight and spiral stairs, ramp).
 
 ### D10 · UI: microui behind `prts_ui`
 Menus, options, the credits screen and the developer console use **microui** (MIT, about 1,100
@@ -160,6 +172,10 @@ needs async loading in every loader; deferred until map sizes need it).
 | Golden images | Xvfb + Mesa llvmpipe on Linux | Deterministic software GL that is available in CI | GPU runners (not available or reproducible) |
 | Browser checks | Playwright (Apache-2.0) | Device emulation with touch, scriptable page, Chromium headless with WebGL | Puppeteer (similar, fewer device profiles) |
 | XR in browser checks | Our own `navigator.xr` mock injected by the test | Deterministic poses; tests the real glue code | Immersive Web Emulator extension (hard to automate headless) |
+
+Golden images (as built): `tests/golden/golden.lua` renders fixed views at 640×360 and
+`tools/golden/compare.c` compares them with `tests/golden/ref/` (a pixel differs above 8 levels in
+any channel; an image fails above 0.5% differing pixels). `tools/golden/update` refreshes them.
 
 Test hooks for the browser (`window.prts_test`: commander position, cell, input scheme, XR
 state) are compiled in only when the page URL has `?test=1` **and** the build has test hooks
