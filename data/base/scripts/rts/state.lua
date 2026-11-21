@@ -200,7 +200,12 @@ function S.spawn_unit(side_id, def_id, x, z, company)
   d.kind, d.side, d.def, d.hp, d.cd, d.anim = "unit", side_id, def_id, u.hp, 0, "idle"
   d.sprite = prts.scene.sprite{ sprite = S.sprite_for(side_id, u), entity = e, anim = "idle" }
   d.company = company and company.id or nil
-  prts.agent.add(e, { speed = u.speed, radius = u.radius })
+  if u.flying then -- flyers keep off the ground grid (rts/sky.lua flies them)
+    d.flying = true
+    prts.entity.place(e, { x, y + 18, z })
+  else
+    prts.agent.add(e, { speed = u.speed, radius = u.radius })
+  end
   m.units[#m.units + 1] = e
   if company then company.members[#company.members + 1] = e end
   prts.events.emit("rts_unit_spawned", e, side_id, def_id)

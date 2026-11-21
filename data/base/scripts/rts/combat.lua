@@ -23,12 +23,15 @@ function K.nearest_enemy_unit(side_id, x, z, r)
   return nil
 end
 
-function K.nearest_enemy_structure(side_id, x, z, r)
+function K.nearest_enemy_structure(side_id, x, z, r, weapon)
   local best, bd = nil, r
+  local Bl = require("props.balloon")
   for _, e in ipairs(S.match().structures) do
     if S.alive(e) then
       local od = S.data(e)
-      if od.side ~= side_id then
+      -- a raised balloon is out of reach of blades
+      local reachable = not (D.structure(od.def).balloon and Bl.up(e) and not (weapon and (weapon.missile or weapon.flyers)))
+      if od.side ~= side_id and reachable then
         local dist = S.rect_dist(x, z, od.fp)
         if dist <= bd then best, bd = e, dist end
       end
@@ -37,10 +40,14 @@ function K.nearest_enemy_structure(side_id, x, z, r)
   return best
 end
 
--- Distance from (x, z) to a target (unit centre or structure footprint).
+-- Distance from (x, z) to a target (unit centre, structure footprint, ship's side).
 function K.reach(x, z, t)
   local td = S.data(t)
   if td.kind == "structure" then return S.rect_dist(x, z, td.fp) end
+  if td.kind == "ship" then
+    local sx, _, sz = S.pos(t)
+    return math.max(0, S.dist(x, z, sx, sz) - D.ship(td.def).beam)
+  end
   local tx, _, tz = S.pos(t)
   return S.dist(x, z, tx, tz)
 end
@@ -49,6 +56,7 @@ end
 function K.hit(t, damage)
   local td = S.data(t)
   if td.kind == "structure" then return B.damage(t, damage) end
+  if td.kind == "ship" then return require("rts.fleet").hit(t, damage) end
   local u = D.unit(td.def)
   td.hp = td.hp - math.max(1, damage - (u.armor or 0))
   if td.hp > 0 then return false end
@@ -161,7 +169,10 @@ function K.think(e, ticks)
   if t and (not S.alive(t) or K.reach(x, z, t) > u.sight * 1.3) then t = nil end
   if not t then
     local r = order.kind == "hold" and w.range + 1 or u.sight
-    t = K.nearest_enemy_unit(d.side, x, z, r) or K.nearest_enemy_structure(d.side, x, z, r)
+    t = K.nearest_enemy_unit(d.side, x, z, r) or K.nearest_enemy_structure(d.side, x, z, r, w)
+    if not t and w.missile then -- bows and javelins reach flyers and ships
+      t = require("rts.sky").nearest_enemy(d.side, x, z, w.range) or require("rts.fleet").enemy_ship(d.side, x, z, w.range)
+    end
     d.target = t
   end
   if not t then return "idle" end
@@ -195,7 +206,9 @@ function K.structure_think(e, ticks)
   d.cd = math.max(0, (d.cd or 0) - ticks)
   if d.cd > 0 then return nil end
   local x, _, z = S.pos(e)
-  local t = K.nearest_enemy_unit(d.side, x, z, def.weapon.range + def.size[1] / 2)
+  local reach = def.weapon.range + def.size[1] / 2
+  local t = K.nearest_enemy_unit(d.side, x, z, reach) or require("rts.sky").nearest_enemy(d.side, x, z, reach)
+    or require("rts.fleet").enemy_ship(d.side, x, z, reach)
   if not t then return nil end
   strike(e, d, def.weapon, t)
   return t

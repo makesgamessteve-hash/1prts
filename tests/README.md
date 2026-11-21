@@ -177,3 +177,20 @@ is missing. References are C unit tests (`suite.case`), test files and scripts (
 | deck-plans-and-crews | A small plan | `data/base/scripts/tests/test_deckplan.lua`, `tests/game/scenarios/siege_tower.lua` (its stairs climbed) |
 | deck-plans-and-crews | Walking away from the siege tower | `tests/game/scenarios/crew_lod.lua` |
 | deck-plans-and-crews | The tower's push room is wrecked | `tests/game/scenarios/room_damage.lua` |
+| economy-and-tiers | An aether well on a spring | `tests/game/scenarios/econ_resources.lua` |
+| economy-and-tiers | Powder at the Forgeworks | `tests/game/scenarios/econ_resources.lua` |
+| economy-and-tiers | Kobb gather bone from the fallen | `tests/game/scenarios/econ_resources.lua` |
+| economy-and-tiers | Upgrading the holdfast to a keep | `tests/game/scenarios/econ_tiers.lua` |
+| economy-and-tiers | A mandate needs its buildings | `tests/game/scenarios/econ_tiers.lua` |
+| economy-and-tiers | Tempered blades | `tests/game/scenarios/econ_tiers.lua` |
+| construction-and-fire | A barracks rises in stages | `tests/game/scenarios/build_stages.lua` |
+| construction-and-fire | Presence speeds building | `tests/game/scenarios/build_stages.lua` |
+| construction-and-fire | Firebrands burn a barracks | `tests/game/scenarios/fire.lua` |
+| construction-and-fire | Serfs put the fire out | `tests/game/scenarios/fire.lua` |
+| construction-and-fire | Stone does not burn | `tests/game/scenarios/fire.lua` |
+| wildborn-clans | Crown against Wildborn | `tests/game/scenarios/rts_wildborn_match.lua` |
+| wildborn-clans | A war lodge on the move | `tests/game/scenarios/behemoth.lua` |
+| wildborn-clans | The AI expands | `tests/game/scenarios/ai_expands.lua` |
+| presence-and-succession | Holding with the commander | `tests/game/scenarios/presence_succession.lua` |
+| presence-and-succession | The banner passes to the second | `tests/game/scenarios/presence_succession.lua` |
+| presence-and-succession | No one left to lead | `tests/game/scenarios/presence_succession.lua` |

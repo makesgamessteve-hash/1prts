@@ -117,6 +117,16 @@ static int l_nav_refresh(lua_State *L)
 static int l_nav_block(lua_State *L) { return block(L, 1); }
 static int l_nav_unblock(lua_State *L) { return block(L, -1); }
 
+static int below(lua_State *L, int delta)
+{
+    prts_nav *n = need_nav(L);
+    lua_pushinteger(L, prts_nav_block_below(n, (float)luaL_checknumber(L, 1), delta));
+    return 1;
+}
+
+static int l_nav_block_below(lua_State *L) { return below(L, 1); }
+static int l_nav_unblock_below(lua_State *L) { return below(L, -1); }
+
 static int l_nav_clear_line(lua_State *L)
 {
     prts_nav *n = need_nav(L);
@@ -284,6 +294,7 @@ void prts_engine_open_nav_api(prts_engine *e)
 {
     static const prts_script_fn nav[] = {{"build", l_nav_build},     {"path", l_nav_path},       {"walkable", l_nav_walkable},
                                          {"height", l_nav_height},   {"block", l_nav_block},     {"unblock", l_nav_unblock},
+                                         {"block_below", l_nav_block_below}, {"unblock_below", l_nav_unblock_below},
                                          {"clear_line", l_nav_clear_line}, {"info", l_nav_info}, {"refresh", l_nav_refresh},
                                          {NULL, NULL}};
     static const prts_script_fn agent[] = {{"add", l_agent_add},           {"remove", l_agent_remove},

@@ -98,6 +98,8 @@ D.FACTIONS = {
 
 -- The Wildborn Clans (M4) add their own units, structures, upgrades, mandates and roles.
 require("rts.wildborn")(D)
+-- Ships, harbors and flyers (M5).
+require("rts.ships")(D)
 
 -- Gold mines and trees.
 D.MINE_GOLD = 4000

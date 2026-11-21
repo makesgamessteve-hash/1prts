@@ -45,11 +45,12 @@ function F.flames(e)
   local def = D.structure(d.def)
   local hw, hd = def.size[1] / 2, def.size[2] / 2
   for i = 1, want do
-    local a = i * 2.39996 -- spread around the building
-    local x, z = math.cos(a) * hw * 0.6, math.sin(a) * hd * 0.6
-    local h = 2 + (i % 3)
-    prts.scene.box{ min = { x - 0.7, 1.5, z - 0.7 }, max = { x + 0.7, 1.5 + h, z + 0.7 }, material = "flame", entity = v,
+    local a = i * 2.39996 -- spread around the building, licking up over its walls and roof
+    local x, z = math.cos(a) * hw * 0.75, math.sin(a) * hd * 0.75
+    local h = 3 + (i % 3)
+    prts.scene.box{ min = { x - 1.0, 3.0, z - 1.0 }, max = { x + 1.0, 5.0 + h, z + 1.0 }, material = "flame", entity = v,
                     solid = false }
+    prts.scene.light{ pos = { x, 6, z }, color = { 1.0, 0.55, 0.2 }, radius = 12, entity = v }
   end
   if prts.audio and want == 1 and (d.fire_sound == nil) then
     local x, y, z = S.pos(e)

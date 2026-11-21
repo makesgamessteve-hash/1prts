@@ -172,6 +172,19 @@ function SHAPES.well(e, w, stone)
                     material = stone and "slate" or "hide", entity = e }
 end
 
+-- A harbor or raft-yard: a timber hall on the shore and a jetty out over the water (+z).
+function SHAPES.harbor(e, w, d, stone)
+  local hw, hd = w / 2, d / 2
+  SHAPES.hall(e, w * 0.6, d * 0.6, 5, stone and "plaster" or "planks")
+  box(e, "planks", -2, 0.0, hd - 2, 2, 0.3, hd + 22)
+  for i = 0, 5 do
+    local z = hd + i * 4
+    box(e, "oak", -2.2, -6, z - 0.2, -1.8, 0.3, z + 0.2)
+    box(e, "oak", 1.8, -6, z - 0.2, 2.2, 0.3, z + 0.2)
+  end
+  box(e, "oak", hw - 6, 0, -hd + 2, hw - 1, 3, hd - 2, false) -- a slipway frame
+end
+
 local function build_shape(e, def, color)
   local w, d = def.size[1], def.size[2]
   local kind = def.id:match("%.(.+)$")
@@ -188,6 +201,9 @@ local function build_shape(e, def, color)
   elseif kind == "aether_shrine" then SHAPES.well(e, w, false)
   elseif kind == "aether_well" then SHAPES.well(e, w, true)
   elseif kind == "forgeworks" then SHAPES.hall(e, w, d, 6, "stone")
+  elseif kind == "harbor" or kind == "raft_yard" then SHAPES.harbor(e, w, d, kind == "harbor")
+  elseif kind == "balloon" then require("props.balloon").build(e)
+  elseif kind == "roost_cliffs" then SHAPES.cairn(e, w) SHAPES.totem(e, 4)
   elseif kind == "smithy" then SHAPES.hall(e, w, d, 4, "planks")
   elseif kind == "farmstead" then SHAPES.farmstead(e, w, d)
   elseif kind == "watchtower" then SHAPES.watchtower(e, w, d)
@@ -288,6 +304,7 @@ function B.place(side_id, def_id, x, z, built)
     if def.mobile then return nil, "not built in place" end
     if not require("rts.tiers").allowed(side_id, def) then return nil, "needs tier " .. def.tier end
     if def.aether and not spring then return nil, "needs an aether spring" end
+    if def.harbor and not require("rts.fleet").shore_ok(def, x, z) then return nil, "needs deep water" end
     if not B.can_place(def_id, x, z) then return nil, "no room" end
     if not S.pay(side, def.cost) then return nil, "cannot pay" end
   end
@@ -374,6 +391,8 @@ function B.order_kind(item, structure_def)
   if up then return "upgrade", up, up.time end
   local st = D.structure(item)
   if st and st.mobile then return "mobile", st, st.build end
+  local ship = D.ship(item)
+  if ship then return "ship", ship, ship.build end
   return nil
 end
 
@@ -397,6 +416,8 @@ function B.order(e, item)
     if Ti.upgrade_known(d.side, item) then return false, "already known" end
   elseif kind == "unit" then
     if not D.trains(it, d.def) then return false, "not trained here" end
+  elseif kind == "ship" then
+    if it.at ~= d.def then return false, "not built here" end
   elseif it.at ~= d.def then
     return false, "not raised here"
   end
@@ -431,6 +452,7 @@ function B.train_tick(e, seconds)
   end
   if kind == "hq_up" then return B.raise_stage(e) end
   local x, _, z = S.pos(e)
+  if kind == "ship" then return require("rts.fleet").launch(d.side, item, x, z + def.size[2] / 2 + 18) end
   return require("props.behemoth").spawn(d.side, item, x, z + def.size[2] / 2 + 24)
 end
 

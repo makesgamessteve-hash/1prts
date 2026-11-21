@@ -16,6 +16,8 @@ local Cmd = require("rts.command")
 local Su = require("rts.succession")
 local Fi = require("rts.fire")
 local Be = require("props.behemoth")
+local Sk = require("rts.sky")
+require("rts.fleet")
 require("rts.tools")
 require("ui.war_maps")
 
@@ -57,12 +59,14 @@ function M.tick(now)
   for _, e in ipairs(m.units) do
     if S.alive(e) and stagger(e, now, M.THINK) then
       local d = S.data(e)
-      if D.unit(d.def).worker then
+      if d.flying then
+        Sk.think(e, M.THINK)
+      elseif D.unit(d.def).worker then
         if d.task then E.think(e, M.THINK / 30) else K.think(e, M.THINK) end
       else
         K.think(e, M.THINK)
       end
-      local moving = prts.agent.info(e) and prts.agent.info(e).moving
+      local moving = d.flying or (prts.agent.info(e) and prts.agent.info(e).moving)
       local anim = moving and "walk" or "idle"
       if S.alive(e) and d.anim ~= anim then
         d.anim = anim

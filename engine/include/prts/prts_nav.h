@@ -32,6 +32,9 @@ bool prts_nav_height(const prts_nav *n, float x, float z, float *h);
 /* Adds `delta` (+1 to block, -1 to free) to the block count of every cell whose centre is in
  * the rectangle. Returns the number of cells changed. */
 int prts_nav_block(prts_nav *n, float min_x, float min_z, float max_x, float max_z, int delta);
+/* Adds delta to the block counter of every cell whose ground lies below `height` (deep water);
+ * returns how many cells it touched. */
+int prts_nav_block_below(prts_nav *n, float height, int delta);
 /* Reads the world again under the rectangle (a tree felled, a wall knocked down). The cells
  * read are not saved: scripts that change the world redo it after loading. */
 int prts_nav_refresh(prts_nav *n, const prts_cworld *cw, float min_x, float min_z, float max_x, float max_z);

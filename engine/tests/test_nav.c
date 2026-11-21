@@ -265,6 +265,27 @@ UTEST(agents, eight_soldiers_reach_one_point_apart)
     prts_cworld_destroy(cw);
 }
 
+UTEST(nav, deep_water_is_closed)
+{
+    prts_cworld *cw = walled();
+    prts_nav *n = prts_nav_build(cw, -30, -30, 30, 30, 1.0f);
+    ASSERT_TRUE(prts_nav_walkable(n, 20, 20));
+    prts_hasher h0, h1;
+    prts_hasher_init(&h0);
+    prts_nav_hash(n, &h0);
+    ASSERT_EQ(0, prts_nav_block_below(n, -5.0f, 1)); /* no ground that low */
+    int all = prts_nav_block_below(n, 0.5f, 1);      /* the flat ground lies at 0 */
+    ASSERT_GT(all, 100);
+    ASSERT_FALSE(prts_nav_walkable(n, 20, 20));
+    prts_hasher_init(&h1);
+    prts_nav_hash(n, &h1);
+    ASSERT_NE(h0.h, h1.h);
+    ASSERT_EQ(all, prts_nav_block_below(n, 0.5f, -1));
+    ASSERT_TRUE(prts_nav_walkable(n, 20, 20));
+    prts_nav_destroy(n);
+    prts_cworld_destroy(cw);
+}
+
 UTEST(agents, walk_out_of_a_building_put_down_around_them)
 {
     prts_cworld *cw = walled();

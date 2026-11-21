@@ -19,7 +19,15 @@ function P.eyes(side_id)
   for _, e in ipairs(S.structures(side_id, nil, true)) do
     local x, _, z = S.pos(e)
     local def = D.structure(S.data(e).def)
-    out[#out + 1] = { x, z, (def.sight or 20) + def.size[1] / 2 }
+    local sight = (def.sight or 20) + def.size[1] / 2
+    if def.balloon and require("props.balloon").up(e) then sight = require("props.balloon").SIGHT end
+    out[#out + 1] = { x, z, sight }
+  end
+  for _, e in ipairs(S.match().ships or {}) do -- ships look out too
+    if S.alive(e) and S.data(e).side == side_id then
+      local x, _, z = S.pos(e)
+      out[#out + 1] = { x, z, D.ship(S.data(e).def).sight or 60 }
+    end
   end
   return out
 end
@@ -48,6 +56,29 @@ function P.update(side_id, now)
             pic[e] = { x = x, z = z, def = d.def, what = "structure", side = d.side, seen = now, built = d.built }
             break
           end
+        end
+      end
+    end
+  end
+  for _, e in ipairs(S.match().ships or {}) do -- enemy ships
+    if S.alive(e) and S.data(e).side ~= side_id then
+      local x, _, z = S.pos(e)
+      for _, eye in ipairs(eyes) do
+        if S.dist(eye[1], eye[2], x, z) <= eye[3] then
+          pic[e] = { x = x, z = z, def = S.data(e).def, what = "ship", side = S.data(e).side, seen = now }
+          break
+        end
+      end
+    end
+  end
+  for _, e in ipairs(require("rts.sky").flyers()) do -- enemy flyers
+    local d = S.data(e)
+    if d.side ~= side_id then
+      local x, _, z = S.pos(e)
+      for _, eye in ipairs(eyes) do
+        if S.dist(eye[1], eye[2], x, z) <= eye[3] then
+          pic[e] = { x = x, z = z, def = d.def, what = "unit", side = d.side, seen = now }
+          break
         end
       end
     end

@@ -9,7 +9,7 @@ face-to-face orders. Keeps, mines, war galleons, siege towers, skyships, walking
 and floating citadels are built at real size with real crews, and you can walk inside every one
 of them. The look is retro 3D: low-poly models, sprites and voxels.
 
-> **Status: M1 done; M2 (First Command) and M3 (Ride Out) playable.** The C engine runs on Windows, Linux, macOS
+> **Status: M1 done; M2 (First Command), M3 (Ride Out) and M4 (Hold and Harvest) playable.** The C engine runs on Windows, Linux, macOS
 > and in the browser (WebGL 2, touch controls on phones, WebXR). It loads all content from
 > `data/` and plays two maps in first person. **Harrowmark**, the Crown's border castle, is the
 > story map ([the story](docs/concept/15-story.md)). **Ashford Vale** is the first skirmish. Serfs
@@ -29,9 +29,19 @@ of them. The look is retro 3D: low-poly models, sprites and voxels.
 >   bridge onto the enemy's wall-walk;
 > - walk the galleries of a gold mine and ride its lift cage.
 >
-> The tasks of [`add-command-core`](openspec/changes/add-command-core/tasks.md) (M2) and
-> [`add-mounts-and-engines`](openspec/changes/add-mounts-and-engines/tasks.md) (M3) list
-> what is done and how each part was verified.
+> **M4 (Hold and Harvest)** adds the second faction and the full economy on **Thornmere**, a
+> medium map where the Crown faces the **Wildborn Clans**:
+> - Kobb workers, Ghorr brutes, spearhurlers, firebrands, wolf and boar riders, ridge giants;
+> - the **behemoth**, a war lodge on a beast's back that walks and that you can climb;
+> - aether from springs, Crown powder and Wildborn bone;
+> - headquarters that grow through three tiers, and mandates beyond them;
+> - workshop upgrades, buildings that rise in stages, timber that burns and is put out;
+> - the commander's presence, and succession when the commander falls.
+>
+> The tasks of [`add-command-core`](openspec/changes/add-command-core/tasks.md) (M2),
+> [`add-mounts-and-engines`](openspec/changes/add-mounts-and-engines/tasks.md) (M3) and
+> [`add-economy-and-second-faction`](openspec/changes/add-economy-and-second-faction/tasks.md)
+> (M4) list what is done and how each part was verified.
 
 ![Harrowmark at dusk](docs/screenshots/01_approach_at_dusk.png)
 
@@ -44,7 +54,9 @@ of them. The look is retro 3D: low-poly models, sprites and voxels.
 | ![The war table in a skirmish](docs/screenshots/30_war_table_skirmish.png) | ![Serfs at the gold mine](docs/screenshots/31_serfs_at_the_mine.png) | ![The field map](docs/screenshots/32_field_map.png) |
 | ![A battle in Ashford Vale](docs/screenshots/33_battle_in_the_vale.png) | ![Lord Varric's holdfast](docs/screenshots/34_varrics_holdfast.png) | ![Saddled horses at the stables](docs/screenshots/40_saddled_horses.png) |
 | ![Riding with the knights](docs/screenshots/41_riding_with_the_knights.png) | ![On the wagon](docs/screenshots/42_on_the_wagon.png) | ![Inside the siege tower](docs/screenshots/43_inside_the_siege_tower.png) |
-| ![The bridge onto the wall](docs/screenshots/44_bridge_to_the_wall.png) | ![The gold mine's gallery and lift cage](docs/screenshots/45_mine_gallery_and_cage.png) | |
+| ![The bridge onto the wall](docs/screenshots/44_bridge_to_the_wall.png) | ![The gold mine's gallery and lift cage](docs/screenshots/45_mine_gallery_and_cage.png) | ![A Wildborn camp](docs/screenshots/50_wildborn_camp.png) |
+| ![A behemoth](docs/screenshots/51_behemoth.png) | ![On the behemoth's back](docs/screenshots/52_behemoth_back.png) | ![Fire in the camp](docs/screenshots/53_fire_in_the_camp.png) |
+| ![Building in stages](docs/screenshots/54_building_in_stages.png) | | |
 | ![Great hall](docs/screenshots/12_hall_benches_braziers.png) | ![Forge](docs/screenshots/05_forge.png) | ![Front-end menu](docs/screenshots/13_front_end_menu.png) |
 
 ## Read this first

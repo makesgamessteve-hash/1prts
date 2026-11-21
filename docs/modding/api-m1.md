@@ -261,6 +261,7 @@ of sight. The same request always gives the same path.
 | `prts.nav.height(x, z)` | The cell's ground height, or nothing. |
 | `prts.nav.clear_line(x0, z0, x1, z1)` | `true` if a straight walk stays on joined walkable cells. |
 | `prts.nav.block{ min, max }`, `prts.nav.unblock{ min, max }` | Blocks or frees the cells under a rectangle (a building). Blocks count, so overlapping buildings free cleanly. Returns the number of cells. Saved with the game. |
+| `prts.nav.block_below(height)` / `prts.nav.unblock_below(height)` | Closes (or opens again) every cell whose ground lies below `height`: deep water, so that land units keep to land (`rts/water.lua`). Counted like `block`; returns how many cells. |
 | `prts.nav.refresh{ min, max }` | Reads the world under a rectangle again (a tree felled, a wall knocked down); returns the number of cells. Scripts that change the world this way redo it after loading a save. |
 | `prts.agent.add(e, { speed = 1.4, radius = 0.35 })` | Makes an entity an agent (or changes its speed and radius). Agents live in the world frame. |
 | `prts.agent.move(e, x, z)` | Finds a path and walks it (straight there without a grid). Returns `true` if there was a path. |
@@ -406,7 +407,7 @@ a reload the engine calls `on_reload(names)` if `scripts/main.lua` defines it, w
 reloaded module names. `scripts/main.lua` itself is not re-run. Hot reload is on for interactive
 runs of developer builds and can be turned on for tests with `--hot-reload`.
 
-## Base-game modules for machines and mounts (M3)
+## Base-game modules for factions, machines and mounts (M3, M4)
 
 These are Lua modules of the base game (`data/base/scripts/`), not engine functions. Mods
 `require` them to build their own machines.
@@ -417,6 +418,10 @@ These are Lua modules of the base game (`data/base/scripts/`), not engine functi
 | `lib.posts` | `make{ name, parent, pos, kind, label, size, seat, machine }` makes a post (a usable place on a machine). `take(post)`, `leave()`, `held()` and `input()` (forward, turn) work the commander's post. Register `handlers[kind] = { take, tick(post, forward, turn), leave }` to drive the machine. While a post is held the commander's own speeds are 0; jump or use leaves it. Events `post_taken` and `post_left` (post name, kind). |
 | `lib.crew` | `new(e, { people = { { name, room, kind, slot } }, rooms = { name = hp } })`, `track(e)`, `living(e [, room])`, `count(e)`, `lod(e)` (`"embodied"`, `"rostered"`, `"aggregated"`), `figures(e)`, `hurt_room(e, room, n)` and `damage(e, room, amount [, wrecked])`. Events `crew_lod` (frame name, level) and `room_wrecked` (frame name, room). |
 | `props.horse` | `make{ name, pos, yaw }` (horses named `horse.<n>` are found by the `mount` action), `mount(horse)`, `dismount()`, `mounted()`. Events `mounted` and `dismounted` (horse name). |
+| `rts.defs` | The factions as data: `D.UNITS`, `D.STRUCTURES`, `D.UPGRADES`, `D.MANDATES` and `D.FACTIONS[f]` (the definition for each role: `hq` by stage, `worker`, `food`, `foot`, `cavalry`, `tower`, `timber_drop`, `workshop`, `aether`, `special`, and the AI's `build`, `train` and `upgrades` plans). A unit's `at` names the structure (or list of structures) that trains it; `tier` is the tier it needs; structures are timber (they burn) unless `material = "stone"`. Mods add a faction by adding definitions and a `D.FACTIONS` entry. |
+| `rts.tiers` | `tier(side)`, `allowed(side, def)`, `buy_mandate(side, id)`, `damage_bonus(side, unit)`, `ignites(side, unit)`. Events `rts_mandate`, `rts_upgraded`, `rts_hq_stage`. |
+| `rts.fire`, `rts.presence`, `rts.succession` | `ignite(e, n)` and `quench(e, seconds)`; `near(side, x, z)` (within 50 m of the commander); `hurt(n)`, `fallen()`, `anchor(side)`, `silent(side)`, with `DELAY`, `HANDOVER` and `SUCCESSORS` as match rules. Events `rts_fire`, `rts_fire_out`, `commander_hurt`, `commander_fell`, `commander_succeeded`, `commander_defeated`. |
+| `props.behemoth` | `spawn(side, def, x, z)`, `order(e, x, z)`, `war_room_point(e)`. Events `rts_behemoth` and `rts_behemoth_arrived`. |
 | `props.wagon`, `props.siege_tower`, `props.mine` | The wagon on its road with a driver's seat; the siege tower with push bar, bridge lever, crew and rooms (`damage(e, room, n)`, `push_speed(e)`, `lower_bridge(e)`); the gold mine's galleries and lift cage. Events `siege_push`, `siege_halt`, `siege_tower_at_wall` and `siege_bridge_lowered` (tower name). |
 
 ## Scenario tests (`t`)

@@ -182,6 +182,22 @@ int prts_nav_block(prts_nav *n, float min_x, float min_z, float max_x, float max
     return changed;
 }
 
+int prts_nav_block_below(prts_nav *n, float height, int delta)
+{
+    int changed = 0;
+    prts_hasher h = {n->block_hash};
+    const float args[3] = {height, (float)delta, -1.0f}; /* -1: not a rectangle */
+    prts_hasher_bytes(&h, args, sizeof(args));
+    n->block_hash = h.h;
+    for (int i = 0; i < n->cols * n->rows; i++) {
+        if (n->ground[i] >= height) continue;
+        int v = (int)n->blocks[i] + delta;
+        n->blocks[i] = (uint16_t)(v < 0 ? 0 : (v > 65535 ? 65535 : v));
+        changed++;
+    }
+    return changed;
+}
+
 /* The nearest open cell to (cx, cz) within SNAP_RINGS, ring by ring, in a fixed order. */
 static bool snap(const prts_nav *n, int *cx, int *cz)
 {
