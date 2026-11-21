@@ -1,5 +1,5 @@
--- Spec (audio-playback): Sound to the left, Muting music, and the engine side of Door closes on
--- a noisy room. Headless runs mix on the null device, so the levels heard are measured exactly.
+-- Spec (audio-playback): Sound to the left, Muting music, and Door closes on a noisy room.
+-- Headless runs mix on the null device, so the levels heard are measured exactly.
 return {
   name = "the keep's door creaks in the commander's left ear, and the forge can be muffled",
   run = function(t)
@@ -34,19 +34,41 @@ return {
     prts.audio.set_volume("effects", 1)
     t.wait_until(function() return prts.audio.voice(creak) == nil end, 3)
 
-    -- Muffling: the forge, heard from outside its door, becomes quieter and duller
+    -- Spec: Door closes on a noisy room. From the hall, the forge is clear while its door is
+    -- open; closing the door muffles it (quieter, duller), and opening it clears it again.
+    local Door = require("props.door")
+    local door = prts.entity.find("keep.forge.door")
     prts.audio.set_volume("ambience", 1)
+    prts.audio.set_volume("effects", 0) -- only the forge and the hall's torches (ambience)
     t.place("forge_door")
     t.ticks(4)
+    local forge = map.forge_sound
+    t.expect(prts.audio.voice(forge).occlusion, "muffled behind the closed door").equals(1)
+    local closed = prts.audio.info().left
+    Door.toggle(door)
+    t.ticks(4)
+    t.expect(prts.audio.voice(forge).occlusion, "clear through the open door").equals(0)
+    t.expect(prts.audio.voice(forge).cutoff, "no low-pass").equals(0)
     local clear = prts.audio.info().left
     t.expect(clear > 0.002, "the forge is heard at its door").is_true()
-    t.expect(prts.audio.muffle(map.forge_sound, 1), "muffle the forge").is_true()
+    t.expect(closed < clear * 0.6, "quieter behind the closed door").is_true()
+    Door.toggle(door)
+    t.ticks(4)
+    t.expect(prts.audio.voice(forge).cutoff < 1000, "duller when the door closes").is_true()
+    t.expect(prts.audio.info().left < clear * 0.6, "quieter when the door closes").is_true()
+    Door.toggle(door)
+    t.ticks(4)
+    t.expect(prts.audio.info().left > clear * 0.8, "clear again when it opens").is_true()
+
+    -- Scripts can muffle a sound themselves (on top of the walls)
+    t.expect(prts.audio.muffle(forge, 1), "muffle the forge").is_true()
     t.ticks(4)
     t.expect(prts.audio.info().left < clear * 0.6, "quieter when muffled").is_true()
-    t.expect(prts.audio.voice(map.forge_sound).cutoff < 1000, "duller when muffled").is_true()
-    prts.audio.muffle(map.forge_sound, 0)
+    t.expect(prts.audio.voice(forge).cutoff < 1000, "duller when muffled").is_true()
+    prts.audio.muffle(forge, 0)
     t.ticks(4)
     t.expect(prts.audio.info().left > clear * 0.5, "clear again").is_true()
+    prts.audio.set_volume("effects", 1)
     prts.audio.set_volume("music", 1)
   end,
 }

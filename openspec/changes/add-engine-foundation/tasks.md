@@ -91,10 +91,10 @@
 
 ## 11. Audio
 
-- [ ] 11.1 Implement the mixer core (voices, buses, attenuation, equal-power panning, low-pass muffling) as device-independent C; verify unit tests on rendered buffers (spec *Sound to the left*, *Muting music*)
-- [ ] 11.2 Connect the mixer to SDL3 audio streams with the lock-free command queue, plus a null device for headless mode; verify a smoke test with a real device under CI where available and the null device otherwise
-- [ ] 11.3 Implement WAV and OGG loading, OGG streaming and script-controlled cross-fades; verify unit tests on fixture files (spec *Cross-fade*)
-- [ ] 11.4 Implement muffling between cells from portal state; verify a scenario test checking the voice's filter state when the forge room door closes (spec *Door closes on a noisy room*)
+- [x] 11.1 Implement the mixer core (voices, buses, attenuation, equal-power panning, low-pass muffling) as device-independent C; verify unit tests on rendered buffers (spec *Sound to the left*, *Muting music*)
+- [x] 11.2 Connect the mixer to SDL3 audio streams with the lock-free command queue, plus a null device for headless mode; verify a smoke test with a real device under CI where available and the null device otherwise
+- [x] 11.3 Implement WAV and OGG loading, OGG streaming and script-controlled cross-fades; verify unit tests on fixture files (spec *Cross-fade*)
+- [x] 11.4 Implement muffling between cells from portal state; verify a scenario test checking the voice's filter state when the forge room door closes (spec *Door closes on a noisy room*)
 - [ ] 11.5 Implement the browser audio unlock with queued start requests; verify a Playwright test that music starts after the first click (spec *First click starts music*)
 
 ## 12. UI, menus and developer console
@@ -171,6 +171,9 @@ Not started: 3.4, 3.5, 5.9, 5.10, 6.3, 7.6–7.9, 8.3, 8.5, 10.5, 11.x (audio), 
 menus, console), 13.x (web and WebXR), 14.1, 14.3, 14.5.
 
 Deviations from `design.md` (recorded there too):
+- Audio (D11): the main thread mixes a little ahead every frame and queues it on an SDL audio
+  stream (about 80 ms). There is no audio-thread mixer and no command queue. Music files are
+  kept compressed in memory and decoded a little at a time.
 - Script budgets count Lua instructions (deterministic) instead of measuring time.
 - The commander's collider is an axis-aligned box. Static collision is a flat box list.
 - Sun and sky visibility are baked into vertices at load. This is a retro substitute for

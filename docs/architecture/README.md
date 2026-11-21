@@ -125,7 +125,7 @@ SDL_AppIterate  (or the WebXR frame callback while an XR session is active, see 
  │            └─ state hash (test builds), replay record
  ├─ look:    apply mouse/stick/head look every frame (no tick latency)
  ├─ render:  for each view (1 flat, or 2 XR eyes): interpolate transforms → passes → present
- └─ audio:   update listener and voices; the mixer runs on SDL's audio thread
+ └─ audio:   update listener and voices; mix a little ahead and queue it on the SDL audio stream
 ```
 
 - The **simulation tick (30 Hz)** is fixed and independent of frame rate. Rendering

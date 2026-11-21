@@ -32,7 +32,8 @@ typedef struct voice {
     float ref, max;
     float fade, fade_target, fade_rate; /* fade_rate: change per output frame */
     bool stop_at_end;
-    float muffle;
+    float muffle;    /* set by scripts */
+    float occlusion; /* set by the engine from interior cells and portals */
     float lp[2];         /* low-pass state per channel */
     float gl, gr;        /* total gains at the end of the last block */
     uint64_t tag;
@@ -229,6 +230,16 @@ bool prts_mixer_set_muffle(prts_mixer *m, prts_voice_id id, float amount)
     return v != NULL;
 }
 
+bool prts_mixer_set_occlusion(prts_mixer *m, prts_voice_id id, float amount)
+{
+    voice *v = find(m, id);
+    if (v) v->occlusion = clampf(amount, 0.0f, 1.0f);
+    return v != NULL;
+}
+
+/* What the listener hears: the stronger of the script's muffle and the walls' occlusion. */
+static float heard_muffle(const voice *v) { return v->muffle > v->occlusion ? v->muffle : v->occlusion; }
+
 void prts_mixer_set_bus_volume(prts_mixer *m, prts_audio_bus bus, float volume)
 {
     if ((unsigned)bus < (unsigned)PRTS_BUS_COUNT) m->bus[bus] = clampf(volume, 0.0f, 1.0f);
@@ -255,7 +266,7 @@ static float fade_gain(float fade)
 static void voice_gains(const prts_mixer *m, const voice *v, float fade, float *gl, float *gr)
 {
     float g = v->volume * fade_gain(fade) * m->bus[PRTS_BUS_MASTER] * (v->bus != PRTS_BUS_MASTER ? m->bus[v->bus] : 1.0f);
-    g *= 1.0f - MUFFLE_GAIN * v->muffle;
+    g *= 1.0f - MUFFLE_GAIN * heard_muffle(v);
     if (!v->positional) {
         *gl = *gr = g;
         return;
@@ -331,7 +342,7 @@ static void mix_voice(prts_mixer *m, voice *v, float *out, int n)
     voice_gains(m, v, v->fade, &tl, &tr);
     float gl = v->gl, gr = v->gr;
     float dl = (tl - gl) / (float)n, dr = (tr - gr) / (float)n;
-    float cutoff = prts_audio_muffle_cutoff(v->muffle);
+    float cutoff = prts_audio_muffle_cutoff(heard_muffle(v));
     float a = cutoff > 0.0f ? 1.0f - expf(-2.0f * (float)PRTS_PI * cutoff / (float)m->rate) : 1.0f;
     bool ended = false;
     for (int i = 0; i < n; i++) {
@@ -384,9 +395,10 @@ static void fill_info(const prts_mixer *m, const voice *v, prts_voice_info *out)
     out->bus = v->bus;
     out->volume = v->volume;
     out->muffle = v->muffle;
+    out->occlusion = v->occlusion;
     out->fade = v->fade;
     voice_gains(m, v, v->fade, &out->gain_left, &out->gain_right);
-    out->cutoff_hz = prts_audio_muffle_cutoff(v->muffle);
+    out->cutoff_hz = prts_audio_muffle_cutoff(heard_muffle(v));
     out->positional = v->positional;
     out->loop = v->loop;
     out->stopping = v->stop_at_end && v->fade_target == 0.0f;

@@ -86,6 +86,7 @@ void prts_voice_params_default(prts_voice_params *p);
 typedef struct prts_voice_info {
     prts_audio_bus bus;
     float volume, muffle;
+    float occlusion;            /* muffling by closed doors between the voice and the listener */
     float fade;                 /* current fade position 0..1 (equal-power curve) */
     float gain_left, gain_right; /* current total gains */
     float cutoff_hz;            /* low-pass cutoff (0 when muffling is off) */
@@ -113,6 +114,8 @@ bool prts_mixer_set_volume(prts_mixer *m, prts_voice_id v, float volume);
 bool prts_mixer_set_position(prts_mixer *m, prts_voice_id v, prts_dvec3 pos);
 /* Muffling 0..1: quieter and duller (gain plus a one-pole low-pass), e.g. behind a door. */
 bool prts_mixer_set_muffle(prts_mixer *m, prts_voice_id v, float amount);
+/* Muffling from the world (closed portals); the voice is heard with the larger of the two. */
+bool prts_mixer_set_occlusion(prts_mixer *m, prts_voice_id v, float amount);
 bool prts_mixer_voice_info(const prts_mixer *m, prts_voice_id v, prts_voice_info *out);
 int prts_mixer_voice_count(const prts_mixer *m);
 /* Calls fn for every playing voice, in slot order. */

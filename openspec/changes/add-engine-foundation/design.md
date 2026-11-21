@@ -119,6 +119,12 @@ main thread through a lock-free single-producer queue. The mixer core is plain C
 buffers, so it is unit-tested without an audio device. *Alternative:* miniaudio (MIT-0, very
 capable). It overlaps with SDL3 audio and would put a second device layer next to SDL.
 
+*As built (M1):* the main thread mixes about 80 ms ahead every frame and queues the result with
+`SDL_PutAudioStreamData`, so the mixer needs no thread and no command queue (this also suits the
+single-threaded web build). Muffling has two inputs: scripts set a voice's `muffle`, and the
+engine sets its `occlusion` every frame (1 when no open portal connects the listener's cell to
+the sound's cell). The voice is heard with the larger of the two.
+
 ### D12 · Input: devices → actions
 SDL3 events update device state. The action mapper turns device state into action values
 (button or axis) per input scheme, using bindings from Lua defaults and user overrides.

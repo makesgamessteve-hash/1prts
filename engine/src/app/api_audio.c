@@ -154,6 +154,7 @@ static int l_voice(lua_State *L)
     lua_setfield(L, -2, "bus");
     set_num(L, "volume", info.volume);
     set_num(L, "muffle", info.muffle);
+    set_num(L, "occlusion", info.occlusion);
     set_num(L, "fade", info.fade);
     set_num(L, "left", info.gain_left);
     set_num(L, "right", info.gain_right);
@@ -208,12 +209,35 @@ static void follow_entity(prts_voice_id v, const prts_voice_info *info, void *us
     else prts_mixer_stop(m, v, 0.05f);
 }
 
+typedef struct occlude_ctx {
+    prts_engine *e;
+    prts_cell_mask heard; /* cells sound reaches the listener from */
+} occlude_ctx;
+
+/* Spec: Door closes on a noisy room. A positional sound in a cell the listener's cell cannot
+ * reach through open portals is muffled; it clears as soon as a connecting portal opens. */
+static void occlude(prts_voice_id v, const prts_voice_info *info, void *user)
+{
+    occlude_ctx *c = user;
+    float amount = 0.0f;
+    if (info->positional) {
+        int cell = prts_scene_cell_at(c->e->scene, prts_v3((float)info->pos.x, (float)info->pos.y, (float)info->pos.z));
+        amount = (c->heard & PRTS_CELL_BIT(cell)) ? 0.0f : 1.0f;
+    }
+    prts_mixer_set_occlusion(prts_audio_mixer(c->e->audio), v, amount);
+}
+
 void prts_engine_audio_frame(prts_engine *e, double real_seconds, double alpha)
 {
+    occlude_ctx oc = {e, PRTS_CELLS_ALL};
     if (e->has_commander) {
-        prts_audio_set_listener(e->audio, prts_commander_eye(&e->commander, e->world, alpha), e->commander.yaw);
+        prts_dvec3 eye = prts_commander_eye(&e->commander, e->world, alpha);
+        prts_audio_set_listener(e->audio, eye, e->commander.yaw);
+        int cell = prts_scene_cell_at(e->scene, prts_v3((float)eye.x, (float)eye.y, (float)eye.z));
+        oc.heard = prts_scene_reachable_cells(e->scene, cell);
     }
     follow_ctx c = {e, alpha};
     prts_mixer_each(prts_audio_mixer(e->audio), follow_entity, &c);
+    prts_mixer_each(prts_audio_mixer(e->audio), occlude, &oc);
     prts_audio_update(e->audio, real_seconds);
 }

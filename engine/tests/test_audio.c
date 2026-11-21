@@ -217,6 +217,17 @@ UTEST(audio, muffling_takes_high_frequencies_away)
     prts_mixer_render(m, out, N);
     prts_mixer_render(m, out, N);
     ASSERT_NEAR(high_clear, tone_power(out, N, 0, 6000.0), high_clear * 0.05);
+    /* the engine's occlusion (closed portals) and the script's muffle: the stronger one counts */
+    ASSERT_TRUE(prts_mixer_set_occlusion(m, v, 1.0f));
+    ASSERT_TRUE(prts_mixer_set_muffle(m, v, 0.25f));
+    ASSERT_TRUE(prts_mixer_voice_info(m, v, &info));
+    ASSERT_EQ(1.0f, info.occlusion);
+    ASSERT_NEAR(350.0f, info.cutoff_hz, 0.5f);
+    ASSERT_TRUE(prts_mixer_set_occlusion(m, v, -3.0f)); /* clamped to 0 */
+    ASSERT_TRUE(prts_mixer_voice_info(m, v, &info));
+    ASSERT_EQ(0.0f, info.occlusion);
+    ASSERT_NEAR(prts_audio_muffle_cutoff(0.25f), info.cutoff_hz, 0.5f);
+    ASSERT_FALSE(prts_mixer_set_occlusion(m, PRTS_VOICE_NONE, 1.0f));
     prts_mixer_destroy(m);
     prts_sound_destroy(s);
 }
