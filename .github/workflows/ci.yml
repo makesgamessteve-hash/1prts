@@ -76,7 +76,7 @@ jobs:
       - run: build/release/bin/prts_tests.exe
 
   macos:
-    runs-on: macos-14
+    runs-on: macos-latest # the newest image; pinned images get retired
     steps:
       - uses: actions/checkout@v4
       - run: brew install ninja
