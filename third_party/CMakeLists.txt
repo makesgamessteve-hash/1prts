@@ -18,3 +18,13 @@ target_include_directories(prts_stb SYSTEM INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}
 
 add_library(prts_utest INTERFACE)
 target_include_directories(prts_utest SYSTEM INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/utest)
+
+# cgltf: compiled once into its own static library.
+add_library(prts_cgltf STATIC ${CMAKE_CURRENT_SOURCE_DIR}/cgltf/cgltf_impl.c)
+target_include_directories(prts_cgltf SYSTEM PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/cgltf)
+set_target_properties(prts_cgltf PROPERTIES C_STANDARD 11 C_EXTENSIONS ON POSITION_INDEPENDENT_CODE ON)
+if(MSVC)
+  target_compile_options(prts_cgltf PRIVATE /W0)
+else()
+  target_compile_options(prts_cgltf PRIVATE -w)
+endif()

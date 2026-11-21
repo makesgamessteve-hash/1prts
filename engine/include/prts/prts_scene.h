@@ -118,6 +118,13 @@ int prts_sprite_direction(float facing_yaw, prts_vec3 to_viewer, int directions)
 /* Animation frame at a time (looping). */
 int prts_sprite_frame(const prts_sprite_anim *a, double seconds);
 
+/* An encoded image (PNG) embedded in a model file, used as a texture under its name. */
+typedef struct prts_scene_image {
+    char name[PRTS_SCENE_PATH_MAX];
+    char *data;
+    size_t size;
+} prts_scene_image;
+
 typedef struct prts_marker {
     char name[PRTS_SCENE_NAME_MAX];
     prts_dvec3 pos;
@@ -171,6 +178,7 @@ typedef struct prts_scene {
     prts_array sprites;     /* prts_sprite */
     prts_array cells;   /* prts_cell; index 0 is outside */
     prts_array portals; /* prts_portal */
+    prts_array images;  /* prts_scene_image */
     prts_cell_mask current_cells; /* cells given to geometry added from now on */
     prts_heightfield *terrain;
     prts_scene_env env;
@@ -195,6 +203,9 @@ int prts_scene_find_sprite_def(const prts_scene *s, const char *path);
 int prts_scene_find_anim(const prts_sprite_def *def, const char *name);
 int prts_scene_add_sprite(prts_scene *s, const prts_sprite *sprite);
 int prts_scene_find_surface(const prts_scene *s, const char *name);
+/* Stores a copy of an encoded image under a texture name (replacing one of the same name). */
+void prts_scene_add_image(prts_scene *s, const char *name, const void *data, size_t size);
+const prts_scene_image *prts_scene_find_image(const prts_scene *s, const char *name);
 /* Vertical prism (cylinder or cone): sides >= 3, top_radius 0 makes a cone. */
 void prts_scene_add_prism(prts_scene *s, prts_vec3 base, float radius, float top_radius, float height, int sides,
                           int material, prts_entity owner);

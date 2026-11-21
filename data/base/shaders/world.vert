@@ -37,7 +37,7 @@ void main() {
         float wrap = max(dot(n, d / max(dist, 0.001)), 0.0) * 0.7 + 0.3;
         light += u_light_color[i] * k * k * wrap;
     }
-    v_light = mix(light * a_color, vec3(1.0), u_emissive);
+    v_light = mix(light, vec3(1.0), u_emissive) * a_color;  // unlit surfaces keep their vertex colors
     vec4 clip = u_view_proj * world;
     if (u_snap.x > 0.0) {
         vec2 ndc = clip.xy / clip.w;

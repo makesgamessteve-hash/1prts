@@ -346,6 +346,43 @@ static int l_scene_sprite(lua_State *L)
     return 1;
 }
 
+static void push_vec3(lua_State *L, prts_vec3 v)
+{
+    lua_createtable(L, 3, 0);
+    lua_pushnumber(L, v.x);
+    lua_rawseti(L, -2, 1);
+    lua_pushnumber(L, v.y);
+    lua_rawseti(L, -2, 2);
+    lua_pushnumber(L, v.z);
+    lua_rawseti(L, -2, 3);
+}
+
+/* prts.scene.model{path=, pos=, yaw=, scale=, entity=, name=, solid=}: loads a glTF or
+ * .vox model. Returns ok, {min=, max=}. A missing model shows a placeholder (ok = false). */
+static int l_scene_model(lua_State *L)
+{
+    prts_engine *e = prts_engine_from_lua(L);
+    luaL_checktype(L, 1, LUA_TTABLE);
+    const char *path = field_string(L, 1, "path", NULL);
+    if (!path) return luaL_error(L, "field 'path' is required");
+    prts_model_place pl;
+    memset(&pl, 0, sizeof(pl));
+    read_vec3(L, 1, "pos", &pl.pos);
+    pl.yaw = field_number(L, 1, "yaw", 0.0f);
+    pl.scale = field_number(L, 1, "scale", 0.0f);
+    pl.owner = opt_entity(L, 1, "entity");
+    prts_aabb b;
+    bool ok = prts_model_add(e->scene, e->vfs, path, &pl, field_string(L, 1, "name", NULL), &b);
+    if (field_bool(L, 1, "solid", false)) prts_cworld_add_box(e->cworld, b, pl.owner);
+    lua_pushboolean(L, ok);
+    lua_createtable(L, 0, 2);
+    push_vec3(L, b.min);
+    lua_setfield(L, -2, "min");
+    push_vec3(L, b.max);
+    lua_setfield(L, -2, "max");
+    return 2;
+}
+
 /* prts.scene.sprite_anim(id, name): switches animation (restarting it). */
 static int l_scene_sprite_anim(lua_State *L)
 {
@@ -727,7 +764,7 @@ void prts_engine_open_game_api(prts_engine *e)
         {"env", l_scene_env},           {"illusion", l_scene_illusion}, {"cell", l_scene_cell},
         {"portal", l_scene_portal},     {"set_portal", l_scene_set_portal}, {"portal_open", l_scene_portal_open},
         {"cells", l_scene_cells},       {"cell_at", l_scene_cell_at},   {"surface", l_scene_surface},
-        {"sprite", l_scene_sprite},     {"sprite_anim", l_scene_sprite_anim},
+        {"sprite", l_scene_sprite},     {"sprite_anim", l_scene_sprite_anim}, {"model", l_scene_model},
         {NULL, NULL}};
     static const prts_script_fn entity[] = {
         {"spawn", l_entity_spawn},   {"pos", l_entity_pos},         {"local_pos", l_entity_local_pos},

@@ -76,6 +76,13 @@ local function torch(x, y, z, facing_x, facing_z)
 end
 
 -- An upper floor, leaving holes for the stairwell (north-east) and the lift shaft (west).
+-- Places a model (glTF or .vox); opts: yaw, scale, solid, name (marker prefix).
+local function model(path, x, y, z, opts)
+  opts = opts or {}
+  return prts.scene.model{ path = path, pos = { x, y, z }, yaw = opts.yaw or 0, scale = opts.scale or 0,
+                           solid = opts.solid or false, name = opts.name }
+end
+
 local function slab(y_top)
   local y0 = y_top - M.SLAB
   B.box("planks", -7.6, y0, -3, 11, y_top, 9)          -- main part (east of the lift shaft)
@@ -160,8 +167,15 @@ local function great_hall()
   B.box("table", -3, F[1] + 0.75, 2.6, 1, F[1] + 0.85, 4.0)          -- long table
   B.box("oak", -2.9, F[1], 2.7, -2.7, F[1] + 0.75, 3.9)
   B.box("oak", 0.7, F[1], 2.7, 0.9, F[1] + 0.75, 3.9)
-  B.box("oak", -3, F[1], 1.9, 1, F[1] + 0.45, 2.3)                   -- benches
-  B.box("oak", -3, F[1], 4.3, 1, F[1] + 0.45, 4.7)
+  for _, z in ipairs({ 2.1, 4.5 }) do                                 -- benches
+    for _, x in ipairs({ -2.0, 0.0 }) do model("models/bench.glb", x, F[1], z, { solid = true }) end
+  end
+  for i, x in ipairs({ -3.2, 2.2 }) do                                -- braziers by the hearth
+    local name = "hall.brazier" .. i
+    model("models/brazier.glb", x, F[1], -1.0, { solid = true, name = name })
+    local lx, ly, lz = prts.scene.marker_pos(name .. ".light")
+    prts.scene.light{ pos = { lx, ly, lz }, color = { 1.4, 0.72, 0.32 }, radius = 8 }
+  end
   B.box("rug", -2.5, F[1], -2, 1.5, F[1] + 0.02, 8.5, { solid = false })
   B.box("banner", -2.0, F[1] + 1.2, -8.98, 0.0, F[1] + 3.8, -8.92, { solid = false })
   B.box("banner", 2.5, F[1] + 1.2, -8.98, 4.5, F[1] + 3.8, -8.92, { solid = false })
@@ -188,7 +202,10 @@ local function forge_room()
   prts.scene.cells{ "keep.forge" }
   B.box("stone", -10.9, F[1], -8.9, -8.5, F[1] + 1.0, -7.4)          -- hearth
   B.box("flame", -10.6, F[1] + 1.0, -8.6, -8.8, F[1] + 1.25, -7.7, { solid = false })
-  B.box("iron", -7.2, F[1], -6.6, -6.4, F[1] + 0.8, -6.0)            -- anvil
+  model("models/anvil.vox", -6.8, F[1], -6.3, { yaw = 0.3, scale = 0.05, solid = true })
+  model("models/crate.vox", -10.3, F[1], -5.0, { scale = 0.07, solid = true })
+  model("models/crate.vox", -10.3, F[1] + 0.84, -5.0, { yaw = 0.4, scale = 0.07, solid = true })
+  model("models/crate.vox", -10.2, F[1], -6.0, { yaw = 0.1, scale = 0.07, solid = true })
   prts.scene.light{ pos = { -9.7, F[1] + 1.8, -7.6 }, color = { 1.3, 0.55, 0.2 }, radius = 9 }
   prts.scene.zone("keep.forge", { -11, F[1] - 0.1, -9 }, { -4.9, F[2] - M.SLAB, -4.3 })
 end
@@ -280,6 +297,12 @@ end
 
 local function countryside()
   prts.scene.cells{ "outside" }
+  for _, x in ipairs({ -2.6, 2.6 }) do                                -- banners at the door
+    model("models/banner_stand.glb", x, prts.scene.height(x, 10.6), 10.6)
+  end
+  for _, c in ipairs({ { 4.3, 11.2, 0, 0.2 }, { 5.2, 11.0, 0, -0.3 }, { 4.7, 11.1, 0.84, 0.9 } }) do
+    model("models/crate.vox", c[1], prts.scene.height(c[1], c[2]) + c[3], c[2], { yaw = c[4], scale = 0.07, solid = true })
+  end
   -- the road to the keep's door
   for i = 0, 15 do
     local z0 = 10 + i * 6

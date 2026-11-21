@@ -111,6 +111,7 @@ prts_scene *prts_scene_create(void)
     prts_array_init(&s->sprite_defs, sizeof(prts_sprite_def));
     prts_array_init(&s->sprites, sizeof(prts_sprite));
     prts_array_init(&s->portals, sizeof(prts_portal));
+    prts_array_init(&s->images, sizeof(prts_scene_image));
     prts_scene_clear(s);
     return s;
 }
@@ -119,6 +120,8 @@ void prts_scene_clear(prts_scene *s)
 {
     for (size_t i = 0; i < s->groups.len; i++) prts_mesh_free(&((prts_mesh_group *)prts_array_at(&s->groups, i))->mesh);
     for (size_t i = 0; i < s->lines.len; i++) prts_array_free(&((prts_line_set *)prts_array_at(&s->lines, i))->points);
+    for (size_t i = 0; i < s->images.len; i++) prts_free(((prts_scene_image *)prts_array_at(&s->images, i))->data);
+    prts_array_clear(&s->images);
     prts_array_clear(&s->materials);
     prts_array_clear(&s->groups);
     prts_array_clear(&s->lights);
@@ -156,6 +159,7 @@ void prts_scene_destroy(prts_scene *s)
     prts_array_free(&s->sprite_defs);
     prts_array_free(&s->sprites);
     prts_array_free(&s->portals);
+    prts_array_free(&s->images);
     prts_free(s);
 }
 
@@ -554,4 +558,28 @@ int prts_sprite_frame(const prts_sprite_anim *a, double seconds)
 {
     if (a->frames <= 1 || a->fps <= 0.0f || seconds <= 0.0) return 0;
     return (int)fmod(floor(seconds * (double)a->fps), (double)a->frames);
+}
+
+void prts_scene_add_image(prts_scene *s, const char *name, const void *data, size_t size)
+{
+    prts_scene_image *im = (prts_scene_image *)prts_scene_find_image(s, name);
+    if (im) {
+        prts_free(im->data);
+    } else {
+        im = prts_array_push(&s->images, NULL);
+        strncpy(im->name, name, sizeof(im->name) - 1);
+    }
+    im->data = prts_malloc(size ? size : 1);
+    memcpy(im->data, data, size);
+    im->size = size;
+    s->revision++;
+}
+
+const prts_scene_image *prts_scene_find_image(const prts_scene *s, const char *name)
+{
+    for (size_t i = 0; i < s->images.len; i++) {
+        const prts_scene_image *im = prts_array_at(&s->images, i);
+        if (strcmp(im->name, name) == 0) return im;
+    }
+    return NULL;
 }

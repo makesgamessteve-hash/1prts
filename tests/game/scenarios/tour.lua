@@ -51,5 +51,9 @@ return {
     t.face("npc.hall_guard", 0, 1.2, 0)
     t.ticks(3)
     t.screenshot("11_hall_guard")
+    t.place(4.6, 0.2, 5.8)
+    t.face(-0.6, 0.6, -0.6)
+    t.ticks(3)
+    t.screenshot("12_hall_benches_braziers")
   end,
 }

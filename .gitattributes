@@ -7,3 +7,4 @@
 *.glb binary
 *.data binary
 *.wasm binary
+*.bin binary

@@ -9,6 +9,7 @@
 #include "prts/prts_gfx.h"
 #include "prts/prts_input.h"
 #include "prts/prts_platform.h"
+#include "prts/prts_model.h"
 #include "prts/prts_scene.h"
 #include "prts/prts_script.h"
 #include "prts/prts_vfs.h"

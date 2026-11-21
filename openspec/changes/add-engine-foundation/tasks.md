@@ -56,7 +56,7 @@
 
 - [x] 7.1 Implement the generated GL function loader, the gfx interface, the GL back end and the null back end; verify unit tests run against the null back end and a GL smoke test runs under Xvfb + llvmpipe
 - [x] 7.2 Implement shader loading from data with the per-platform prelude, compile-error reporting with file and line, and the fallback shader; verify tests with a broken shader file (spec *Broken shader*, *Mod changes the look*)
-- [ ] 7.3 Implement textures (stb_image), the glTF 2.0 subset (cgltf) with marker nodes, and `.vox` greedy meshing (ogt_vox); verify loader unit tests on small fixture files, and a missing-model placeholder test (spec *Missing model*, *Voxel prop*)
+- [x] 7.3 Implement textures (stb_image), the glTF 2.0 subset (cgltf) with marker nodes, and `.vox` greedy meshing (ogt_vox); verify loader unit tests on small fixture files, and a missing-model placeholder test (spec *Missing model*, *Voxel prop*)
 - [ ] 7.4 Implement the view list, camera-relative transforms, depth layers and the low-resolution scene target with nearest-neighbor integer upscale and the resolution presets; verify golden images for each preset and the near/far depth case (spec *Changing the preset*, *Field map and horizon in one view*, *Two views*)
 - [ ] 7.5 Implement per-vertex lighting, fog, vertex snapping, affine mapping, palette quantization with ordered dither and run-time toggles; verify golden images for each toggle state and the dusk preset (spec *Turning off dithering*, *Dusk lighting*)
 - [ ] 7.6 Implement 8-direction billboard sprites with animations and batching; verify a golden test from front, side and back angles (spec *Directional sprite*)
@@ -131,8 +131,8 @@ with 99% C and 99.8% Lua line coverage.
 
 Partly done (still unchecked):
 - 1.2 SDL3 is fetched and pinned; building against a system SDL3 has not been tried.
-- 1.3 Lua 5.4.7, stb_image/stb_image_write and utest.h are vendored. cgltf, stb_vorbis,
-  ogt_vox and microui come with the tasks that use them.
+- 1.3 Lua 5.4.7, stb_image/stb_image_write, cgltf and utest.h are vendored. stb_vorbis and
+  microui come with the tasks that use them. ogt_vox is not used (see 7.3).
 - 1.4 Strict warnings are on; `.clang-format` / `.clang-tidy` are missing.
 - 1.5 `.github/workflows/ci.yml` exists. The Linux jobs mirror what passes locally. The Windows
   and macOS jobs have never run.
@@ -146,7 +146,8 @@ Partly done (still unchecked):
 - 6.2 Handles, slot reuse and movers work. The component set is smaller than listed.
 - 6.6 Determinism is tested with two identical runs (matching state hashes). Replay recording
   is missing.
-- 7.3 PNG textures load. glTF and `.vox` are missing.
+- 7.3 Done. `.vox` files are read by a small C parser in `engine/src/scene/vox.c` instead of
+  ogt_vox, whose header is C++ only (the engine is C11).
 - 7.4 Camera-relative rendering, two depth layers, the low-resolution target and presets work.
   There is no multi-view list and there are no golden images yet.
 - 7.5 All effects and toggles work. Golden images are missing.

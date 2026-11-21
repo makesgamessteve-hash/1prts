@@ -182,6 +182,11 @@ UTEST(engine, game_api_from_scripts)
     ASSERT_STREQ("<error>", lua_eval(e, "prts.scene.illusion{ center = {0,0,0} }"));
     ASSERT_STREQ("true", lua_eval(e, "(function() prts.scene.prism{ base = {0,0,90}, solid = true, material = 'rock' } return true end)()"));
     ASSERT_STREQ("true", lua_eval(e, "(function() prts.scene.light{ pos = {0,1,0} } return true end)()"));
+    /* Spec: Missing model (the placeholder is drawn and the call reports false) */
+    ASSERT_STREQ("false", lua_eval(e, "(prts.scene.model{ path = 'models/missing.glb', pos = {0,0,80} })"));
+    ASSERT_STREQ("<error>", lua_eval(e, "prts.scene.model{ pos = {0,0,0} }"));
+    ASSERT_STREQ("0.84", lua_eval(e, "(function() local ok, b = prts.scene.model{ path = 'models/crate.vox', pos = {0,0,80}, "
+                                    "scale = 0.07, solid = true } return string.format('%.2f', b.max[2] - b.min[2]) end)()"));
     prts_log_set_min_level(PRTS_LOG_INFO);
     prts_engine_destroy(e);
 }

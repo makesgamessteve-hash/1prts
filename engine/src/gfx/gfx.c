@@ -250,44 +250,62 @@ static GLuint upload_texture(prts_gfx *g, const unsigned char *rgba, int w, int 
     return t;
 }
 
-GLuint prts_gfx_texture(prts_gfx *g, const char *path)
+static texture_entry *find_texture(prts_gfx *g, const char *path)
 {
     for (size_t i = 0; i < g->textures.len; i++) {
         texture_entry *e = prts_array_at(&g->textures, i);
-        if (strcmp(e->path, path) == 0) return e->tex;
+        if (strcmp(e->path, path) == 0) return e;
     }
+    return NULL;
+}
+
+/* Decodes an encoded image into a new cache entry, or a magenta checker placeholder. */
+static GLuint add_texture(prts_gfx *g, const char *path, const void *data, size_t size)
+{
     texture_entry e;
     memset(&e, 0, sizeof(e));
     strncpy(e.path, path, sizeof(e.path) - 1);
-    if (!*path) {
-        static const unsigned char white[4] = {255, 255, 255, 255};
-        e.tex = upload_texture(g, white, 1, 1);
+    int w = 0, h = 0;
+    unsigned char *px = data ? prts_image_decode(data, size, &w, &h) : NULL;
+    if (px) {
+        e.tex = upload_texture(g, px, w, h);
+        prts_image_free(px);
     } else {
-        char *data = NULL;
-        size_t size = 0;
-        int w = 0, h = 0;
-        unsigned char *px = NULL;
-        if (prts_vfs_read(g->vfs, path, &data, &size) == PRTS_VFS_OK) px = prts_image_decode(data, size, &w, &h);
-        prts_free(data);
-        if (px) {
-            e.tex = upload_texture(g, px, w, h);
-            prts_image_free(px);
-        } else {
-            /* Spec: Missing model/asset -> clearly visible placeholder */
-            prts_log_error("texture '%s' is missing or unreadable; using placeholder", path);
-            unsigned char checker[8 * 8 * 4];
-            for (int i = 0; i < 64; i++) {
-                bool on = ((i % 8) / 2 + (i / 8) / 2) % 2 == 0;
-                checker[i * 4 + 0] = on ? 255 : 20;
-                checker[i * 4 + 1] = 0;
-                checker[i * 4 + 2] = on ? 255 : 20;
-                checker[i * 4 + 3] = 255;
-            }
-            e.tex = upload_texture(g, checker, 8, 8);
+        /* Spec: Missing model/asset -> clearly visible placeholder */
+        prts_log_error("texture '%s' is missing or unreadable; using placeholder", path);
+        unsigned char checker[8 * 8 * 4];
+        for (int i = 0; i < 64; i++) {
+            bool on = ((i % 8) / 2 + (i / 8) / 2) % 2 == 0;
+            checker[i * 4 + 0] = on ? 255 : 20;
+            checker[i * 4 + 1] = 0;
+            checker[i * 4 + 2] = on ? 255 : 20;
+            checker[i * 4 + 3] = 255;
         }
+        e.tex = upload_texture(g, checker, 8, 8);
     }
     prts_array_push(&g->textures, &e);
     return e.tex;
+}
+
+GLuint prts_gfx_texture(prts_gfx *g, const char *path)
+{
+    texture_entry *found = find_texture(g, path);
+    if (found) return found->tex;
+    if (!*path) {
+        static const unsigned char white[4] = {255, 255, 255, 255};
+        texture_entry e;
+        memset(&e, 0, sizeof(e));
+        e.tex = upload_texture(g, white, 1, 1);
+        prts_array_push(&g->textures, &e);
+        return e.tex;
+    }
+    char *data = NULL;
+    size_t size = 0;
+    GLuint tex;
+    if (prts_vfs_read(g->vfs, path, &data, &size) == PRTS_VFS_OK) tex = add_texture(g, path, data, size);
+    else tex = add_texture(g, path, NULL, 0);
+    prts_free(data);
+    return tex;
 }
 
 /* --- scene upload ------------------------------------------------------------- */
@@ -345,6 +363,10 @@ static void upload_scene(prts_gfx *g, const prts_scene *s)
         prts_array_push(&g->lines, &l);
     }
     g->gl.glBindVertexArray(0);
+    for (size_t i = 0; i < s->images.len; i++) { /* textures embedded in model files */
+        const prts_scene_image *im = prts_array_at(&s->images, i);
+        if (!find_texture(g, im->name)) add_texture(g, im->name, im->data, im->size);
+    }
     for (size_t i = 0; i < s->materials.len; i++) prts_gfx_texture(g, ((prts_material *)prts_array_at(&s->materials, i))->texture);
     for (size_t i = 0; i < s->sprite_defs.len; i++) prts_gfx_texture(g, ((prts_sprite_def *)prts_array_at(&s->sprite_defs, i))->texture);
     g->uploaded_scene = s;
