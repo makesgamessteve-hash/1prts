@@ -15,8 +15,8 @@
 #define PRTS_DATA_BUDGET 100000u
 
 static const char *REG_SCRIPT = "prts.script";
-static const char *REG_LOADED = "prts.loaded";
-static const char *REG_ENVS = "prts.envs";
+static const char *REG_LOADED = PRTS_REG_LOADED;
+static const char *REG_ENVS = PRTS_REG_ENVS;
 static const char *REG_EVENTS = "prts.events";
 
 prts_script *prts_script_from_lua(lua_State *L)
@@ -195,6 +195,7 @@ static int l_require(lua_State *L)
     for (const char *p = name; *p; p++) prts_str_append_n(&path, *p == '.' ? "/" : p, 1);
     prts_str_append(&path, ".lua");
     bool ok = load_vfs_chunk(s, path.data);
+    if (ok && s->reload) prts_reload_track(s, name, path.data);
     prts_str_free(&path);
     if (!ok) return lua_error(L);
     lua_pushstring(L, name);
@@ -388,6 +389,7 @@ prts_script *prts_script_create(prts_vfs *vfs, uint64_t seed)
         {"on", l_events_on}, {"off", l_events_off}, {"emit", l_events_emit}, {NULL, NULL}};
     prts_script_register(s, "events", events);
     prts_script_open_core_api(s);
+    prts_script_open_def_api(s);
     install_hook(s);
     return s;
 }
@@ -397,6 +399,7 @@ void prts_script_destroy(prts_script *s)
     if (!s) return;
     lua_close(s->L);
     prts_coverage_free(s);
+    prts_reload_free(s);
     prts_free(s->last_error);
     prts_free(s);
 }
@@ -419,3 +422,5 @@ void prts_script_enable_coverage(prts_script *s)
     s->coverage = true;
     install_hook(s);
 }
+
+bool prts_script_load_chunk(prts_script *s, const char *vpath) { return load_vfs_chunk(s, vpath); }

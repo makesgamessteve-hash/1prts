@@ -4,6 +4,9 @@
 #include <string.h>
 
 #include "app/engine_internal.h"
+#include "app/mods.h"
+#include "app/report.h"
+#include "app/snapshot.h"
 #include "prts/prts_fs.h"
 #include "prts/prts_log.h"
 #include "prts/prts_rng.h"
@@ -35,68 +38,6 @@ static char *find_data_dir(const prts_engine_config *cfg, prts_str *searched)
     if (prts_fs_is_dir(PRTS_SOURCE_DATA_DIR)) return prts_strdup(PRTS_SOURCE_DATA_DIR);
 #endif
     return NULL;
-}
-
-/* Reads and checks a mod manifest; returns false (with a message) if it can't be used. */
-static bool check_manifest(prts_engine *e, const char *dir, const char *id, char *err, size_t err_size)
-{
-    char *path = prts_path_join(dir, "mod.lua");
-    char *code = NULL;
-    bool ok = prts_fs_read_file(path, &code, NULL);
-    prts_free(path);
-    if (!ok) {
-        snprintf(err, err_size, "mod '%s' has no mod.lua manifest in %s", id, dir);
-        return false;
-    }
-    lua_State *L = prts_script_lua(e->script);
-    ok = prts_script_eval_data(e->script, code, "=mod.lua");
-    prts_free(code);
-    if (!ok || !lua_istable(L, -1)) {
-        if (ok) lua_pop(L, 1);
-        snprintf(err, err_size, "mod '%s' has an invalid mod.lua manifest", id);
-        return false;
-    }
-    lua_getfield(L, -1, "api");
-    const char *api = lua_tostring(L, -1);
-    char want[16];
-    snprintf(want, sizeof(want), "%d", PRTS_API_VERSION);
-    ok = api && strcmp(api, want) == 0;
-    if (!ok) {
-        /* Spec: Incompatible mod */
-        snprintf(err, err_size, "mod '%s' targets scripting API %s, but this engine provides API %s", id,
-                 api ? api : "(none)", want);
-    }
-    lua_pop(L, 2);
-    return ok;
-}
-
-static void mount_mods(prts_engine *e)
-{
-    for (int i = 0; i < e->cfg.mod_count; i++) {
-        const char *id = e->cfg.mods[i];
-        char *parent = prts_path_join(e->data_dir, "..");
-        char *install_mods = prts_path_join(parent, "mods");
-        char *user_mods = prts_path_join(e->user_dir, "mods");
-        char *candidates[3] = {prts_path_join(e->data_dir, id), prts_path_join(install_mods, id),
-                               prts_path_join(user_mods, id)};
-        bool mounted = false;
-        for (int c = 0; c < 3 && !mounted; c++) {
-            if (!prts_fs_is_dir(candidates[c])) continue;
-            char err[256];
-            if (check_manifest(e, candidates[c], id, err, sizeof(err))) {
-                prts_vfs_mount(e->vfs, candidates[c], id);
-                prts_log_info("mounted mod '%s' from %s", id, candidates[c]);
-            } else {
-                prts_log_error("%s; continuing without it", err);
-            }
-            mounted = true;
-        }
-        if (!mounted) prts_log_error("mod '%s' was not found; continuing without it", id);
-        for (int c = 0; c < 3; c++) prts_free(candidates[c]);
-        prts_free(parent);
-        prts_free(install_mods);
-        prts_free(user_mods);
-    }
 }
 
 static void fail(char *err, size_t err_size, const char *msg)
@@ -135,19 +76,20 @@ prts_engine *prts_engine_create(const prts_engine_config *cfg, char *err, size_t
     prts_render_settings_default(&e->render);
     e->vfs = prts_vfs_create();
     prts_vfs_set_user_dir(e->vfs, e->user_dir);
+    e->jobs = prts_jobs_create(cfg->headless ? 0 : prts_jobs_default_threads());
     e->script = prts_script_create(e->vfs, cfg->seed);
     if (cfg->lua_coverage) prts_script_enable_coverage(e->script);
     prts_script_set_context(e->script, ENGINE_KEY, e);
     prts_script_set_time(e->script, 0, e->clock.tick_seconds);
 
-    if (!check_manifest(e, base, "base", err, err_size)) {
+    if (!prts_engine_check_base(e, base, err, err_size)) {
         prts_free(base);
         prts_engine_destroy(e);
         return NULL;
     }
     prts_vfs_mount(e->vfs, base, "base");
     prts_free(base);
-    mount_mods(e);
+    prts_engine_mount_mods(e);
 
     e->world = prts_world_create();
     e->cworld = prts_cworld_create();
@@ -179,6 +121,12 @@ prts_engine *prts_engine_create(const prts_engine_config *cfg, char *err, size_t
 
     prts_engine_open_game_api(e);
     prts_engine_open_audio_api(e);
+    prts_engine_open_save_api(e);
+#if defined(PRTS_DEV) && !defined(__EMSCRIPTEN__)
+    /* developer builds on desktop: on for interactive runs, opt-in for tests */
+    e->hot_reload = cfg->hot_reload || (!cfg->headless && !cfg->scenario && !cfg->test_lua && !cfg->replay);
+    if (e->hot_reload) prts_script_enable_hot_reload(e->script);
+#endif
     if (!prts_script_run_file(e->script, "scripts/main.lua")) {
         snprintf(err, err_size, "The boot script scripts/main.lua failed: %s", prts_script_last_error(e->script));
         prts_engine_destroy(e);
@@ -188,9 +136,17 @@ prts_engine *prts_engine_create(const prts_engine_config *cfg, char *err, size_t
     prts_cworld_sync(e->cworld, e->world);
     if (!cfg->headless) prts_scene_bake_sun(e->scene, e->cworld, e->world);
     if (e->platform && !cfg->scenario) prts_platform_set_relative_mouse(e->platform, true);
+    if (cfg->junit) {
+        e->report = prts_report_create(cfg->test_lua ? "lua_unit_tests" : cfg->replay ? "replays" : "scenarios");
+    }
     if (cfg->scenario && !prts_engine_start_scenario(e, cfg->scenario)) {
         snprintf(err, err_size, "The scenario %s could not be started: %s", cfg->scenario,
                  prts_script_last_error(e->script));
+        if (e->report) prts_report_fail(e->report, cfg->scenario, "(start)", err);
+        prts_engine_destroy(e);
+        return NULL;
+    }
+    if (!prts_engine_replay_start(e, err, err_size)) {
         prts_engine_destroy(e);
         return NULL;
     }
@@ -200,6 +156,9 @@ prts_engine *prts_engine_create(const prts_engine_config *cfg, char *err, size_t
 void prts_engine_destroy(prts_engine *e)
 {
     if (!e) return;
+    prts_jobs_destroy(e->jobs);
+    if (e->script) prts_engine_replay_finish(e);
+    prts_engine_finish_report(e);
     if (e->cfg.lua_coverage && e->script) prts_script_write_coverage(e->script, e->cfg.lua_coverage);
     prts_script_destroy(e->script);
     prts_gfx_destroy(e->gfx);
@@ -212,6 +171,7 @@ void prts_engine_destroy(prts_engine *e)
     prts_world_destroy(e->world);
     prts_vfs_destroy(e->vfs);
     prts_array_free(&e->move_done);
+    for (size_t i = 0; i < PRTS_ARRAY_COUNT(e->mod_versions); i++) prts_free(e->mod_versions[i]);
     prts_free(e->data_dir);
     prts_free(e->user_dir);
     prts_free(e);
@@ -233,6 +193,7 @@ static void emit_entity_event(prts_engine *e, const char *event, prts_entity ent
 
 void prts_engine_tick(prts_engine *e)
 {
+    prts_engine_replay_before_tick(e);
     float dt = (float)e->clock.tick_seconds;
     prts_world_begin_tick(e->world);
     prts_array_clear(&e->move_done);
@@ -255,12 +216,13 @@ void prts_engine_tick(prts_engine *e)
     prts_script_emit(e->script, "tick", 1);
     prts_input_end_tick(e->input);
     prts_input_tick_overrides(e->input);
+    prts_engine_replay_after_tick(e); /* before the scenario drives the next tick */
     if (e->scenario_active) prts_engine_scenario_step(e);
 }
 
 static void apply_look(prts_engine *e)
 {
-    if (!e->has_commander) return;
+    if (!e->has_commander || prts_engine_replaying(e)) return;
     float s = e->commander.p.look_sensitivity;
     prts_commander_look(&e->commander, -prts_input_value(e->input, "look_x") * s,
                         -prts_input_value(e->input, "look_y") * s);
@@ -306,6 +268,12 @@ bool prts_engine_frame(prts_engine *e, double real_seconds)
     prts_input_scheme hint;
     if (prts_platform_take_scheme_hint(&hint)) e->dev.last_device = (int)hint; /* web: touch-first device */
     e->frames++;
+    prts_jobs_apply_completed(e->jobs); /* the one point per frame where job results land */
+#if defined(PRTS_DEV)
+    e->reload_timer += real_seconds;
+    if (e->hot_reload && e->reload_timer >= 1.0) prts_script_check_reload(e->script);
+    if (e->reload_timer >= 1.0) e->reload_timer = 0.0;
+#endif
     prts_input_update(e->input, &e->dev);
     apply_look(e);
     prts_platform_begin_frame(&e->dev);
@@ -337,7 +305,7 @@ int prts_engine_run(prts_engine *e)
         prts_platform_begin_frame(&e->dev);
         if (e->platform && prts_platform_poll(e->platform, &e->dev)) e->quit = true;
         if (!prts_engine_frame(e, e->clock.tick_seconds)) break;
-        if (!e->cfg.scenario && e->cfg.ticks <= 0 && e->cfg.headless) e->quit = true;
+        if (!e->cfg.scenario && !e->cfg.replay && e->cfg.ticks <= 0 && e->cfg.headless) e->quit = true;
     }
     return e->exit_code;
 }
@@ -379,5 +347,6 @@ uint64_t prts_engine_hash(const prts_engine *e)
         prts_hasher_f64(&h, c->stamina);
         prts_hasher_u64(&h, (uint64_t)c->on_ground | ((uint64_t)c->crouched << 1));
     }
+    prts_engine_hash_script_data(e, &h);
     return h.h;
 }

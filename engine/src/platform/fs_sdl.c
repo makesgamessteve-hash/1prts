@@ -110,3 +110,12 @@ char *prts_fs_user_dir(void)
     return out;
 #endif
 }
+
+bool prts_fs_stat(const char *path, int64_t *mtime_ns, uint64_t *size)
+{
+    SDL_PathInfo info;
+    if (!SDL_GetPathInfo(path, &info)) return false;
+    *mtime_ns = (int64_t)info.modify_time;
+    *size = (uint64_t)info.size;
+    return true;
+}

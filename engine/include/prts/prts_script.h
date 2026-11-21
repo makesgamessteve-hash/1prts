@@ -51,8 +51,29 @@ int prts_script_emit(prts_script *s, const char *event, int nargs);
 void prts_script_set_time(prts_script *s, uint64_t tick, double tick_seconds);
 prts_rng *prts_script_rng(prts_script *s);
 
+/* Hot reload (developer builds): remembers the file of every module loaded with require.
+ * check_reload re-runs the modules whose file changed since (in their mod's environment),
+ * updates the require cache (a module table is updated in place, so code holding it sees the
+ * new functions), then calls main.lua's on_reload(names) if it defines one. Entity data is not
+ * touched. Returns how many modules were reloaded. */
+void prts_script_enable_hot_reload(prts_script *s);
+int prts_script_check_reload(prts_script *s);
+
 /* Line coverage of Lua chunks, written in lcov format. */
 void prts_script_enable_coverage(prts_script *s);
 bool prts_script_write_coverage(prts_script *s, const char *real_path);
+
+/* Plain data (saves, replays, state hashes): nil, booleans, numbers, strings and tables of
+ * them; shared and cyclic tables are kept. Equal data always gives equal bytes (keys are
+ * written in a fixed order). With strict, any other value (function, userdata, thread, or a
+ * table used as a key) fails and err names the field, after `what`; without strict such
+ * values are written as a stand-in for their type, which is enough for hashing. */
+struct prts_writer;
+struct prts_reader;
+bool prts_script_write_plain(prts_script *s, int idx, struct prts_writer *w, bool strict, const char *what,
+                             char *err, size_t err_size);
+/* Pushes the value read. Returns false (pushing nothing, marking the reader failed) for
+ * malformed data. */
+bool prts_script_read_plain(prts_script *s, struct prts_reader *r);
 
 #endif

@@ -5,6 +5,7 @@
 #include <string.h>
 
 #include "app/engine_internal.h"
+#include "app/report.h"
 #include "prts/prts_fs.h"
 #include "prts/prts_log.h"
 
@@ -14,6 +15,7 @@ static const char *SCENARIO_PRELUDE =
     "t.input = {\n"
     "  hold = function(action, seconds) t._hold(action, math.max(1, math.floor(seconds * 30 + 0.5))) end,\n"
     "  press = function(action) t._hold(action, 1) end,\n"
+    "  release = function(action) t._hold(action, 0) end,\n"
     "}\n"
     "function t.wait_until(fn, seconds)\n"
     "  for _ = 1, math.floor(seconds * 30 + 0.5) do\n"
@@ -220,6 +222,7 @@ static int t_headless(lua_State *L)
     return 1;
 }
 
+/* api-docs: t */
 static const luaL_Reg T_FUNCS[] = {
     {"commander", t_commander}, {"ticks", t_ticks},   {"screenshot", t_screenshot}, {"_hold", t_hold},
     {"place", t_place},         {"look", t_look},     {"pos", t_pos},               {"parent", t_parent},
@@ -233,6 +236,7 @@ static void finish(prts_engine *e, bool passed, const char *message)
     lua_State *L = prts_script_lua(s);
     if (passed) prts_log_info("scenario PASSED (%llu ticks)", (unsigned long long)e->scenario_ticks);
     else prts_log_error("scenario FAILED: %s", message);
+    if (e->report) prts_report_end(e->report, (double)e->scenario_ticks / PRTS_TICK_HZ, passed ? NULL : message);
     e->exit_code = passed ? 0 : 1;
     e->scenario_active = false;
     e->quit = true;
@@ -287,6 +291,7 @@ bool prts_engine_start_scenario(prts_engine *e, const char *real_path)
     }
     lua_getfield(L, -1, "name");
     prts_log_info("scenario: %s", lua_isstring(L, -1) ? lua_tostring(L, -1) : real_path);
+    if (e->report) prts_report_begin(e->report, real_path, lua_isstring(L, -1) ? lua_tostring(L, -1) : real_path);
     lua_pop(L, 1);
     lua_getfield(L, -1, "max_seconds");
     e->scenario_max_ticks = (uint64_t)((lua_isnumber(L, -1) ? lua_tonumber(L, -1) : 120.0) * PRTS_TICK_HZ);
@@ -356,6 +361,7 @@ int prts_engine_run_lua_tests(prts_engine *e)
         lua_setfield(L, -2, "cases");
         if (!prts_script_run_file(e->script, path)) {
             prts_log_error("FAIL %s (could not load)", path);
+            if (e->report) prts_report_case(e->report, path, "(load)", 0.0, prts_script_last_error(e->script));
             failed++;
         }
         lua_getfield(L, -1, "cases");
@@ -365,7 +371,9 @@ int prts_engine_run_lua_tests(prts_engine *e)
             char *name = prts_strdup(lua_isstring(L, -1) ? lua_tostring(L, -1) : "?");
             lua_pop(L, 1);
             lua_getfield(L, -1, "fn");
-            if (prts_script_call(e->script, 0, 0)) {
+            bool ok = prts_script_call(e->script, 0, 0);
+            if (e->report) prts_report_case(e->report, path, name, 0.0, ok ? NULL : prts_script_last_error(e->script));
+            if (ok) {
                 passed++;
                 prts_log_info("ok   %s: %s", path, name);
             } else {
@@ -382,4 +390,20 @@ int prts_engine_run_lua_tests(prts_engine *e)
     prts_log_info("Lua tests: %d passed, %d failed", passed, failed);
     e->exit_code = failed == 0 && passed > 0 ? 0 : 1;
     return e->exit_code;
+}
+
+void prts_engine_finish_report(prts_engine *e)
+{
+    if (!e->report) return;
+    if (prts_report_is_open(e->report)) {
+        prts_report_end(e->report, (double)e->clock.tick * e->clock.tick_seconds, "the run ended before this test finished");
+    }
+    if (prts_report_write_junit(e->report, e->cfg.junit)) {
+        prts_log_info("JUnit report: %s (%zu tests, %zu failed)", e->cfg.junit, prts_report_count(e->report),
+                      prts_report_failures(e->report));
+    } else {
+        prts_log_error("cannot write the JUnit report %s", e->cfg.junit);
+    }
+    prts_report_destroy(e->report);
+    e->report = NULL;
 }

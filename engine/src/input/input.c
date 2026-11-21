@@ -201,3 +201,19 @@ void prts_input_set_scheme(prts_input *in, prts_input_scheme s)
     if (s != in->scheme) in->scheme_changed = true;
     in->scheme = s;
 }
+
+void prts_input_tick_state(const prts_input *in, int index, float *value, bool *pressed)
+{
+    const action *a = index >= 0 ? prts_array_at(&in->actions, (size_t)index) : NULL;
+    *value = a ? a->value : 0.0f;
+    *pressed = a && a->pressed;
+}
+
+void prts_input_set_tick_state(prts_input *in, int index, float value, bool pressed)
+{
+    action *a = index >= 0 ? prts_array_at(&in->actions, (size_t)index) : NULL;
+    if (!a) return;
+    a->value = value;
+    a->down = fabsf(value) > 0.5f;
+    a->pressed = pressed;
+}

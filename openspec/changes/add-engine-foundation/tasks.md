@@ -20,15 +20,15 @@
 - [ ] 3.1 Implement `platform/` on SDL3 app callbacks: window, GL context creation (3.3 core / 4.1 core on macOS / WebGL 2), event pump, timers, base and preference paths, threads; verify a smoke test opens a window under Xvfb and closes cleanly
 - [x] 3.2 Show a readable error and exit non-zero when no suitable GL context can be created; verify by forcing an impossible context version in a test (spec *OpenGL context unavailable*)
 - [x] 3.3 Implement the launcher `apps/1stprts` with command-line options `--data`, `--mod`, `--user`, `--headless`, `--test`, `--test-lua`, `--lua-coverage`, `--ticks`, `--seed`; verify option-parsing unit tests and `1stprts --headless --ticks 1` exiting 0
-- [ ] 3.4 Add the Emscripten build (`web-dev`, `web-release`) with a minimal shell page, a load-progress display and a WebGL 2 check; verify a Playwright smoke test in the `web` job sees the page reach the "engine started" state, and that a browser without WebGL 2 shows the requirement message (spec *Browser without WebGL 2*)
-- [ ] 3.5 Implement the job system (worker threads on desktop, inline time-sliced on single-threaded web); verify unit tests for ordering and that results are applied only at defined points
+- [x] 3.4 Add the Emscripten build (`web-dev`, `web-release`) with a minimal shell page, a load-progress display and a WebGL 2 check; verify a Playwright smoke test in the `web` job sees the page reach the "engine started" state, and that a browser without WebGL 2 shows the requirement message (spec *Browser without WebGL 2*)
+- [x] 3.5 Implement the job system (worker threads on desktop, inline time-sliced on single-threaded web); verify unit tests for ordering and that results are applied only at defined points
 
 ## 4. Virtual file system and user area
 
 - [x] 4.1 Implement path validation (relative, `/`, case-sensitive, no `..`, backslashes, drive letters or empty segments); verify unit tests for every rejected form (spec *Path escape attempt*, *Same behavior across platforms*)
 - [x] 4.2 Implement the mount table with last-mount-wins lookup and merged directory listings; verify unit tests with temporary directories (spec *Mod overrides a base file*, *Mod adds a new file*)
 - [x] 4.3 Implement data folder lookup (design D16) and the built-in "data folder missing" error screen; verify a headless test starting with an empty folder exits non-zero with the searched paths in the log (spec *Data folder missing*)
-- [ ] 4.4 Implement the user data area (preference path on desktop, IDBFS `/user` on the web) with read/write APIs limited to it; verify unit tests and a web check that a written setting is still there after a page reload
+- [x] 4.4 Implement the user data area (preference path on desktop, IDBFS `/user` on the web) with read/write APIs limited to it; verify unit tests and a web check that a written setting is still there after a page reload
 
 ## 5. Lua scripting runtime
 
@@ -36,21 +36,21 @@
 - [x] 5.2 Implement the sandbox (removed and replaced functions from `docs/architecture/data-and-scripting.md §4`); verify Lua tests that each removed function is missing and that `load` rejects bytecode (spec *Blocked operating system access*)
 - [x] 5.3 Implement error containment at every C→Lua entry point with traceback logging; verify a test where a failing handler leaves other handlers running (spec *Error in an event handler*)
 - [x] 5.4 Implement soft and hard execution budgets with the count hook; verify a test where `while true do end` is interrupted and the next tick runs (spec *Endless loop*)
-- [ ] 5.5 Implement the API skeleton: `prts.api_version`, `prts.platform`, `prts.log`, `prts.vfs`, `prts.def` (merge by id), `prts.events`, `prts.time`, `prts.rand` (replacing `math.random`), `prts.sorted_pairs`, and handle validation; verify C and Lua unit tests, including the stale-handle case (spec *Stale entity handle*, *Same seed, same random numbers*)
-- [ ] 5.6 Implement mod manifests (`mod.lua` in a data-only sandbox), dependency and load-order resolution and the API-version check; verify tests for an incompatible mod being skipped with a message (spec *Incompatible mod*)
+- [x] 5.5 Implement the API skeleton: `prts.api_version`, `prts.platform`, `prts.log`, `prts.vfs`, `prts.def` (merge by id), `prts.events`, `prts.time`, `prts.rand` (replacing `math.random`), `prts.sorted_pairs`, and handle validation; verify C and Lua unit tests, including the stale-handle case (spec *Stale entity handle*, *Same seed, same random numbers*)
+- [x] 5.6 Implement mod manifests (`mod.lua` in a data-only sandbox), dependency and load-order resolution and the API-version check; verify tests for an incompatible mod being skipped with a message (spec *Incompatible mod*)
 - [x] 5.7 Implement the script-driven boot (`scripts/main.lua`) and a minimal base-game boot script; verify a headless test that a mod's `main.lua` replaces the base one (spec *Replacing the boot script*)
-- [ ] 5.8 Implement the Lua unit-test runner (`--test-lua`, `prts.test` assertions, JUnit XML) and Lua coverage mode (line hook + prototype walk → lcov); add the 95% Lua gate to `linux-coverage`; verify the base-game Lua tests run in CI and the gate fails when an untested function is added (spec *Running base game tests*, *Lua coverage report*)
-- [ ] 5.9 Implement hot reload in developer mode (file watching through the VFS, re-run modules, keep entity script data, replace named handlers, `on_reload`); verify a desktop integration test that edits a script file and checks the changed behavior (spec *Changing a door script while playing*)
-- [ ] 5.10 Document the M1 scripting API in `docs/modding/api-m1.md`; verify every `prts.*` function in the bindings appears in the document (checked by a script in `checks`)
+- [x] 5.8 Implement the Lua unit-test runner (`--test-lua`, `prts.test` assertions, JUnit XML) and Lua coverage mode (line hook + prototype walk → lcov); add the 95% Lua gate to `linux-coverage`; verify the base-game Lua tests run in CI and the gate fails when an untested function is added (spec *Running base game tests*, *Lua coverage report*)
+- [x] 5.9 Implement hot reload in developer mode (file watching through the VFS, re-run modules, keep entity script data, replace named handlers, `on_reload`); verify a desktop integration test that edits a script file and checks the changed behavior (spec *Changing a door script while playing*)
+- [x] 5.10 Document the M1 scripting API in `docs/modding/api-m1.md`; verify every `prts.*` function in the bindings appears in the document (checked by a script in `checks`)
 
 ## 6. Simulation core
 
 - [x] 6.1 Implement the fixed 30 Hz tick with accumulator, the catch-up limit and interpolation factors; verify unit tests with simulated frame times of 1/30 s, 1/144 s and 1 s (spec *Different frame rates, same simulation*, *Very slow frame*)
 - [ ] 6.2 Implement the entity store with index+generation handles, component arrays (transform, frame, body, collider, render, light, audio_source, door, platform, trigger, script) and events; verify unit tests including slot reuse (spec *Slot reuse*)
-- [ ] 6.3 Implement script components with plain-data checks; verify tests that functions and userdata are rejected when the state is serialized
+- [x] 6.3 Implement script components with plain-data checks; verify tests that functions and userdata are rejected when the state is serialized
 - [x] 6.4 Implement the reference-frame tree with double-precision world transforms, frame volumes and reparenting that keeps world transform and velocity; verify unit tests (spec *Riding a moving frame*, *Changing parent without a jump*)
 - [x] 6.5 Implement the 64-bit state hash over all simulation state; verify a test that a 1 mm position change changes the hash (spec *Divergence is detected*)
-- [ ] 6.6 Implement replay recording (start snapshot + per-tick inputs + look direction) and playback; verify a determinism test in `tests/game/determinism/` that records a Proving Ground walk and replays it with matching hashes (spec *Record and replay*, *Two identical runs*)
+- [x] 6.6 Implement replay recording (start snapshot + per-tick inputs + look direction) and playback; verify a determinism test in `tests/game/determinism/` that records a Proving Ground walk and replays it with matching hashes (spec *Record and replay*, *Two identical runs*)
 
 ## 7. Renderer
 
@@ -86,7 +86,7 @@
 - [ ] 10.1 Implement greybox brushes (box, wedge, stairs, door frame, window frame) defined in Lua, generating meshes, collision, cells and portals (design D9); verify unit tests of the generated geometry
 - [ ] 10.2 Build the Proving Ground: ≥ 1 km × 1 km terrain, dusk lighting, the three-storey keep (great hall, side rooms, spiral stair, hoist lift, war room with a placeholder war table), a `.vox` crate, a person sprite and a forge room; verify the scenario test *Reaching the war room*
 - [ ] 10.3 Create the placeholder art (textures, sprite sheet, voxel crate, sounds, music loop, bitmap font) as original CC BY 4.0 work with `data/base/CREDITS.md` entries; verify the asset validator passes
-- [ ] 10.4 Implement `tools/validate-assets` (credits coverage, references resolve, formats parse, manifests valid) and add it to `checks`; verify it fails on an uncredited fixture file (spec *Uncredited asset detected*)
+- [x] 10.4 Implement `tools/validate-assets` (credits coverage, references resolve, formats parse, manifests valid) and add it to `checks`; verify it fails on an uncredited fixture file (spec *Uncredited asset detected*)
 - [ ] 10.5 Write the commander-is-there smoke scenario set (walk, stairs, door, lift, war table) and run it in CI on Windows, Linux, macOS and web; verify all report passed with the same final cell (spec *Same scenario result on desktop and web*)
 
 ## 11. Audio
@@ -106,19 +106,19 @@
 
 ## 13. Web platform and WebXR
 
-- [ ] 13.1 Spike the WebXR frame-driver handoff: `web/prts_xr.js` starts a session, pauses SDL's loop, drives `prts_frame()` from the XR session and resumes SDL's loop on end; verify with the `navigator.xr` mock in Playwright (spec *Entering VR*, *Session ended by the headset*)
+- [x] 13.1 Spike the WebXR frame-driver handoff: `web/prts_xr.js` starts a session, pauses SDL's loop, drives `prts_frame()` from the XR session and resumes SDL's loop on end; verify with the `navigator.xr` mock in Playwright (spec *Entering VR*, *Session ended by the headset*)
 - [ ] 13.2 Implement the XR interface in `xr/` (session state, eye views into the renderer's view list, controller poses and buttons into the action mapper, pointer rays); verify unit tests with recorded pose fixtures (spec *Pulling the lift lever*)
 - [ ] 13.3 Implement XR body handling: head offset within the play area, collision push-back for the head, seated mode; verify unit tests (spec *Leaning toward a wall*)
 - [ ] 13.4 Implement comfort options (smooth and teleport movement, snap and smooth turn, vignette) and XR effect defaults; verify unit tests and a Playwright XR-mock test (spec *Teleport movement*, *Comfort defaults*)
-- [ ] 13.5 Implement XR availability detection and the "Enter VR" control, hidden when unsupported; verify Playwright tests with and without the mock (spec *No XR support*)
+- [x] 13.5 Implement XR availability detection and the "Enter VR" control, hidden when unsupported; verify Playwright tests with and without the mock (spec *No XR support*)
 - [ ] 13.6 Add the browser end-to-end suite (desktop boot and keyboard, mobile emulation, XR mock) to the `web` job with test hooks enabled only by `?test=1` in test builds; verify all tests pass in CI
-- [ ] 13.7 Write `docs/testing/xr-checklist.md` and `docs/testing/mobile-checklist.md` (manual checks on real headsets and phones); verify the checklists cover every scenario in `xr-presentation` and the touch scenarios in `input-actions`
+- [x] 13.7 Write `docs/testing/xr-checklist.md` and `docs/testing/mobile-checklist.md` (manual checks on real headsets and phones); verify the checklists cover every scenario in `xr-presentation` and the touch scenarios in `input-actions`
 
 ## 14. Packaging and integration
 
 - [ ] 14.1 Implement the `package` job: desktop archives (executable + `data/` + `LICENSE`, `LICENSE-ASSETS`, `LICENSING.md`, third-party licenses) and the web bundle; verify an extract-and-run smoke test on each desktop platform (spec *Extract and run*, *Licenses included*)
 - [x] 14.2 Run the headless runner on a display-less CI machine with the Proving Ground; verify exit status 0 (spec *Headless on a server*)
-- [ ] 14.3 Check that every scenario in this change's specs is linked to at least one automated test (a mapping table in `tests/README.md`, checked by a script in `checks`); verify the script passes
+- [x] 14.3 Check that every scenario in this change's specs is linked to at least one automated test (a mapping table in `tests/README.md`, checked by a script in `checks`); verify the script passes
 - [x] 14.4 Update `README.md` with build, run and test instructions for every platform; verify the documented commands work as written in a clean checkout
 - [ ] 14.5 Run `openspec validate --strict` and the full CI pipeline on the final branch; verify everything is green and both coverage gates are ≥ 95%
 

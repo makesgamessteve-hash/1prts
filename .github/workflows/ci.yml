@@ -43,6 +43,11 @@ jobs:
           path: |
             build/coverage/golden-out/
             build/coverage/golden-diff/
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: junit-linux
+          path: build/coverage/junit/
 
   linux-sanitize:
     runs-on: ubuntu-24.04
@@ -67,7 +72,7 @@ jobs:
       - run: cmake --preset release -DCMAKE_C_COMPILER=cl
       - run: cmake --build --preset release
       - name: Headless tests (Lua and scenarios)
-        run: ctest --test-dir build/release -E "render_tour|prts_unit_tests" --output-on-failure
+        run: ctest --test-dir build/release -LE gl -E prts_unit_tests --output-on-failure
       - run: build/release/bin/prts_tests.exe
 
   macos:
@@ -77,7 +82,7 @@ jobs:
       - run: brew install ninja
       - run: cmake --preset release && cmake --build --preset release
       - name: Unit, Lua and scenario tests (headless)
-        run: ctest --test-dir build/release -E render_tour --output-on-failure
+        run: ctest --test-dir build/release -LE gl --output-on-failure
 
   web:
     runs-on: ubuntu-24.04
@@ -125,5 +130,13 @@ jobs:
         run: npx openspec validate --all --strict
       - name: Engine layering rules
         run: python3 -I tools/check_layering.py
-      - name: Asset credits and references
+      - name: Asset credits, references, formats and manifests
         run: python3 -I tools/validate_assets.py
+      - name: Scripting API documentation (every prts.* function in docs/modding/api-m1.md)
+        run: python3 -I tools/check_api_docs.py
+      - name: Spec scenarios linked to tests (tests/README.md)
+        run: python3 -I tools/check_spec_coverage.py
+      - name: Self-tests of the checks
+        run: |
+          python3 -I tools/tests/test_validate_assets.py
+          python3 -I tools/tests/test_check_scripts.py

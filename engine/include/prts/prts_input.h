@@ -72,4 +72,9 @@ prts_input_scheme prts_input_scheme_active(const prts_input *in);
 bool prts_input_take_scheme_changed(prts_input *in);
 void prts_input_set_scheme(prts_input *in, prts_input_scheme s);
 
+/* Replays: the state of action `index` as a simulation tick sees it (value and whether it
+ * was pressed since the last tick), and forcing that state during playback. */
+void prts_input_tick_state(const prts_input *in, int index, float *value, bool *pressed);
+void prts_input_set_tick_state(prts_input *in, int index, float value, bool pressed);
+
 #endif

@@ -28,6 +28,11 @@ const char *prts_args_usage(void)
            "  --scenario <file>     run an automated game test and exit\n"
            "  --out <dir>           where scenario screenshots are written\n"
            "  --lua-coverage <file> write Lua line coverage (lcov) on exit\n"
+           "  --junit <file>        write a JUnit XML report (with --test-lua, --scenario, --replay)\n"
+           "  --record <file>       record a replay of this run\n"
+           "  --replay <file>       play back a replay and check its state hashes\n"
+           "  --hot-reload          reload changed Lua modules (developer builds; on by default\n"
+           "                        when playing interactively)\n"
            "  --version, --help\n";
 }
 
@@ -47,7 +52,8 @@ int prts_args_parse(int argc, char **argv, prts_engine_config *cfg, char *err, s
         const char *v = i + 1 < argc ? argv[i + 1] : NULL;
         bool takes = strcmp(a, "--data") == 0 || strcmp(a, "--user") == 0 || strcmp(a, "--mod") == 0 ||
                      strcmp(a, "--size") == 0 || strcmp(a, "--seed") == 0 || strcmp(a, "--ticks") == 0 ||
-                     strcmp(a, "--scenario") == 0 || strcmp(a, "--out") == 0 || strcmp(a, "--lua-coverage") == 0;
+                     strcmp(a, "--scenario") == 0 || strcmp(a, "--out") == 0 || strcmp(a, "--lua-coverage") == 0 ||
+                     strcmp(a, "--junit") == 0 || strcmp(a, "--record") == 0 || strcmp(a, "--replay") == 0;
         if (takes && !v) {
             snprintf(err, err_size, "option %s needs a value", a);
             return 1;
@@ -79,6 +85,22 @@ int prts_args_parse(int argc, char **argv, prts_engine_config *cfg, char *err, s
         } else if (strcmp(a, "--lua-coverage") == 0) {
             cfg->lua_coverage = v;
             i++;
+        } else if (strcmp(a, "--junit") == 0) {
+            cfg->junit = v;
+            i++;
+        } else if (strcmp(a, "--record") == 0) {
+            cfg->record = v;
+            i++;
+        } else if (strcmp(a, "--replay") == 0) {
+            cfg->replay = v;
+            i++;
+        } else if (strcmp(a, "--hot-reload") == 0) {
+#if defined(PRTS_DEV)
+            cfg->hot_reload = true;
+#else
+            snprintf(err, err_size, "--hot-reload is only available in developer builds");
+            return 1;
+#endif
         } else if (strcmp(a, "--mod") == 0) {
             if (cfg->mod_count >= PRTS_MAX_MODS) {
                 snprintf(err, err_size, "too many --mod options (at most %d)", PRTS_MAX_MODS);
@@ -109,6 +131,10 @@ int prts_args_parse(int argc, char **argv, prts_engine_config *cfg, char *err, s
             snprintf(err, err_size, "unknown option '%s'\n%s", a, prts_args_usage());
             return 1;
         }
+    }
+    if (cfg->replay && (cfg->record || cfg->scenario || cfg->test_lua)) {
+        snprintf(err, err_size, "--replay cannot be combined with --record, --scenario or --test-lua");
+        return 1;
     }
     return 0;
 }

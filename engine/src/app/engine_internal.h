@@ -9,6 +9,7 @@
 #include "prts/prts_engine.h"
 #include "prts/prts_gfx.h"
 #include "prts/prts_input.h"
+#include "prts/prts_jobs.h"
 #include "prts/prts_platform.h"
 #include "prts/prts_model.h"
 #include "prts/prts_scene.h"
@@ -17,6 +18,8 @@
 #include "prts/prts_world.h"
 
 #define PRTS_TICK_HZ 30
+/* Registry key of the per-entity script data table (prts.entity.data). */
+#define PRTS_REG_EDATA "prts.edata"
 
 struct prts_engine {
     prts_engine_config cfg;
@@ -50,6 +53,13 @@ struct prts_engine {
     uint64_t scenario_ticks;
     uint64_t scenario_max_ticks;
     prts_array move_done; /* prts_entity: movers that finished this tick */
+    char *mod_versions[PRTS_MAX_MODS + 1]; /* per VFS mount (base first), from mod.lua */
+    /* infrastructure: jobs, test reports (report.c), saves and replays (replay.c), hot reload */
+    prts_jobs *jobs;
+    struct prts_report *report;
+    struct prts_replay *replay;
+    bool hot_reload;
+    double reload_timer;
 };
 
 void prts_engine_open_game_api(prts_engine *e);
@@ -67,5 +77,7 @@ void prts_engine_audio_frame(prts_engine *e, double real_seconds, double alpha);
 bool prts_engine_start_scenario(prts_engine *e, const char *real_path);
 void prts_engine_scenario_step(prts_engine *e);
 int prts_engine_run_lua_tests(prts_engine *e);
+/* Ends an unfinished test case and writes the --junit report. */
+void prts_engine_finish_report(prts_engine *e);
 
 #endif
