@@ -104,6 +104,8 @@ static void fail(char *err, size_t err_size, const char *msg)
     snprintf(err, err_size, "%s", msg);
 }
 
+static void resume_audio(void *audio) { prts_audio_resume(audio); }
+
 prts_engine *prts_engine_create(const prts_engine_config *cfg, char *err, size_t err_size)
 {
     prts_str searched = {0};
@@ -173,6 +175,7 @@ prts_engine *prts_engine_create(const prts_engine_config *cfg, char *err, size_t
     }
 
     e->audio = prts_audio_create(e->vfs, !cfg->headless, NULL);
+    prts_platform_set_gesture_handler(resume_audio, e->audio); /* browsers: audio after a click */
 
     prts_engine_open_game_api(e);
     prts_engine_open_audio_api(e);
@@ -200,6 +203,7 @@ void prts_engine_destroy(prts_engine *e)
     if (e->cfg.lua_coverage && e->script) prts_script_write_coverage(e->script, e->cfg.lua_coverage);
     prts_script_destroy(e->script);
     prts_gfx_destroy(e->gfx);
+    prts_platform_set_gesture_handler(NULL, NULL);
     prts_audio_destroy(e->audio);
     prts_platform_destroy(e->platform);
     prts_input_destroy(e->input);
@@ -265,9 +269,18 @@ static void apply_look(prts_engine *e)
 static void render_frame(prts_engine *e, double alpha)
 {
     if (!e->platform) return;
-    /* TODO(renderer, WebXR): while an XR session runs (prts_xr_get()->active, prts_xr.h), draw
-     * each of xr->views into xr->framebuffer (viewport per view) with the multi-view renderer.
-     * Until that is connected, the flat camera below is drawn to the page canvas only. */
+    const prts_xr *xr = prts_xr_get();
+    if (xr->active && e->has_commander) {
+        /* WebXR: both eyes into the session's framebuffer; the browser presents it */
+        prts_view views[PRTS_XR_MAX_VIEWS];
+        prts_dvec3 eye = prts_commander_eye(&e->commander, e->world, alpha);
+        prts_dvec3 feet = prts_dv3(eye.x, eye.y - e->commander.eye, eye.z);
+        int n = prts_xr_build_views(xr, feet, e->commander.yaw, views, PRTS_XR_MAX_VIEWS);
+        if (n > 0) {
+            prts_gfx_render_views(e->gfx, e->scene, e->world, views, n, &e->render, alpha, e->time);
+            return;
+        }
+    }
     int w = 0, h = 0;
     prts_platform_drawable_size(e->platform, &w, &h);
     prts_camera cam = {prts_dv3(0, 1.7, 0), 0.0f, 0.0f};

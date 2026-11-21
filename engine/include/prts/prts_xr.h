@@ -3,6 +3,7 @@
 #define PRTS_XR_H
 
 #include "prts_base.h"
+#include "prts_gfx.h"
 
 #define PRTS_XR_MAX_VIEWS 2
 #define PRTS_XR_MAX_CONTROLLERS 2
@@ -69,6 +70,10 @@ void prts_xr_begin(prts_xr *xr, unsigned framebuffer, int fb_width, int fb_heigh
 /* The session ended (from the game, the browser or the headset): views and controllers are
  * cleared, the counters are kept. */
 void prts_xr_end(prts_xr *xr);
+/* The renderer views of the current XR frame: the reference space (local-floor) is anchored
+ * at `origin` (the commander's feet) and turned by `yaw`, so the player walks and turns the
+ * commander as usual and the headset adds head motion on top. Returns the number of views. */
+int prts_xr_build_views(const prts_xr *xr, prts_dvec3 origin, float yaw, prts_view *out, int max);
 
 /* Packed frame data, as the web glue (web/prts_xr.js) writes it into a float array once per
  * XR frame. All offsets are in floats. Flags are 0 or 1; counts are clamped when read. */

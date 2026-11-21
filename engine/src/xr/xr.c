@@ -101,3 +101,35 @@ bool prts_xr_apply_frame(prts_xr *xr, const float *data, size_t count)
     }
     return true;
 }
+
+int prts_xr_build_views(const prts_xr *xr, prts_dvec3 origin, float yaw, prts_view *out, int max)
+{
+    int n = 0;
+    for (int i = 0; i < xr->view_count && i < PRTS_XR_MAX_VIEWS && n < max; i++) {
+        const prts_xr_view *xv = &xr->views[i];
+        const float *m = xv->view, *p = xv->projection;
+        if (p[0] == 0.0f || p[5] == 0.0f) continue; /* not a perspective projection */
+        prts_view *v = &out[n++];
+        /* the eye in the reference space: -R^T t of the rigid view matrix [R t] */
+        prts_vec3 eye;
+        float *e = &eye.x;
+        for (int k = 0; k < 3; k++) e[k] = -(m[k * 4 + 0] * m[12] + m[k * 4 + 1] * m[13] + m[k * 4 + 2] * m[14]);
+        prts_vec3 w = prts_v3_rotate_y(eye, yaw);
+        v->eye = prts_dv3(origin.x + w.x, origin.y + w.y, origin.z + w.z);
+        prts_mat4 rot;
+        memcpy(rot.m, m, sizeof(rot.m));
+        rot.m[12] = rot.m[13] = rot.m[14] = 0.0f;
+        v->rotation = prts_mat4_mul(rot, prts_mat4_rotate_y(-yaw));
+        /* frustum extents at distance 1 from an off-axis perspective projection */
+        v->tan_left = (p[8] - 1.0f) / p[0];
+        v->tan_right = (p[8] + 1.0f) / p[0];
+        v->tan_down = (p[9] - 1.0f) / p[5];
+        v->tan_up = (p[9] + 1.0f) / p[5];
+        v->framebuffer = xr->framebuffer;
+        v->x = xv->viewport[0];
+        v->y = xv->viewport[1];
+        v->w = xv->viewport[2];
+        v->h = xv->viewport[3];
+    }
+    return n;
+}

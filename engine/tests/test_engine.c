@@ -7,6 +7,7 @@
 #include "app/engine_internal.h"
 #include "prts/prts_fs.h"
 #include "prts/prts_log.h"
+#include "prts/prts_xr.h"
 #include "utest.h"
 
 #define FIX PRTS_TEST_FIXTURES
@@ -388,6 +389,27 @@ UTEST(gfx, windowed_engine_renders_and_recovers_from_broken_content)
     eyes[1].x = 160;
     prts_gfx_render_views(e->gfx, e->scene, e->world, eyes, 2, &e->render, 1.0, 0.0);
     ASSERT_EQ(2, prts_gfx_last_view_count(e->gfx));
+    /* Spec: Stereo views from the headset. A WebXR frame (here into the window) draws both
+     * eyes at the commander's position instead of the flat view. */
+    e->cfg.ticks = 0; /* keep running past the configured tick limit */
+    e->quit = false;
+    prts_xr *xr = prts_xr_get();
+    prts_xr_begin(xr, 0, 320, 180);
+    xr->view_count = 2;
+    for (int i = 0; i < 2; i++) {
+        prts_mat4 id = prts_mat4_identity(), proj = prts_mat4_frustum(-1.0f, 1.0f, -1.0f, 1.0f, 0.1f, 100.0f);
+        memcpy(xr->views[i].view, id.m, sizeof(id.m));
+        xr->views[i].view[12] = i ? -0.032f : 0.032f;
+        xr->views[i].view[13] = -1.6f;
+        memcpy(xr->views[i].projection, proj.m, sizeof(proj.m));
+        int vp[4] = {i * 160, 0, 160, 180};
+        memcpy(xr->views[i].viewport, vp, sizeof(vp));
+    }
+    ASSERT_TRUE(prts_engine_frame(e, 1.0 / 30.0));
+    ASSERT_EQ(2, prts_gfx_last_view_count(e->gfx));
+    prts_xr_end(xr);
+    ASSERT_TRUE(prts_engine_frame(e, 1.0 / 30.0));
+    ASSERT_EQ(1, prts_gfx_last_view_count(e->gfx));
     prts_gfx_reload_shaders(e->gfx);
     SDL_Event ev;
     memset(&ev, 0, sizeof(ev));

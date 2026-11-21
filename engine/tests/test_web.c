@@ -221,6 +221,10 @@ UTEST(engine, status_for_test_hooks_and_scheme_hint)
     ASSERT_EQ(PRTS_VFS_OK, prts_vfs_user_read(vfs, "settings/hook.txt", &text, NULL));
     ASSERT_STREQ("on", text);
     prts_free(text);
+    /* a click on the page resumes the engine's audio device (spec: First click starts music) */
+    unsigned gestures = prts_platform_gesture_count();
+    prts_platform_user_gesture();
+    ASSERT_EQ(gestures + 1, prts_platform_gesture_count());
     prts_engine_destroy(e);
 
     e = boot_headless(PRTS_TEST_FIXTURES "/data_tests", err);
@@ -229,4 +233,56 @@ UTEST(engine, status_for_test_hooks_and_scheme_hint)
     ASSERT_FALSE(s.has_commander);
     ASSERT_EQ(0.0, s.commander[0]);
     prts_engine_destroy(e);
+}
+
+UTEST(xr, eye_views_follow_the_commander)
+{
+    prts_xr xr;
+    prts_xr_reset(&xr);
+    prts_xr_begin(&xr, 7, 2000, 1000);
+    xr.view_count = 2;
+    for (int i = 0; i < 2; i++) {
+        prts_xr_view *v = &xr.views[i];
+        memset(v, 0, sizeof(*v));
+        /* eyes 1.6 m up, 3 cm left/right, looking along -z: view = translate(-eye) */
+        v->view[0] = v->view[5] = v->view[10] = v->view[15] = 1.0f;
+        v->view[12] = i ? -0.03f : 0.03f;
+        v->view[13] = -1.6f;
+        /* an off-axis projection: 45 degrees out, 40 in, 40 up and down */
+        float l = -tanf(i ? 0.70f : 0.79f), r = tanf(i ? 0.79f : 0.70f), b = -tanf(0.70f), t = tanf(0.70f);
+        v->projection[0] = 2.0f / (r - l);
+        v->projection[5] = 2.0f / (t - b);
+        v->projection[8] = (r + l) / (r - l);
+        v->projection[9] = (t + b) / (t - b);
+        v->projection[10] = -1.0f;
+        v->projection[11] = -1.0f;
+        v->viewport[0] = i * 1000;
+        v->viewport[2] = 1000;
+        v->viewport[3] = 1000;
+    }
+    prts_view views[2];
+    /* the commander stands at (10, 0, 5), turned 90 degrees left (looking along -x) */
+    ASSERT_EQ(2, prts_xr_build_views(&xr, prts_dv3(10, 0, 5), (float)PRTS_PI / 2, views, 2));
+    ASSERT_NEAR(10.0, views[0].eye.x, 1e-5);
+    ASSERT_NEAR(1.6, views[0].eye.y, 1e-5);
+    ASSERT_NEAR(5.03, views[0].eye.z, 1e-5); /* the left eye is towards +z when facing -x */
+    ASSERT_NEAR(4.97, views[1].eye.z, 1e-5);
+    ASSERT_NEAR(-tanf(0.79f), views[0].tan_left, 1e-5f);
+    ASSERT_NEAR(tanf(0.70f), views[0].tan_right, 1e-5f);
+    ASSERT_NEAR(tanf(0.70f), views[0].tan_up, 1e-5f);
+    ASSERT_NEAR(-tanf(0.70f), views[0].tan_down, 1e-5f);
+    ASSERT_EQ(7u, views[1].framebuffer);
+    ASSERT_EQ(1000, views[1].x);
+    /* the eye's forward direction in the world: -x */
+    prts_vec3 fwd_view = prts_v3(0, 0, -1);
+    const float *r = views[0].rotation.m; /* world -> view; its transpose maps view -> world */
+    prts_vec3 fwd = prts_v3(r[0] * fwd_view.x + r[1] * fwd_view.y + r[2] * fwd_view.z,
+                            r[4] * fwd_view.x + r[5] * fwd_view.y + r[6] * fwd_view.z,
+                            r[8] * fwd_view.x + r[9] * fwd_view.y + r[10] * fwd_view.z);
+    ASSERT_NEAR(-1.0f, fwd.x, 1e-5f);
+    ASSERT_NEAR(0.0f, fwd.z, 1e-5f);
+    /* at most `max` views, and broken projections are skipped */
+    ASSERT_EQ(1, prts_xr_build_views(&xr, prts_dv3(0, 0, 0), 0, views, 1));
+    xr.views[1].projection[0] = 0.0f;
+    ASSERT_EQ(1, prts_xr_build_views(&xr, prts_dv3(0, 0, 0), 0, views, 2));
 }
