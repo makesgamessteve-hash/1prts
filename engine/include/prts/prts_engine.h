@@ -17,6 +17,9 @@ typedef struct prts_engine_config {
     const char *scenario;     /* real path of a scenario test to run */
     const char *out_dir;      /* where scenario screenshots go */
     const char *lua_coverage; /* write Lua line coverage (lcov) here on exit */
+    const char *start_map;    /* start this map at once instead of showing the front-end menu */
+    bool front_end;           /* show the front-end menu even in test and batch runs */
+    bool no_dev;              /* turn developer features off (tests of release behavior) */
     uint64_t seed;
     int ticks;                /* stop after this many ticks (0: run until quit) */
     int width, height;

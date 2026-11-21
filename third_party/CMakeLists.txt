@@ -18,3 +18,15 @@ target_include_directories(prts_stb SYSTEM INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}
 
 add_library(prts_utest INTERFACE)
 target_include_directories(prts_utest SYSTEM INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/utest)
+
+add_library(prts_microui STATIC ${CMAKE_CURRENT_SOURCE_DIR}/microui/microui.c)
+target_include_directories(prts_microui SYSTEM PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/microui)
+set_target_properties(prts_microui PROPERTIES C_STANDARD 11 POSITION_INDEPENDENT_CODE ON)
+if(MSVC)
+  target_compile_options(prts_microui PRIVATE /W0)
+else()
+  # microui packs its draw commands without padding; that is fine on every target we
+  # build for, so the sanitizer's alignment check is left out for it (engine code reads the
+  # commands through aligned copies).
+  target_compile_options(prts_microui PRIVATE -w -fno-sanitize=alignment)
+endif()

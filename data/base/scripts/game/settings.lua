@@ -1,0 +1,81 @@
+-- Player settings with their defaults: video (retro preset and effects) and audio volumes.
+-- Values live in config.lua in the user area (prts.settings); only changes are stored, and
+-- they are applied at boot and whenever the options menu changes them. MIT License.
+local M = {}
+
+M.VIDEO = { preset = "retro", dither = true, snap = true, affine = false, fog = true, crosshair = true, fov = 70 }
+M.PRESETS = { "authentic", "retro", "crisp", "hd", "native" }
+M.PRESET_NAMES = {
+  authentic = "Authentic (180 lines)", retro = "Retro (270 lines)", crisp = "Crisp (360 lines)",
+  hd = "HD (540 lines)", native = "Native resolution",
+}
+M.BUSES = { "master", "music", "effects", "voice" }
+M.BUS_NAMES = { master = "Master", music = "Music", effects = "Effects", voice = "Voices" }
+
+-- The current video settings: saved values over the defaults (wrong types are ignored).
+function M.video()
+  local v = {}
+  for _, key in ipairs({ "preset", "dither", "snap", "affine", "fog", "crosshair", "fov" }) do
+    local saved = prts.settings.get("video." .. key)
+    v[key] = M.VIDEO[key]
+    if type(saved) == type(M.VIDEO[key]) then v[key] = saved end
+  end
+  return v
+end
+
+function M.apply_video()
+  local v = M.video()
+  prts.render.settings(v)
+  return v
+end
+
+-- Changes one video setting, applies it at once and (unless save is false) saves it.
+function M.set_video(key, value, save)
+  prts.settings.set("video." .. key, value)
+  M.apply_video()
+  if save ~= false then prts.settings.save() end
+end
+
+function M.next_preset(current)
+  for i, p in ipairs(M.PRESETS) do
+    if p == current then return M.PRESETS[i % #M.PRESETS + 1] end
+  end
+  return M.PRESETS[1]
+end
+
+function M.audio_volume(bus)
+  local v = prts.settings.get("audio." .. bus)
+  return type(v) == "number" and v or 1.0
+end
+
+-- The audio module's bus volume function, if this build has one.
+function M.audio_api()
+  local audio = prts.audio
+  if not audio then return nil end
+  return audio.set_volume or audio.set_bus_volume or audio.bus_volume
+end
+
+local function send_volume(bus, v)
+  local set = M.audio_api()
+  if set then pcall(set, bus, v) end
+  return set ~= nil
+end
+
+function M.apply_audio()
+  local applied = false
+  for _, bus in ipairs(M.BUSES) do applied = send_volume(bus, M.audio_volume(bus)) end
+  return applied
+end
+
+-- Volume sliders change continuously; the options menu saves when it is left.
+function M.set_audio(bus, v)
+  prts.settings.set("audio." .. bus, v)
+  return send_volume(bus, v)
+end
+
+function M.apply()
+  M.apply_video()
+  M.apply_audio()
+end
+
+return M

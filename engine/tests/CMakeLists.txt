@@ -23,8 +23,14 @@ file(GLOB PRTS_SCENARIOS CONFIGURE_DEPENDS ${CMAKE_SOURCE_DIR}/tests/game/scenar
 foreach(scenario ${PRTS_SCENARIOS})
   get_filename_component(name ${scenario} NAME_WE)
   prts_lua_cov_args(cov scenario_${name})
+  # A scenario can ask for extra options with a line "-- ctest-args: --front-end --mod x". Test
+  # mods (tests/game/mods) are installed into every scenario's user area.
+  file(STRINGS ${scenario} extra REGEX "^-- ctest-args: " LIMIT_COUNT 1)
+  string(REPLACE "-- ctest-args: " "" extra "${extra}")
+  separate_arguments(extra)
+  file(COPY ${CMAKE_SOURCE_DIR}/tests/game/mods DESTINATION ${CMAKE_BINARY_DIR}/test-user/${name})
   add_test(NAME scenario_${name}
-    COMMAND 1stprts --headless --scenario ${scenario} --user ${CMAKE_BINARY_DIR}/test-user/${name} ${cov})
+    COMMAND 1stprts --headless --scenario ${scenario} --user ${CMAKE_BINARY_DIR}/test-user/${name} ${extra} ${cov})
 endforeach()
 target_compile_definitions(prts_tests PRIVATE PRTS_TEST_TMP="${CMAKE_BINARY_DIR}/test-tmp")
 

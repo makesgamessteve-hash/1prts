@@ -15,6 +15,10 @@ typedef void (*prts_log_sink)(prts_log_level level, const char *message, void *u
 
 /* Replaces the log sink. NULL restores the default (stderr). */
 void prts_log_set_sink(prts_log_sink sink, void *user);
+/* Listeners get every message that passes the level filter, in addition to the sink
+ * (the developer console keeps its log view this way). At most 8; returns false when full. */
+bool prts_log_add_listener(prts_log_sink fn, void *user);
+void prts_log_remove_listener(prts_log_sink fn, void *user);
 void prts_log_set_min_level(prts_log_level level);
 #if defined(__GNUC__)
 __attribute__((format(printf, 2, 3)))

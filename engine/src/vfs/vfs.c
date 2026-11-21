@@ -156,6 +156,20 @@ prts_vfs_result prts_vfs_read(prts_vfs *vfs, const char *vpath, char **out_data,
     return ok ? PRTS_VFS_OK : PRTS_VFS_IO_ERROR;
 }
 
+prts_vfs_result prts_vfs_read_mount(prts_vfs *vfs, size_t mount, const char *vpath, char **out_data,
+                                    size_t *out_size)
+{
+    *out_data = NULL;
+    if (out_size) *out_size = 0;
+    if (!prts_vfs_path_valid(vpath)) return PRTS_VFS_INVALID_PATH;
+    prts_mount *m = mount < vfs->mounts.len ? prts_array_at(&vfs->mounts, mount) : NULL;
+    if (!m || !mount_has(m, vpath, false)) return PRTS_VFS_NOT_FOUND;
+    char *real = prts_path_join(m->dir, vpath);
+    bool ok = prts_fs_read_file(real, out_data, out_size);
+    prts_free(real);
+    return ok ? PRTS_VFS_OK : PRTS_VFS_IO_ERROR;
+}
+
 typedef struct list_entry {
     char *name;
     bool is_dir;

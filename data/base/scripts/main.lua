@@ -1,13 +1,17 @@
 -- 1stPRTS base game boot script. MIT License.
 -- The engine runs this file after mounting the data folder. Everything game-specific
--- (controls, the map, what the commander starts with) is decided here, not in the engine.
+-- (controls, menus, the map, what the commander starts with) is decided here, not in the engine.
 local input = require("input.defaults")
 input.apply()
+require("game.settings").apply()
+require("ui.touch").apply()
+require("ui.hud")
+local menu = require("ui.menu")
+local session = require("game.session")
 
-prts.render.settings{ preset = "retro", dither = true, snap = true, fog = true, crosshair = true, fov = 70 }
-
-local map = require("maps.proving_ground")
-map.build()
-
-prts.commander.spawn{ marker = "start" }
-prts.log.info("Proving Ground ready (scripting API " .. prts.api_version .. ")")
+-- Windowed runs show the front-end menu; test, batch and --start runs begin a map at once.
+if prts.boot.auto_start then
+  session.start(prts.boot.map or "proving_ground")
+else
+  menu.open("main")
+end

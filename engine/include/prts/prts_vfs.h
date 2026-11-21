@@ -31,6 +31,9 @@ const char *prts_vfs_mount_dir(const prts_vfs *vfs, size_t index);
 int prts_vfs_find(prts_vfs *vfs, const char *vpath);
 bool prts_vfs_exists(prts_vfs *vfs, const char *vpath);
 prts_vfs_result prts_vfs_read(prts_vfs *vfs, const char *vpath, char **out_data, size_t *out_size);
+/* Reads vpath from one mount only (for example every pack's CREDITS.md). */
+prts_vfs_result prts_vfs_read_mount(prts_vfs *vfs, size_t mount, const char *vpath, char **out_data,
+                                    size_t *out_size);
 
 /* Merged, sorted, de-duplicated listing of a virtual directory ("" for the root). */
 typedef void (*prts_vfs_list_fn)(const char *name, bool is_dir, void *user);

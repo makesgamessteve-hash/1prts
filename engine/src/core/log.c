@@ -8,6 +8,11 @@ static prts_log_sink g_sink;
 static void *g_sink_user;
 static prts_log_level g_min_level = PRTS_LOG_INFO;
 static size_t g_error_count;
+#define MAX_LISTENERS 8
+static struct {
+    prts_log_sink fn;
+    void *user;
+} g_listeners[MAX_LISTENERS];
 
 void prts_log_set_sink(prts_log_sink sink, void *user)
 {
@@ -16,6 +21,25 @@ void prts_log_set_sink(prts_log_sink sink, void *user)
 }
 
 void prts_log_set_min_level(prts_log_level level) { g_min_level = level; }
+
+bool prts_log_add_listener(prts_log_sink fn, void *user)
+{
+    for (int i = 0; i < MAX_LISTENERS; i++) {
+        if (!g_listeners[i].fn) {
+            g_listeners[i].fn = fn;
+            g_listeners[i].user = user;
+            return true;
+        }
+    }
+    return false;
+}
+
+void prts_log_remove_listener(prts_log_sink fn, void *user)
+{
+    for (int i = 0; i < MAX_LISTENERS; i++) {
+        if (g_listeners[i].fn == fn && g_listeners[i].user == user) g_listeners[i].fn = NULL;
+    }
+}
 
 const char *prts_log_level_name(prts_log_level level)
 {
@@ -38,6 +62,9 @@ void prts_logf(prts_log_level level, const char *fmt, ...)
     va_end(ap);
     if (g_sink) g_sink(level, buf, g_sink_user);
     else fprintf(stderr, "[%s] %s\n", prts_log_level_name(level), buf);
+    for (int i = 0; i < MAX_LISTENERS; i++) {
+        if (g_listeners[i].fn) g_listeners[i].fn(level, buf, g_listeners[i].user);
+    }
 }
 
 size_t prts_log_error_count(void) { return g_error_count; }
