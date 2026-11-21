@@ -5,52 +5,9 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "gfx/gl_api.h"
+#include "gfx/gfx_internal.h"
 #include "gfx/image.h"
 #include "prts/prts_log.h"
-
-#define MAX_LIGHTS 8
-#define FAR_LAYER_NEAR 25.0f
-#define FAR_LAYER_FAR 6000.0f
-#define NEAR_LAYER_NEAR 0.05f
-#define NEAR_LAYER_FAR 30.0f
-
-typedef struct gpu_mesh {
-    GLuint vao, vbo, ibo;
-    GLsizei count;
-    int material;
-    prts_entity owner;
-} gpu_mesh;
-
-typedef struct gpu_lines {
-    GLuint vao, vbo;
-    GLsizei count;
-    prts_vec3 color;
-    prts_entity owner;
-} gpu_lines;
-
-typedef struct texture_entry {
-    char path[PRTS_SCENE_PATH_MAX];
-    GLuint tex;
-} texture_entry;
-
-struct prts_gfx {
-    bool null;
-    bool gles;
-    prts_gl gl;
-    prts_vfs *vfs;
-    char info[256];
-    size_t shader_errors;
-    GLuint prog_world, prog_sky, prog_lines, prog_post, prog_fallback;
-    prts_array meshes;   /* gpu_mesh */
-    prts_array lines;    /* gpu_lines */
-    prts_array textures; /* texture_entry */
-    const prts_scene *uploaded_scene;
-    uint32_t uploaded_revision;
-    GLuint fbo, color_tex, depth_rb;
-    int fbo_w, fbo_h;
-    GLuint empty_vao;
-};
 
 void prts_render_settings_default(prts_render_settings *s)
 {
@@ -161,7 +118,7 @@ static GLuint link(prts_gfx *g, const char *vs_src, const char *fs_src, const ch
     return p;
 }
 
-static GLuint load_program(prts_gfx *g, const char *base)
+GLuint prts_gfx_load_program(prts_gfx *g, const char *base)
 {
     char vs_path[96], fs_path[96];
     snprintf(vs_path, sizeof(vs_path), "shaders/%s.vert", base);
@@ -194,10 +151,10 @@ void prts_gfx_reload_shaders(prts_gfx *g)
     delete_program(g, &g->prog_sky);
     delete_program(g, &g->prog_lines);
     delete_program(g, &g->prog_post);
-    g->prog_world = load_program(g, "world");
-    g->prog_sky = load_program(g, "sky");
-    g->prog_lines = load_program(g, "lines");
-    g->prog_post = load_program(g, "post");
+    g->prog_world = prts_gfx_load_program(g, "world");
+    g->prog_sky = prts_gfx_load_program(g, "sky");
+    g->prog_lines = prts_gfx_load_program(g, "lines");
+    g->prog_post = prts_gfx_load_program(g, "post");
 }
 
 /* --- lifecycle --------------------------------------------------------------- */
@@ -288,7 +245,7 @@ static GLuint upload_texture(prts_gfx *g, const unsigned char *rgba, int w, int 
     return t;
 }
 
-static GLuint get_texture(prts_gfx *g, const char *path)
+GLuint prts_gfx_texture(prts_gfx *g, const char *path)
 {
     for (size_t i = 0; i < g->textures.len; i++) {
         texture_entry *e = prts_array_at(&g->textures, i);
@@ -377,7 +334,7 @@ static void upload_scene(prts_gfx *g, const prts_scene *s)
         prts_array_push(&g->lines, &l);
     }
     g->gl.glBindVertexArray(0);
-    for (size_t i = 0; i < s->materials.len; i++) get_texture(g, ((prts_material *)prts_array_at(&s->materials, i))->texture);
+    for (size_t i = 0; i < s->materials.len; i++) prts_gfx_texture(g, ((prts_material *)prts_array_at(&s->materials, i))->texture);
     g->uploaded_scene = s;
     g->uploaded_revision = s->revision;
 }
@@ -413,11 +370,11 @@ static void ensure_target(prts_gfx *g, int w, int h)
 
 /* --- drawing ---------------------------------------------------------------- */
 
-static GLint loc(prts_gfx *g, GLuint p, const char *name) { return g->gl.glGetUniformLocation(p, name); }
+GLint prts_gfx_uniform(prts_gfx *g, GLuint p, const char *name) { return g->gl.glGetUniformLocation(p, name); }
 
 static void set_vec3(prts_gfx *g, GLuint p, const char *name, prts_vec3 v)
 {
-    g->gl.glUniform3f(loc(g, p, name), v.x, v.y, v.z);
+    g->gl.glUniform3f(prts_gfx_uniform(g, p, name), v.x, v.y, v.z);
 }
 
 typedef struct frame_ctx {
@@ -454,8 +411,8 @@ static void draw_sky(prts_gfx *g, const frame_ctx *f)
     set_vec3(g, p, "u_zenith", env->sky_zenith);
     set_vec3(g, p, "u_sun_dir", prts_v3_normalize(env->sun_dir));
     set_vec3(g, p, "u_sun_color", env->sun_color);
-    g->gl.glUniform1f(loc(g, p, "u_stars"), env->stars);
-    g->gl.glUniform1f(loc(g, p, "u_moons"), env->moons ? 1.0f : 0.0f);
+    g->gl.glUniform1f(prts_gfx_uniform(g, p, "u_stars"), env->stars);
+    g->gl.glUniform1f(prts_gfx_uniform(g, p, "u_moons"), env->moons ? 1.0f : 0.0f);
     g->gl.glBindVertexArray(g->empty_vao);
     g->gl.glDrawArrays(GL_TRIANGLES, 0, 3);
 }
@@ -486,15 +443,15 @@ static void draw_meshes(prts_gfx *g, const frame_ctx *f, prts_mat4 view_proj)
 {
     GLuint p = g->prog_world;
     g->gl.glUseProgram(p);
-    g->gl.glUniformMatrix4fv(loc(g, p, "u_view_proj"), 1, 0, view_proj.m);
+    g->gl.glUniformMatrix4fv(prts_gfx_uniform(g, p, "u_view_proj"), 1, 0, view_proj.m);
     const prts_scene_env *env = &f->scene->env;
     set_vec3(g, p, "u_sun_dir", prts_v3_normalize(env->sun_dir));
     set_vec3(g, p, "u_sun_color", env->sun_color);
     set_vec3(g, p, "u_ambient", env->ambient);
     set_vec3(g, p, "u_fog_color", env->fog_color);
-    g->gl.glUniform2f(loc(g, p, "u_fog_range"), env->fog_near, f->rs->fog ? env->fog_far : 1e9f);
-    g->gl.glUniform2f(loc(g, p, "u_snap"), f->rs->snap ? (float)f->iw * 0.5f : 0.0f, (float)f->ih * 0.5f);
-    g->gl.glUniform1f(loc(g, p, "u_affine"), f->rs->affine ? 1.0f : 0.0f);
+    g->gl.glUniform2f(prts_gfx_uniform(g, p, "u_fog_range"), env->fog_near, f->rs->fog ? env->fog_far : 1e9f);
+    g->gl.glUniform2f(prts_gfx_uniform(g, p, "u_snap"), f->rs->snap ? (float)f->iw * 0.5f : 0.0f, (float)f->ih * 0.5f);
+    g->gl.glUniform1f(prts_gfx_uniform(g, p, "u_affine"), f->rs->affine ? 1.0f : 0.0f);
     prts_light lights[MAX_LIGHTS];
     int n = pick_lights(f, lights);
     float pos[MAX_LIGHTS * 3] = {0}, col[MAX_LIGHTS * 3] = {0}, rad[MAX_LIGHTS] = {0};
@@ -508,18 +465,18 @@ static void draw_meshes(prts_gfx *g, const frame_ctx *f, prts_mat4 view_proj)
         col[i * 3 + 2] = lights[i].color.z;
         rad[i] = lights[i].radius;
     }
-    g->gl.glUniform3fv(loc(g, p, "u_light_pos"), MAX_LIGHTS, pos);
-    g->gl.glUniform3fv(loc(g, p, "u_light_color"), MAX_LIGHTS, col);
-    g->gl.glUniform1fv(loc(g, p, "u_light_radius"), MAX_LIGHTS, rad);
-    g->gl.glUniform1i(loc(g, p, "u_light_count"), n);
-    g->gl.glUniform1i(loc(g, p, "u_tex"), 0);
+    g->gl.glUniform3fv(prts_gfx_uniform(g, p, "u_light_pos"), MAX_LIGHTS, pos);
+    g->gl.glUniform3fv(prts_gfx_uniform(g, p, "u_light_color"), MAX_LIGHTS, col);
+    g->gl.glUniform1fv(prts_gfx_uniform(g, p, "u_light_radius"), MAX_LIGHTS, rad);
+    g->gl.glUniform1i(prts_gfx_uniform(g, p, "u_light_count"), n);
+    g->gl.glUniform1i(prts_gfx_uniform(g, p, "u_tex"), 0);
     g->gl.glActiveTexture(GL_TEXTURE0);
-    GLint model_loc = loc(g, p, "u_model"), emissive_loc = loc(g, p, "u_emissive");
+    GLint model_loc = prts_gfx_uniform(g, p, "u_model"), emissive_loc = prts_gfx_uniform(g, p, "u_emissive");
     for (size_t i = 0; i < g->meshes.len; i++) {
         gpu_mesh *m = prts_array_at(&g->meshes, i);
         if (m->owner != PRTS_ENTITY_NONE && !prts_world_alive(f->world, m->owner)) continue;
         const prts_material *mat = prts_array_at(&f->scene->materials, (size_t)m->material);
-        g->gl.glBindTexture(GL_TEXTURE_2D, get_texture(g, mat ? mat->texture : ""));
+        g->gl.glBindTexture(GL_TEXTURE_2D, prts_gfx_texture(g, mat ? mat->texture : ""));
         g->gl.glUniform1f(emissive_loc, mat && mat->emissive ? 1.0f : 0.0f);
         prts_mat4 model = owner_model(f, m->owner);
         g->gl.glUniformMatrix4fv(model_loc, 1, 0, model.m);
@@ -533,8 +490,8 @@ static void draw_lines(prts_gfx *g, const frame_ctx *f, prts_mat4 view_proj, dou
     if (g->lines.len == 0) return;
     GLuint p = g->prog_lines;
     g->gl.glUseProgram(p);
-    g->gl.glUniformMatrix4fv(loc(g, p, "u_view_proj"), 1, 0, view_proj.m);
-    g->gl.glUniform1f(loc(g, p, "u_time"), (float)fmod(time, 1000.0));
+    g->gl.glUniformMatrix4fv(prts_gfx_uniform(g, p, "u_view_proj"), 1, 0, view_proj.m);
+    g->gl.glUniform1f(prts_gfx_uniform(g, p, "u_time"), (float)fmod(time, 1000.0));
     g->gl.glEnable(GL_BLEND);
     g->gl.glBlendFunc(GL_SRC_ALPHA, GL_ONE);
     g->gl.glDepthMask(0);
@@ -542,7 +499,7 @@ static void draw_lines(prts_gfx *g, const frame_ctx *f, prts_mat4 view_proj, dou
         gpu_lines *l = prts_array_at(&g->lines, i);
         if (l->owner != PRTS_ENTITY_NONE && !prts_world_alive(f->world, l->owner)) continue;
         prts_mat4 model = owner_model(f, l->owner);
-        g->gl.glUniformMatrix4fv(loc(g, p, "u_model"), 1, 0, model.m);
+        g->gl.glUniformMatrix4fv(prts_gfx_uniform(g, p, "u_model"), 1, 0, model.m);
         set_vec3(g, p, "u_color", l->color);
         g->gl.glBindVertexArray(l->vao);
         g->gl.glDrawArrays(GL_LINES, 0, l->count);
@@ -600,10 +557,10 @@ void prts_gfx_render(prts_gfx *g, const prts_scene *scene, const prts_world *wor
     g->gl.glUseProgram(p);
     g->gl.glActiveTexture(GL_TEXTURE0);
     g->gl.glBindTexture(GL_TEXTURE_2D, g->color_tex);
-    g->gl.glUniform1i(loc(g, p, "u_scene"), 0);
-    g->gl.glUniform2f(loc(g, p, "u_size"), (float)f.iw, (float)f.ih);
-    g->gl.glUniform1f(loc(g, p, "u_dither"), rs->dither ? 1.0f : 0.0f);
-    g->gl.glUniform1f(loc(g, p, "u_crosshair"), rs->crosshair ? 1.0f : 0.0f);
+    g->gl.glUniform1i(prts_gfx_uniform(g, p, "u_scene"), 0);
+    g->gl.glUniform2f(prts_gfx_uniform(g, p, "u_size"), (float)f.iw, (float)f.ih);
+    g->gl.glUniform1f(prts_gfx_uniform(g, p, "u_dither"), rs->dither ? 1.0f : 0.0f);
+    g->gl.glUniform1f(prts_gfx_uniform(g, p, "u_crosshair"), rs->crosshair ? 1.0f : 0.0f);
     g->gl.glBindVertexArray(g->empty_vao);
     g->gl.glDrawArrays(GL_TRIANGLES, 0, 3);
     g->gl.glBindVertexArray(0);
