@@ -94,8 +94,10 @@ module.exports = [
       expect(first.held && first.mixed === 0, `audio was mixed before the click (held ${first.held}, ${first.mixed} s)`);
       expect(first.left === 0 && first.right === 0, `levels ${first.left}, ${first.right} before the click`);
       expect(first.musicFade === 0, `the music's fade-in ran on before the click (${first.musicFade})`);
-      await page.waitForTimeout(500);
-      expect(last.mixed === 0 && last.musicFade === 0 && last.frames > first.frames,
+      // a few more frames (waiting for them, not a fixed time: a slow runner draws fewer), and
+      // still nothing mixed and the music's fade-in not started
+      await until((a) => a.frames > first.frames + 5, 'more frames of the menu', 5000);
+      expect(last.mixed === 0 && last.musicFade === 0,
         `the held music moved on while waiting for the click (before ${JSON.stringify(first)}, after ${JSON.stringify(last)})`);
 
       const view = page.viewportSize();
