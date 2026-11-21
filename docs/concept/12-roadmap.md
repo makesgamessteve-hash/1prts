@@ -103,5 +103,5 @@ Full specification: [`openspec/changes/add-engine-foundation/`](../../openspec/c
   performance work for mobile and standalone headsets; full accessibility pass.
 
 ## M10 · Release 1.0
-- *The Skyfall Wars* campaign; the Custodians; first-person map and scenario editor;
-  modding guide and API reference; localization framework.
+- *The Skyfall Wars* campaign (prologue and acts in [15](15-story.md)); the Custodians;
+  first-person map and scenario editor; modding guide and API reference; localization framework.

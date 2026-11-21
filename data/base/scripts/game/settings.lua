@@ -1,5 +1,5 @@
--- Player settings with their defaults: video (retro preset and effects), audio volumes and VR
--- (comfort options and the video settings used in a headset).
+-- Player settings with their defaults: video (retro preset and effects), audio volumes, VR
+-- (comfort options and the video settings used in a headset) and game (the prologue).
 -- Values live in config.lua in the user area (prts.settings); only changes are stored, and
 -- they are applied at boot and whenever the options menu changes them. MIT License.
 local M = {}
@@ -55,6 +55,17 @@ end
 -- The VR settings: comfort options (xr.<key>) and video in the headset (xr.video.<key>).
 function M.xr() return read("xr.", M.XR) end
 function M.xr_video() return read("xr.video.", M.XR_VIDEO) end
+
+-- Game settings (game.<key>): whether a map started from the front-end menu opens with its
+-- prologue (a few spoken lines as the Marshal arrives).
+M.GAME = { prologue = true }
+function M.game() return read("game.", M.GAME) end
+
+-- Changes one game setting and (unless save is false) saves it; it is read when it matters.
+function M.set_game(key, value, save)
+  prts.settings.set("game." .. key, value)
+  if save ~= false then prts.settings.save() end
+end
 
 function M.apply_xr()
   local v = M.xr()

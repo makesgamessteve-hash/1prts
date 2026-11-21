@@ -11,5 +11,6 @@ xvfb-run -a ./build/dev/bin/1stprts --size 960x540 --scenario tests/game/scenari
 Credits screen, the touch controls (phone browsers) and the developer console with the
 labeled observer camera (developer builds only).
 
-These images show 1stPRTS art and are licensed under CC BY 4.0 like the rest of the art
-(see `LICENSING.md`). Credit: "1stPRTS screenshot" by The 1stPRTS Contributors.
+These images show Banner & Bastion art and are licensed under CC BY 4.0 like the rest of the
+art (see `LICENSING.md`). Credit: "Banner & Bastion screenshot" by The Banner & Bastion
+Contributors.

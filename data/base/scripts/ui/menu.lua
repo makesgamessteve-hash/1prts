@@ -1,10 +1,15 @@
 -- The front-end menu (start a map, options, credits, quit) and the pause menu while
 -- playing (Esc or Start). Menus take the pointer and stop game input while open. MIT License.
 local session = require("game.session")
+local settings = require("game.settings")
 local options = require("ui.options")
 local credits = require("ui.credits")
 
 local M = { screen = nil }
+
+-- The game's name (codename 1stPRTS) and its subtitle.
+M.TITLE = "Banner & Bastion"
+M.SUBTITLE = "War through a commander's eyes"
 
 local GOLD = { 240, 200, 120, 255 }
 local PALE = { 225, 214, 190, 255 }
@@ -51,16 +56,30 @@ local function list_window(title, w, h, buttons)
   end)
 end
 
+-- The largest whole-number scale (up to 4) at which the title fits the width, at least 1.
+function M.title_scale(w)
+  local scale = 4
+  while scale > 1 and prts.ui.text_width(M.TITLE) * scale > w - 16 do scale = scale - 1 end
+  return scale
+end
+
 function M.draw_title(w)
-  prts.ui.draw_text("1stPRTS", w / 2, 34, { align = "center", scale = 4, color = GOLD })
-  prts.ui.draw_text("A first-person fantasy RTS", w / 2, 74, { align = "center", color = PALE })
+  prts.ui.draw_text(M.TITLE, w / 2, 34, { align = "center", scale = M.title_scale(w), color = GOLD })
+  prts.ui.draw_text(M.SUBTITLE, w / 2, 74, { align = "center", color = PALE })
+end
+
+-- Starts a map from the menu: with its prologue unless the player turned it off.
+function M.start_map(id)
+  if not session.start(id, { prologue = settings.game().prologue }) then return false end
+  M.open(nil)
+  return true
 end
 
 function M.draw_main(w, h)
   M.draw_title(w)
   local buttons = {}
   for _, map in ipairs(session.maps) do
-    buttons[#buttons + 1] = { map.name, function() if session.start(map.id) then M.open(nil) end end }
+    buttons[#buttons + 1] = { map.name, function() M.start_map(map.id) end }
   end
   buttons[#buttons + 1] = { "Options", function() M.open("options") end }
   buttons[#buttons + 1] = { "Credits", function() M.open("credits") end }

@@ -1,23 +1,26 @@
-# 1stPRTS
+# Banner & Bastion
 
-**A first-person fantasy real-time strategy game.** In the tradition of classic fantasy RTS,
-serfs haul gold and timber, knights charge, giants hurl boulders, galleons trade broadsides and
-drakes burn the sky. You see all of it only through your commander's eyes. Keeps, mines, war
-galleons, siege towers, skyships, walking beast-fortresses and floating citadels are built at real
-size with real crews, and you can walk inside every one of them. Orders travel by enchanted
-sending stones, war horns, banners, messengers and face-to-face conversations. The look is retro
-3D: low-poly models, sprites and voxels.
+***War through a commander's eyes.*** Banner & Bastion (codename **1stPRTS**) is a first-person
+fantasy real-time strategy game. In the tradition of classic fantasy RTS, serfs haul gold and
+timber, knights charge, giants hurl boulders, galleons trade broadsides and drakes burn the sky.
+You see all of it only through your commander's eyes, and you lead the way a commander would:
+from your fortresses, with banners, war horns, enchanted sending stones, messengers and
+face-to-face orders. Keeps, mines, war galleons, siege towers, skyships, walking beast-fortresses
+and floating citadels are built at real size with real crews, and you can walk inside every one
+of them. The look is retro 3D: low-poly models, sprites and voxels.
 
 > **Status: M1 (engine foundation) nearly done.** The C engine runs on Windows, Linux, macOS
 > and in the browser (WebGL 2, touch controls on phones, WebXR). It loads all content from
-> `data/` and plays the **Proving Ground** in first person. You can walk the keep, open doors,
-> climb the stairs (including a spiral stair to the roof) and ride the hoist lift to the war
-> room with its live illusion table. Along the way: people sprites, glTF and voxel props,
-> positional sound with muffling behind closed doors, music, a front-end menu, options, credits,
-> saves and replays. See [`tasks.md`](openspec/changes/add-engine-foundation/tasks.md) for
+> `data/` and plays **Harrowmark** (the Proving Ground map), the Crown's border castle, in first
+> person. You arrive as its newly sworn Marshal: walk the keep, open doors, climb the stairs
+> (including a spiral stair to the roof), ride the hoist lift to the war room with its live
+> illusion table, and talk to the castle's people about the silent north
+> ([the story](docs/concept/15-story.md)). Along the way: people sprites, glTF and voxel props,
+> positional sound with muffling behind closed doors, music, subtitles, a front-end menu,
+> options, credits, saves and replays. See [`tasks.md`](openspec/changes/add-engine-foundation/tasks.md) for
 > which M1 tasks are done and how each was verified.
 
-![The Proving Ground at dusk](docs/screenshots/01_approach_at_dusk.png)
+![Harrowmark at dusk](docs/screenshots/01_approach_at_dusk.png)
 
 | | | |
 |---|---|---|
@@ -29,7 +32,7 @@ sending stones, war horns, banners, messengers and face-to-face conversations. T
 
 | | |
 |---|---|
-| 🎯 **Concept** | [`docs/concept/`](docs/concept/README.md): pitch, pillars, the commander, command and control, scale, units, economy, setting, art, controls, modding, roadmap, open questions |
+| 🎯 **Concept** | [`docs/concept/`](docs/concept/README.md): pitch, pillars, the commander, command and control, scale, units, economy, setting, art, controls, modding, roadmap, open questions, story |
 | 🏗️ **Architecture** | [`docs/architecture/`](docs/architecture/README.md): engine and script split, simulation, rendering, data and Lua API, quality and build |
 | 📐 **Specs** | [`openspec/`](openspec/): spec-driven development with [OpenSpec](https://github.com/Fission-AI/OpenSpec). The first change: [`add-engine-foundation`](openspec/changes/add-engine-foundation/proposal.md) |
 | ❓ **Open questions** | [`docs/concept/13-open-questions.md`](docs/concept/13-open-questions.md) |
@@ -68,9 +71,11 @@ cmake --build --preset dev
 ./build/dev/bin/1stprts       # data/ is copied next to the executable
 ```
 
-The game opens with the front-end menu (`--start proving_ground` goes straight to the map).
-Controls: WASD to move, mouse to look, Shift to run, Alt to sprint, Ctrl to crouch, Space to
-jump, E to use (doors, lift levers), Esc for the menu (options, credits, quit); a gamepad works
+The game opens with the front-end menu; starting Harrowmark there plays a short prologue (it
+can be turned off under Options, Game). `--start proving_ground` goes straight to the map,
+without it. Controls: WASD to move, mouse to look, Shift to run, Alt to sprint, Ctrl to crouch,
+Space to jump, E to use (doors, lift levers, talking to people), Esc for the menu (options,
+credits, quit); a gamepad works
 too, and every binding can be changed in Options. In developer builds the backquote key opens
 the developer console. `1stprts --help` lists the command-line options.
 

@@ -26,6 +26,7 @@ typedef struct prts_mod {
     char *id;
     char *dir;
     char *version_text;
+    char *title; /* the game's name for the window title (base game only), or NULL */
     uint32_t version[3];
     prts_array depends;    /* prts_mod_dep */
     prts_array load_after; /* char * */
@@ -49,8 +50,8 @@ void prts_mod_free(prts_mod *m);
  * targets first, ties by id), to order and returns how many there are. */
 size_t prts_mods_resolve(prts_mod *mods, size_t count, const prts_mod *base, size_t *order);
 
-/* Engine boot: checks the base game's manifest (fills err), and finds, checks, orders and
- * mounts the mods named with --mod. */
+/* Engine boot: checks the base game's manifest (fills err; its `title` names the window), and
+ * finds, checks, orders and mounts the mods named with --mod. */
 bool prts_engine_check_base(prts_engine *e, const char *dir, char *err, size_t err_size);
 void prts_engine_mount_mods(prts_engine *e);
 

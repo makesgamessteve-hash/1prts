@@ -182,7 +182,7 @@ prts_entity prts_commander_target(const prts_commander *c, const prts_world *w, 
         dir = c->xr.pointer_dir;
     }
     float dist = 0.0f;
-    int id = prts_cworld_raycast(cw, o, dir, c->p.reach, &dist);
+    int id = prts_cworld_raycast_use(cw, o, dir, c->p.reach, &dist);
     prts_entity e = prts_cworld_owner(cw, id);
     return prts_world_usable(w, e) ? e : PRTS_ENTITY_NONE;
 }

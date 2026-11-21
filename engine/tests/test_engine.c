@@ -188,6 +188,17 @@ UTEST(engine, game_api_from_scripts)
     ASSERT_STREQ("<error>", lua_eval(e, "prts.scene.model{ pos = {0,0,0} }"));
     ASSERT_STREQ("0.84", lua_eval(e, "(function() local ok, b = prts.scene.model{ path = 'models/crate.vox', pos = {0,0,80}, "
                                     "scale = 0.07, solid = true } return string.format('%.2f', b.max[2] - b.min[2]) end)()"));
+    /* an invisible box needs no material; a use-only box stops only the use ray (a person) */
+    ASSERT_STREQ("true", lua_eval(e, "prts.scene.box{ min = {0,0,90}, max = {1,1,91}, visible = false } >= 0"));
+    ASSERT_STREQ("true", lua_eval(e, "(function() local p = prts.entity.spawn{ name = 'talker', pos = {0,0,37}, usable = true } "
+                                    "return prts.scene.box{ min = {-0.3,0,-0.3}, max = {0.3,1.8,0.3}, entity = p, "
+                                    "visible = false, use_only = true } >= 0 end)()"));
+    prts_cworld_sync(e->cworld, e->world);
+    ASSERT_STREQ("talker", lua_eval(e, "(function() prts.commander.spawn{ pos = {0,0,39}, yaw = 0 } "
+                                      "return select(2, prts.commander.target()) end)()"));
+    prts_aabb walk = prts_aabb_make(prts_v3(-0.2f, 0.5f, 36.8f), prts_v3(0.2f, 1.5f, 37.2f));
+    ASSERT_FALSE(prts_cworld_overlaps(e->cworld, walk));
+    ASSERT_STREQ("Banner & Bastion", e->title); /* the window title, from data/base/mod.lua */
     prts_log_set_min_level(PRTS_LOG_INFO);
     prts_engine_destroy(e);
 }
@@ -296,6 +307,7 @@ UTEST(engine, lua_test_runner_reports_failures)
     char err[1024];
     prts_engine *e = prts_engine_create(&cfg, err, sizeof(err));
     ASSERT_TRUE(e != NULL);
+    ASSERT_STREQ("1stPRTS", e->title); /* a base game without a `title` in its mod.lua */
     ASSERT_TRUE(prts_engine_is_batch(e));
     prts_log_set_min_level(PRTS_LOG_ERROR + 1);
     ASSERT_EQ(1, prts_engine_run(e));

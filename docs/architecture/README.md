@@ -1,6 +1,6 @@
 # Architecture Overview
 
-This folder describes **how** 1stPRTS is built. The concept is in [`../concept/`](../concept/README.md).
+This folder describes **how** Banner & Bastion (codename 1stPRTS) is built. The concept is in [`../concept/`](../concept/README.md).
 Binding requirements are in [`../../openspec/`](../../openspec/).
 
 | Document | Contents |

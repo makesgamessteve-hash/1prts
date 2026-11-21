@@ -12,10 +12,11 @@ T.case("the front-end menu offers the map, options, credits and quit", function(
   menu.open("main")
   T.ui_frame()
   T.is_true(prts.ui.modal(), "menus take the pointer")
-  T.is_true(T.ui_has("1stPRTS"), "title")
-  for _, label in ipairs({ "Proving Ground", "Options", "Credits", "Quit" }) do T.is_true(T.ui_has(label), label) end
+  T.is_true(T.ui_has("Banner & Bastion"), "title")
+  T.is_true(T.ui_has("War through a commander's eyes"), "subtitle")
+  for _, label in ipairs({ "Harrowmark", "Options", "Credits", "Quit" }) do T.is_true(T.ui_has(label), label) end
   -- the map is already loaded in test runs: starting another one is refused, the menu stays
-  T.ui_click("Proving Ground")
+  T.ui_click("Harrowmark")
   T.eq(menu.screen, "main")
   T.ui_click("Credits")
   T.eq(menu.screen, "credits")
@@ -175,7 +176,7 @@ T.case("credits come from every pack's CREDITS.md and the third-party list", fun
   local text = {}
   for _, l in ipairs(credits.lines) do text[#text + 1] = l.text end
   text = table.concat(text, "\n")
-  T.is_true(text:find("Stone wall texture - The 1stPRTS Contributors (CC-BY-4.0)", 1, true) ~= nil, "base entry")
+  T.is_true(text:find("Stone wall texture - The Banner & Bastion Contributors (CC-BY-4.0)", 1, true) ~= nil, "base entry")
   T.is_true(text:find("Third-party code", 1, true) ~= nil, "third-party section")
   T.is_true(text:find("Lua 5.4.7 - MIT", 1, true) ~= nil, "Lua")
   T.is_true(text:find("stb_image, stb_image_write - MIT or public domain", 1, true) ~= nil, "stb without version")

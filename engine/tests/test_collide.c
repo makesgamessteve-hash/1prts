@@ -113,6 +113,48 @@ UTEST(collide, owned_boxes_follow_entities)
     prts_world_destroy(w);
 }
 
+UTEST(collide, use_boxes_stop_only_the_use_ray)
+{
+    /* a person: a use-only box the commander can point at and walk through */
+    prts_world *w = prts_world_create();
+    prts_entity guard = prts_world_spawn(w, "guard");
+    prts_world_set_local(w, guard, prts_dv3(3, 0, 0), 0.0f);
+    prts_cworld *cw = prts_cworld_create();
+    int id = prts_cworld_add_use_box(cw, box(-0.3f, 0, -0.3f, 0.3f, 1.8f, 0.3f), guard);
+    int post = prts_cworld_add_use_box(cw, box(-0.2f, 0, 5.8f, 0.2f, 2.0f, 6.2f), PRTS_ENTITY_NONE); /* static */
+    prts_cworld_sync(cw, w);
+    ASSERT_EQ(guard, prts_cworld_owner(cw, id));
+    ASSERT_TRUE(prts_cworld_enabled(cw, id));
+    float d = 0.0f;
+    ASSERT_EQ(id, prts_cworld_raycast_use(cw, prts_v3(0, 1.5f, 0), prts_v3(1, 0, 0), 5.0f, &d));
+    ASSERT_NEAR(2.7f, d, 1e-4f);
+    ASSERT_EQ(post, prts_cworld_raycast_use(cw, prts_v3(0, 1.5f, 0), prts_v3(0, 0, 1), 8.0f, &d));
+    ASSERT_NEAR(5.8f, d, 1e-4f);
+    /* nothing else sees them: rays, occlusion (so no baked shadow), overlaps, ground, movement */
+    ASSERT_EQ(-1, prts_cworld_raycast(cw, prts_v3(0, 1.5f, 0), prts_v3(1, 0, 0), 5.0f, NULL));
+    ASSERT_EQ(-1, prts_cworld_raycast(cw, prts_v3(0, 1.5f, 0), prts_v3(0, 0, 1), 8.0f, NULL));
+    ASSERT_FALSE(prts_cworld_occluded(cw, prts_v3(0, 1.5f, 0), prts_v3(1, 0, 0), 5.0f));
+    ASSERT_FALSE(prts_cworld_occluded(cw, prts_v3(0, 1.5f, 0), prts_v3(0, 0, 1), 8.0f));
+    ASSERT_FALSE(prts_cworld_overlaps(cw, box(2.9f, 0.5f, -0.1f, 3.1f, 1.0f, 0.1f)));
+    float h = 0.0f;
+    ASSERT_FALSE(prts_cworld_ground(cw, prts_v3(3, 2.5f, 0), 3.0f, &h));
+    prts_aabb me = box(0, 0.1f, -0.3f, 0.6f, 1.9f, 0.3f);
+    prts_vec3 moved = prts_cworld_move(cw, &me, prts_v3(5, 0, 0), 0.0f, NULL);
+    ASSERT_NEAR(5.0f, moved.x, 1e-4f);
+    /* the nearest hit wins: a wall in front hides the person from the use ray */
+    int wall = prts_cworld_add_box(cw, box(1, 0, -1, 1.2f, 3, 1), PRTS_ENTITY_NONE);
+    ASSERT_EQ(wall, prts_cworld_raycast_use(cw, prts_v3(0, 1.5f, 0), prts_v3(1, 0, 0), 5.0f, &d));
+    ASSERT_NEAR(1.0f, d, 1e-4f);
+    /* a use box follows its owner and is switched off with it */
+    prts_world_set_local(w, guard, prts_dv3(0, 0, -3), 0.0f);
+    prts_cworld_sync(cw, w);
+    ASSERT_EQ(id, prts_cworld_raycast_use(cw, prts_v3(0, 1.5f, 0), prts_v3(0, 0, -1), 5.0f, &d));
+    prts_cworld_set_owner_enabled(cw, guard, false);
+    ASSERT_EQ(-1, prts_cworld_raycast_use(cw, prts_v3(0, 1.5f, 0), prts_v3(0, 0, -1), 5.0f, &d));
+    prts_cworld_destroy(cw);
+    prts_world_destroy(w);
+}
+
 UTEST(collide, terrain_and_raycast)
 {
     prts_heightfield *hf = prts_heightfield_create(11, 11, 1.0f, -5.0f, -5.0f);

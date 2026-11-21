@@ -132,6 +132,7 @@ void prts_mod_free(prts_mod *m)
     prts_free(m->id);
     prts_free(m->dir);
     prts_free(m->version_text);
+    prts_free(m->title);
     memset(m, 0, sizeof(*m));
 }
 
@@ -306,6 +307,9 @@ static bool read_manifest(prts_engine *e, const char *dir, prts_mod *m, char *er
         }
     }
     lua_pop(L, 1);
+    lua_getfield(L, -1, "title");
+    if (lua_type(L, -1) == LUA_TSTRING) m->title = prts_strdup(lua_tostring(L, -1));
+    lua_pop(L, 1);
     ok = ok && read_string_list(L, "depends", m, true, err, err_size);
     ok = ok && read_string_list(L, "load_after", m, false, err, err_size);
     lua_pop(L, 1);
@@ -319,6 +323,8 @@ bool prts_engine_check_base(prts_engine *e, const char *dir, char *err, size_t e
     prts_mod_init(&base, "base");
     bool ok = read_manifest(e, dir, &base, err, err_size);
     if (ok) e->mod_versions[0] = prts_strdup(base.version_text);
+    /* the game's name comes from its data, not the executable ("1stPRTS" is the engine's codename) */
+    if (ok) e->title = prts_strdup(base.title ? base.title : "1stPRTS");
     prts_mod_free(&base);
     return ok;
 }

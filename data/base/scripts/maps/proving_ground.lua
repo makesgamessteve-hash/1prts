@@ -194,10 +194,10 @@ local function great_hall()
   for _, z in ipairs({ 2.1, 4.5 }) do                                 -- benches
     for _, x in ipairs({ -2.0, 0.0 }) do model("models/bench.glb", x, F[1], z, { solid = true }) end
   end
-  -- the orders of the day on the stairwell wall (an in-world UI surface)
+  -- the castellan's orders on the stairwell wall (an in-world UI surface)
+  local orders = require("story.harrowmark").NOTICES
   M.notices = Notice.make{ id = "hall.notices", x = 5.38, y = F[1] + 1.75, z = -4.6, facing = "-x", width = 1.6,
-                           height = 1.0, title = "Orders of the day",
-                           lines = { "Muster at dawn", "Count the arrows", "Oil the lift", "Ride to the tower" } }
+                           height = 1.0, title = orders.title, lines = orders.lines }
   for i, x in ipairs({ -3.2, 2.2 }) do                                -- braziers by the hearth
     local name = "hall.brazier" .. i
     model("models/brazier.glb", x, F[1], -1.0, { solid = true, name = name })
@@ -377,21 +377,27 @@ local function countryside()
   return placed
 end
 
+-- The people of Harrowmark at their posts; who they are and what they say is in
+-- story/harrowmark.lua (PEOPLE, by the part of the entity name after "npc.").
 local function people()
   local F = M.FLOORS
   local guard, clerk = "sprites/crown_guard.lua", "sprites/crown_clerk.lua"
+  local who = require("story.harrowmark").PEOPLE
   local list = {}
+  local function person(post, n)
+    n.name, n.person = "npc." .. post, who[post]
+    list[#list + 1] = NPC.make(n)
+  end
   prts.scene.cells{ "outside" }
-  list[#list + 1] = NPC.make{ name = "npc.door_guard", sprite = guard, pos = { 2.3, 0, 11.4 }, yaw = math.pi }
-  list[#list + 1] = NPC.make{ name = "npc.road_patrol", sprite = guard, pos = { -2.6, 0, 16 },
-                              patrol = { { -2.6, 0, 46 }, { -2.6, 0, 16 } }, speed = 1.3 }
+  person("door_guard", { sprite = guard, pos = { 2.3, 0, 11.4 }, yaw = math.pi })
+  person("road_patrol", { sprite = guard, pos = { -2.6, 0, 16 }, patrol = { { -2.6, 0, 46 }, { -2.6, 0, 16 } }, speed = 1.3 })
   prts.scene.cells{ "keep.hall" }
-  list[#list + 1] = NPC.make{ name = "npc.hall_guard", sprite = guard, pos = { 4.2, F[1], -6.5 }, yaw = -math.pi / 2 }
-  list[#list + 1] = NPC.make{ name = "npc.hall_patrol", sprite = guard, pos = { -6, F[1], 6 },
-                              patrol = { { 3, F[1], 6 }, { 3, F[1], -2 }, { -6, F[1], -2 }, { -6, F[1], 6 } }, speed = 1.2 }
+  person("hall_guard", { sprite = guard, pos = { 4.2, F[1], -6.5 }, yaw = -math.pi / 2 })
+  person("hall_patrol", { sprite = guard, pos = { -6, F[1], 6 },
+                          patrol = { { 3, F[1], 6 }, { 3, F[1], -2 }, { -6, F[1], -2 }, { -6, F[1], 6 } }, speed = 1.2 })
   prts.scene.cells{ "keep.floor3" }
-  list[#list + 1] = NPC.make{ name = "npc.clerk", sprite = clerk, pos = { -5.5, F[3], -5.9 }, yaw = 0 }
-  list[#list + 1] = NPC.make{ name = "npc.war_room_guard", sprite = guard, pos = { -2.6, F[3], 6.4 }, yaw = math.pi * 0.85 }
+  person("clerk", { sprite = clerk, pos = { -5.5, F[3], -5.9 }, yaw = 0 })
+  person("war_room_guard", { sprite = guard, pos = { -2.6, F[3], 6.4 }, yaw = math.pi * 0.85 })
   return #list
 end
 

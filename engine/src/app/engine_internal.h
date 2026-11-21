@@ -93,6 +93,7 @@ struct prts_engine {
     uint64_t scenario_hash; /* the state hash at the end */
     prts_array move_done; /* prts_entity: movers that finished this tick */
     char *mod_versions[PRTS_MAX_MODS + 1]; /* per VFS mount (base first), from mod.lua */
+    char *title;                           /* the window title: `title` of the base game's mod.lua */
     /* infrastructure: jobs, test reports (report.c), saves and replays (replay.c), hot reload */
     prts_jobs *jobs;
     struct prts_report *report;

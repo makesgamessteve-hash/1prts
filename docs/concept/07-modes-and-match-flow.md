@@ -4,7 +4,7 @@
 
 | Mode | Description | Milestone |
 |---|---|---|
-| **Proving Ground** | Sandbox test map for walking, climbing the keep, riding the lift and trying out tools | M1 |
+| **Proving Ground** | Sandbox test map (Harrowmark, the Crown's proving fortress) for walking, climbing the keep, riding the lift, meeting the castle's people and trying out tools | M1 |
 | **Training** | A guided tutorial for first-person command: field map, sending stone, war table, marking staff, horn | M2 |
 | **Skirmish** | 1v1 up to 4 players (free-for-all or teams) against AI on generated or authored maps | M2+ |
 | **Scenarios** | Hand-made set pieces: *Hold the Ford*, *Harbor Siege*, *Storm the Citadel*, *Under the Hill*, *Reef War* | M5+ |
@@ -41,18 +41,21 @@
 
 ## 4. Campaign outline: *The Skyfall Wars*
 
-Five acts, about 15 missions per side. The story can be played from any of the four sides, with
-different missions.
+A prologue at Harrowmark and eight acts, each built on what one roadmap milestone adds; the story,
+cast and acts are in [15 · Story](15-story.md). About 15 missions per side; the story can be
+played from any of the four sides, with different missions.
 
-1. **The Border Marches**: the old truce breaks. A field-only act that teaches command from a
-   single holdfast and one war tent.
-2. **Timber and Gold**: expansion, raids on gatherers, the first sieges, the first behemoth hunt.
-   The Gloam Courts break out from below when the mines dig too deep.
-3. **The Saltcoast**: rivers and the sea open up: landings, fireships, the fight for the aether
-   springs. The Brine League's fleets arrive, and the war goes under the waves.
-4. **Above the Clouds**: skyships and drakes, and the race to reach the drifting citadels.
-5. **The Custodians Wake**: waking the citadels also wakes their ancient guardians. A fifth, hostile
-   side appears (voxel-built; see [08](08-setting-and-factions.md)).
+0. **Prologue: Harrowmark** (M1): the new Marshal arrives at the Crown's proving fortress; the
+   north has gone silent.
+1. **The Silent Watch** (M2): first command from the war table; raiders at the ford.
+2. **The Border Marches** (M3): ride north to the silent watchtowers; the first siege tower.
+3. **Timber and Gold** (M4): the Wildborn gather under a behemoth and besiege Harrowmark.
+4. **The Saltcoast** (M5): the siege is broken by river and sky; the *Harbor Siege*.
+5. **Above the Clouds** (M6): the fallen citadel Caldrith rises; *Storm the Citadel*.
+6. **The Hollow Roads** (M7): the Gloam Courts open their sealed gates; *Under the Hill*.
+7. **Deep Water** (M8): the Brine League and the war under the waves; the *Reef War*.
+8. **The Custodians Wake** (M10): waking the citadels also wakes their ancient guardians. A
+   fifth, hostile side appears (voxel-built; see [08](08-setting-and-factions.md)).
 
 Missions are Lua scripts, so the campaign is a mod like any other.
 

@@ -96,6 +96,11 @@ Events sent by the engine:
 | `ui` | surface name, width, height | Every frame, once for each UI surface: the world surfaces (`prts.ui.surface`), then `"screen"`. Handlers draw with `prts.ui`. |
 | `input_scheme` | scheme name | The active input scheme changed (see `prts.input.scheme`). |
 
+The base game's scripts send events of their own the same way, for example `session_started`
+(map id, options) from `game/session.lua` once a map is loaded; the options are
+`{ prologue = true }` when the front-end menu asks for the map's prologue (unless the player
+turned it off), and `{}` for test, batch and `--start` runs.
+
 ## `prts.def`
 
 Definitions (units, buildings, weapons, factions, actions, ...) registered by **kind** and **id**.
@@ -127,7 +132,7 @@ by an entity (`entity = e`) is in that entity's frame and moves with it.
 | Function | What it does |
 |---|---|
 | `prts.scene.material{ id, texture, tint, uv_scale, emissive }` | Defines a material (`uv_scale` default 2, `emissive` default false). Returns its index. |
-| `prts.scene.box{ min, max, material, entity, visible, solid, tile }` | An axis-aligned box: drawn unless `visible = false`, solid unless `solid = false`. Returns its collision box id, or -1. |
+| `prts.scene.box{ min, max, material, entity, visible, solid, use_only, tile }` | An axis-aligned box: drawn unless `visible = false` (an invisible box needs no `material`), solid unless `solid = false`. `use_only = true` makes it a box only the `use` ray (and the XR pointer ray) hits, instead of a solid one: nothing collides with it, stands on it or is shadowed by it, so it suits people the commander talks to (`props/npc.lua` gives each person one). Returns its collision box id, or -1. |
 | `prts.scene.wedge{ min, max, axis, sign, material, entity, tile }` | A ramp filling the box: its top rises from the box's floor to its top along `axis` (`"x"` or `"z"`) in the direction `sign` (1 or -1). Drawn only; add collision yourself (`lib/build.lua`'s `B.wedge` adds walkable invisible steps). |
 | `prts.scene.prism{ base, radius, top_radius, height, sides, material, entity, solid }` | A prism or cone (tree trunks, roofs, towers); solid only with `solid = true`. |
 | `prts.scene.terrain{ size, spacing, seed, height, octaves, material, flats }` | Generates the terrain height field; `flats` is a list of `{ x, z, radius, height, blend }` areas levelled for buildings. |
@@ -225,7 +230,7 @@ actions per scheme (`kbm`, `gamepad`, `touch`, `xr`); their overrides are kept i
 | `prts.commander.spawn{ marker \| pos, yaw, walk_speed, run_speed, sprint_speed, crouch_speed, jump_speed, eye_stand, eye_crouch, step_height, reach, look_sensitivity }` | Creates (or re-creates) the commander, the player's first-person body, at a marker or position. Returns its entity. |
 | `prts.commander.entity()` | The commander's entity, or nothing before it is spawned. |
 | `prts.commander.view()` | `yaw, pitch, eye_height, on_ground`. |
-| `prts.commander.target()` | `entity, name` of the usable entity in view within reach (in XR: on the pointer ray of the pointer hand), or nothing (also before the commander is spawned). |
+| `prts.commander.target()` | `entity, name` of the usable entity in view within reach (in XR: on the pointer ray of the pointer hand), or nothing (also before the commander is spawned). The ray stops at the first box it hits, solid or `use_only`, and the entity owning that box counts if it is usable. |
 
 ## `prts.xr`
 
@@ -334,6 +339,7 @@ return {
   id = "better_doors",              -- must match the folder name
   api = "1",                        -- prts.api_version the mod targets; other versions are not mounted
   version = "1.2.0",                -- optional, "major.minor.patch"
+  title = "My Game",                -- optional, base game only: the window title (default "1stPRTS")
   depends = { "base >= 0.1", "keep_pack" },   -- optional: needs these mods (enabled with --mod)
   load_after = { "lighting_mod" },  -- optional: if that mod is enabled too, load after it
 }

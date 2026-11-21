@@ -1,6 +1,6 @@
 -- The options menu: video (retro resolution preset and each retro effect), audio volumes,
--- controls and VR (comfort options and the video settings in a headset). Video and VR changes
--- apply at once, without a restart, and are saved. MIT License.
+-- controls, VR (comfort options and the video settings in a headset) and game (the prologue).
+-- Video and VR changes apply at once, without a restart, and are saved. MIT License.
 local settings = require("game.settings")
 local controls = require("ui.controls")
 
@@ -11,6 +11,7 @@ O.TABS = {
   { id = "audio", label = "Audio" },
   { id = "controls", label = "Controls" },
   { id = "vr", label = "VR" },
+  { id = "game", label = "Game" },
 }
 O.EFFECTS = {
   { key = "dither", label = "Palette and dithering" },
@@ -18,6 +19,10 @@ O.EFFECTS = {
   { key = "affine", label = "Affine textures" },
   { key = "fog", label = "Distance fog" },
   { key = "crosshair", label = "Crosshair" },
+}
+
+O.GAME_OPTIONS = {
+  { key = "prologue", label = "Prologue when a map starts from the menu" },
 }
 
 O.XR_OPTIONS = {
@@ -85,6 +90,15 @@ function O.draw_vr()
   end
 end
 
+function O.draw_game()
+  local g = settings.game()
+  prts.ui.row({ -1 })
+  for _, o in ipairs(O.GAME_OPTIONS) do
+    local value, changed = prts.ui.checkbox(o.label, g[o.key], "game." .. o.key)
+    if changed then settings.set_game(o.key, value) end
+  end
+end
+
 function O.draw_audio()
   prts.ui.row({ -1 })
   if not settings.audio_api() then prts.ui.label("No audio mixer in this build; volumes are kept for later.") end
@@ -100,7 +114,7 @@ end
 function O.draw(w, h, back)
   local ww, wh = math.min(440, w - 16), math.min(290, h - 16)
   prts.ui.window("Options", math.floor((w - ww) / 2), math.floor((h - wh) / 2), ww, wh, function()
-    prts.ui.row({ 70, 70, 70, 70, -1 })
+    prts.ui.row({ 70, 70, 70, 70, 70, -1 })
     for _, tab in ipairs(O.TABS) do
       if prts.ui.button(tab.id == O.tab and ("[" .. tab.label .. "]") or tab.label, "tab." .. tab.id) then
         O.tab = tab.id
@@ -118,6 +132,8 @@ function O.draw(w, h, back)
       O.draw_audio()
     elseif O.tab == "vr" then
       O.draw_vr()
+    elseif O.tab == "game" then
+      O.draw_game()
     else
       controls.draw()
     end

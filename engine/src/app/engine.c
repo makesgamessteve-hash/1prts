@@ -40,11 +40,6 @@ static char *find_data_dir(const prts_engine_config *cfg, prts_str *searched)
     return NULL;
 }
 
-static void fail(char *err, size_t err_size, const char *msg)
-{
-    snprintf(err, err_size, "%s", msg);
-}
-
 static void resume_audio(void *audio) { prts_audio_resume(audio); }
 
 prts_engine *prts_engine_create(const prts_engine_config *cfg, char *err, size_t err_size)
@@ -97,17 +92,18 @@ prts_engine *prts_engine_create(const prts_engine_config *cfg, char *err, size_t
     e->scene = prts_scene_create();
     e->input = prts_input_create(prts_platform_key_from_name);
     if (!cfg->headless) {
-        prts_platform_config pc = {"1stPRTS", cfg->width, cfg->height, cfg->hidden, 3, 3};
+        prts_platform_config pc = {e->title, cfg->width, cfg->height, cfg->hidden, 3, 3};
         e->platform = prts_platform_create(&pc);
         if (!e->platform) {
             /* Spec: OpenGL context unavailable */
-            fail(err, err_size, "1stPRTS needs OpenGL 3.3 (core profile) or WebGL 2, which this system could not provide.");
+            snprintf(err, err_size, "%s needs OpenGL 3.3 (core profile) or WebGL 2, which this system could not provide.",
+                     e->title);
             prts_engine_destroy(e);
             return NULL;
         }
         e->gfx = prts_gfx_create(prts_platform_gl_getproc, e->vfs, prts_platform_gles(e->platform));
         if (!e->gfx) {
-            fail(err, err_size, "The OpenGL driver is missing functions 1stPRTS needs.");
+            snprintf(err, err_size, "The OpenGL driver is missing functions %s needs.", e->title);
             prts_engine_destroy(e);
             return NULL;
         }
@@ -174,6 +170,7 @@ void prts_engine_destroy(prts_engine *e)
     prts_array_free(&e->move_done);
     for (size_t i = 0; i < PRTS_ARRAY_COUNT(e->mod_versions); i++) prts_free(e->mod_versions[i]);
     prts_free(e->scenario_message);
+    prts_free(e->title);
     prts_free(e->data_dir);
     prts_free(e->user_dir);
     prts_free(e);

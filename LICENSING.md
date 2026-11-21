@@ -1,12 +1,12 @@
 # Licensing
 
-1stPRTS uses two licenses: one for code and one for art.
+Banner & Bastion (codename 1stPRTS) uses two licenses: one for code and one for art.
 
 | What | License | File |
 |---|---|---|
 | **Code**: C engine sources, build scripts, tools, tests, Lua scripts, shader sources | MIT | [`LICENSE`](LICENSE) |
 | **Art and content**: models, textures, sprites, voxel models, sounds, music, fonts, maps, deck plans, written content in `data/` | Creative Commons Attribution 4.0 International (CC BY 4.0) | [`LICENSE-ASSETS`](LICENSE-ASSETS) |
-| **Screenshots** in `docs/screenshots/` and golden test images in `tests/golden/ref/` | CC BY 4.0 (they show 1stPRTS art) | [`LICENSE-ASSETS`](LICENSE-ASSETS) |
+| **Screenshots** in `docs/screenshots/` and golden test images in `tests/golden/ref/` | CC BY 4.0 (they show Banner & Bastion art) | [`LICENSE-ASSETS`](LICENSE-ASSETS) |
 | **Third-party code** in `third_party/` | The license that ships with each library | `third_party/<lib>/LICENSE*` |
 
 ## Where the line falls
@@ -30,9 +30,9 @@ The in-game **Credits** screen is built from these files, and an automated test 
 file under `data/` has no credits entry. This keeps CC BY 4.0 attribution correct as mods and
 contributions grow.
 
-To credit 1stPRTS art when you reuse it:
+To credit Banner & Bastion art when you reuse it:
 
-> "<asset title>" by <author> from 1stPRTS (https://github.com/makesgamessteve-hash/1prts), licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Changes: <describe or "none">.
+> "<asset title>" by <author> from Banner & Bastion (https://github.com/makesgamessteve-hash/1prts), licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Changes: <describe or "none">.
 
 ## Contributions
 

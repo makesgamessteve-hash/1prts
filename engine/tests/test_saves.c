@@ -524,7 +524,7 @@ UTEST(engine, boot_without_opengl_is_refused_with_a_message)
     prts_log_set_min_level(PRTS_LOG_INFO);
     SDL_ResetHint(SDL_HINT_VIDEO_DRIVER);
     ASSERT_TRUE(e == NULL);
-    ASSERT_TRUE(strstr(err, "needs OpenGL 3.3") != NULL);
+    ASSERT_TRUE(strstr(err, "Banner & Bastion needs OpenGL 3.3") != NULL); /* named after the game's data */
 }
 
 UTEST(snapshot, a_save_that_stops_matching_before_it_is_applied)

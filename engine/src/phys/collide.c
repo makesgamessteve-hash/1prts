@@ -78,6 +78,7 @@ typedef struct cbox {
     prts_aabb world;
     prts_entity owner;
     bool enabled;
+    bool use_only; /* only the use ray hits it (prts_cworld_add_use_box) */
 } cbox;
 
 /* Static boxes (no owner) live in a bounding volume hierarchy, rebuilt when boxes are added;
@@ -139,10 +140,17 @@ void prts_cworld_destroy(prts_cworld *cw)
 
 int prts_cworld_add_box(prts_cworld *cw, prts_aabb box, prts_entity owner)
 {
-    cbox b = {box, box, owner, true};
+    cbox b = {box, box, owner, true, false};
     prts_array_push(&cw->boxes, &b);
     cw->bvh->dirty = true;
     return (int)cw->boxes.len - 1;
+}
+
+int prts_cworld_add_use_box(prts_cworld *cw, prts_aabb box, prts_entity owner)
+{
+    int id = prts_cworld_add_box(cw, box, owner);
+    ((cbox *)prts_array_at(&cw->boxes, (size_t)id))->use_only = true;
+    return id;
 }
 
 size_t prts_cworld_box_count(const prts_cworld *cw) { return cw->boxes.len; }
@@ -304,8 +312,9 @@ static int by_id(const void *a, const void *b)
     return x < y ? -1 : (x > y ? 1 : 0);
 }
 
-/* Ids of enabled boxes touching q, ascending. The result stays valid until the next query. */
-static const prts_array *query(const prts_cworld *cw, prts_aabb q)
+/* Ids of enabled boxes touching q, ascending; use-only boxes only with `use`. The result stays
+ * valid until the next query. */
+static const prts_array *query(const prts_cworld *cw, prts_aabb q, bool use)
 {
     bvh_state *st = cw->bvh;
     if (st->dirty) rebuild(cw);
@@ -324,7 +333,7 @@ static const prts_array *query(const prts_cworld *cw, prts_aabb q)
             for (size_t i = n->first; i < n->first + n->count; i++) {
                 int id = ((bvh_item *)prts_array_at(&st->items, i))->id;
                 const cbox *b = prts_array_at(&cw->boxes, (size_t)id);
-                if (b->enabled && touches(b->world, q)) prts_array_push(&st->found, &id);
+                if (b->enabled && (use || !b->use_only) && touches(b->world, q)) prts_array_push(&st->found, &id);
             }
         } else {
             prts_array_push(&st->stack, &n->left);
@@ -334,7 +343,7 @@ static const prts_array *query(const prts_cworld *cw, prts_aabb q)
     for (size_t i = 0; i < st->dynamic.len; i++) {
         int id = *(int *)prts_array_at(&st->dynamic, i);
         const cbox *b = prts_array_at(&cw->boxes, (size_t)id);
-        if (b->enabled && touches(b->world, q)) prts_array_push(&st->found, &id);
+        if (b->enabled && (use || !b->use_only) && touches(b->world, q)) prts_array_push(&st->found, &id);
     }
     qsort(st->found.data, st->found.len, sizeof(int), by_id);
     return &st->found;
@@ -355,7 +364,7 @@ static float move_axis(const prts_cworld *cw, prts_aabb *box, int axis, float d,
     int o1 = (axis + 1) % 3, o2 = (axis + 2) % 3;
     prts_aabb swept = *box;
     set_comp(d > 0.0f ? &swept.max : &swept.min, axis, comp(d > 0.0f ? swept.max : swept.min, axis) + d);
-    const prts_array *found = query(cw, swept);
+    const prts_array *found = query(cw, swept, false);
     for (size_t k = 0; k < found->len; k++) {
         size_t i = (size_t)*(const int *)prts_array_at(found, k);
         cbox *b = prts_array_at(&cw->boxes, i);
@@ -459,7 +468,7 @@ prts_vec3 prts_cworld_move(const prts_cworld *cw, prts_aabb *box, prts_vec3 delt
 
 bool prts_cworld_overlaps(const prts_cworld *cw, prts_aabb box)
 {
-    const prts_array *found = query(cw, box);
+    const prts_array *found = query(cw, box, false);
     for (size_t k = 0; k < found->len; k++) {
         cbox *b = prts_array_at(&cw->boxes, (size_t)*(const int *)prts_array_at(found, k));
         if (prts_aabb_overlaps(box, b->world)) return true;
@@ -490,12 +499,12 @@ static bool ray_box(prts_vec3 o, prts_vec3 d, prts_aabb b, float *t_hit)
     return true;
 }
 
-int prts_cworld_raycast(const prts_cworld *cw, prts_vec3 origin, prts_vec3 dir, float max_dist, float *out_dist)
+static int raycast(const prts_cworld *cw, prts_vec3 origin, prts_vec3 dir, float max_dist, float *out_dist, bool use)
 {
     dir = prts_v3_normalize(dir);
     int best = -1;
     float best_t = max_dist;
-    const prts_array *found = query(cw, segment_bounds(origin, dir, max_dist));
+    const prts_array *found = query(cw, segment_bounds(origin, dir, max_dist), use);
     for (size_t k = 0; k < found->len; k++) {
         int i = *(const int *)prts_array_at(found, k);
         cbox *b = prts_array_at(&cw->boxes, (size_t)i);
@@ -519,11 +528,21 @@ int prts_cworld_raycast(const prts_cworld *cw, prts_vec3 origin, prts_vec3 dir, 
     return best;
 }
 
+int prts_cworld_raycast(const prts_cworld *cw, prts_vec3 origin, prts_vec3 dir, float max_dist, float *out_dist)
+{
+    return raycast(cw, origin, dir, max_dist, out_dist, false);
+}
+
+int prts_cworld_raycast_use(const prts_cworld *cw, prts_vec3 origin, prts_vec3 dir, float max_dist, float *out_dist)
+{
+    return raycast(cw, origin, dir, max_dist, out_dist, true);
+}
+
 bool prts_cworld_ground(const prts_cworld *cw, prts_vec3 p, float max_drop, float *height)
 {
     float best = p.y - max_drop;
     bool found = false;
-    const prts_array *ids = query(cw, prts_aabb_make(p, prts_v3(p.x, p.y - max_drop, p.z)));
+    const prts_array *ids = query(cw, prts_aabb_make(p, prts_v3(p.x, p.y - max_drop, p.z)), false);
     for (size_t k = 0; k < ids->len; k++) {
         const cbox *b = prts_array_at(&cw->boxes, (size_t)*(const int *)prts_array_at(ids, k));
         float top = b->world.max.y;
@@ -546,7 +565,7 @@ bool prts_cworld_ground(const prts_cworld *cw, prts_vec3 p, float max_drop, floa
 bool prts_cworld_occluded(const prts_cworld *cw, prts_vec3 origin, prts_vec3 dir, float max_dist)
 {
     dir = prts_v3_normalize(dir);
-    const prts_array *found = query(cw, segment_bounds(origin, dir, max_dist));
+    const prts_array *found = query(cw, segment_bounds(origin, dir, max_dist), false);
     for (size_t k = 0; k < found->len; k++) {
         cbox *b = prts_array_at(&cw->boxes, (size_t)*(const int *)prts_array_at(found, k));
         float t = 0.0f;

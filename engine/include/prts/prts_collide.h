@@ -34,6 +34,10 @@ prts_cworld *prts_cworld_create(void);
 void prts_cworld_destroy(prts_cworld *cw);
 /* Adds a solid box. With an owner, the box is in the owner's local frame and follows it. */
 int prts_cworld_add_box(prts_cworld *cw, prts_aabb box, prts_entity owner);
+/* Adds a box only the use ray (prts_cworld_raycast_use) hits: movement, ground, overlap and
+ * occlusion queries and plain raycasts pass through it, so it blocks nobody and casts no baked
+ * light (people the commander can talk to). Otherwise like prts_cworld_add_box. */
+int prts_cworld_add_use_box(prts_cworld *cw, prts_aabb box, prts_entity owner);
 size_t prts_cworld_box_count(const prts_cworld *cw);
 prts_aabb prts_cworld_box(const prts_cworld *cw, int id);
 prts_entity prts_cworld_owner(const prts_cworld *cw, int id);
@@ -67,5 +71,7 @@ bool prts_cworld_occluded(const prts_cworld *cw, prts_vec3 origin, prts_vec3 dir
 bool prts_cworld_ground(const prts_cworld *cw, prts_vec3 p, float max_drop, float *height);
 /* Ray against boxes and terrain. Returns the box id, -2 for terrain, -1 for no hit. */
 int prts_cworld_raycast(const prts_cworld *cw, prts_vec3 origin, prts_vec3 dir, float max_dist, float *out_dist);
+/* The same ray, also against use-only boxes (what the commander's use ray points at). */
+int prts_cworld_raycast_use(const prts_cworld *cw, prts_vec3 origin, prts_vec3 dir, float max_dist, float *out_dist);
 
 #endif

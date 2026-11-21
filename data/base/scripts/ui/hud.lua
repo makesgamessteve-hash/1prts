@@ -1,6 +1,6 @@
--- The minimal HUD (First-Person Contract): only the interaction prompt when the commander
--- looks at something usable, with the key, button or touch glyph of the active scheme.
--- MIT License.
+-- The minimal HUD (First-Person Contract): the interaction prompt when the commander looks at
+-- something usable, with the key, button or touch glyph of the active scheme. Subtitles are
+-- drawn by ui/subtitles.lua. MIT License.
 local glyphs = require("ui.glyphs")
 
 local H = { scheme = prts.input.scheme(), visible = true }
@@ -10,6 +10,7 @@ H.PROMPTS = {
   door = function(data) return data.open and "Close door" or "Open door" end,
   lift_lever = "Pull the lever",
   lift_call = "Call the lift",
+  npc = function(data) return "Talk to " .. data.person end,
 }
 
 function H.prompt_text(entity)

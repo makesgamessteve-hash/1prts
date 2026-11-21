@@ -76,7 +76,7 @@ return {
     t.face(5.38, 1.95, -4.6)
     t.ticks(3)
     if not t.headless() then
-      t.expect(t.ui_has("Orders of the day", "hall.notices"), "the board's title is drawn").is_true()
+      t.expect(t.ui_has("Castellan's orders", "hall.notices"), "the board's title is drawn").is_true()
     end
     t.screenshot("notice_board")
 

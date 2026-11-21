@@ -7,7 +7,7 @@ archers, knights and catapults, warships and dragons, two very different peoples
 land, and the satisfying rhythm of building, training and attacking. It almost always comes with
 a god's view: a free camera, perfect control and instant orders.
 
-1stPRTS keeps the fantasy RTS and takes away the god's view. The player is one person, the
+Banner & Bastion keeps the fantasy RTS and takes away the god's view. The player is one person, the
 commander. They stand somewhere, see only what is in front of them, and command through the
 tools a fantasy war leader would have: a war table, a map, a spyglass, sending stones, horns,
 banners and messengers. The world is built at real scale and is full of people and creatures, so
@@ -71,9 +71,9 @@ This is a hard rule that applies to every feature:
 6. **Debug and observer cameras** exist only in developer builds and automated tests. They are
    never shipped as a gameplay option.
 
-## What makes 1stPRTS different
+## What makes Banner & Bastion different
 
-| Typical fantasy RTS | 1stPRTS |
+| Typical fantasy RTS | Banner & Bastion |
 |---|---|
 | Overhead camera, instant global view | One pair of eyes; the map is an enchanted table you have to walk to |
 | Orders arrive instantly | Orders travel by sending stones, horns, banners and messengers, with range, delay and interference |
@@ -99,6 +99,6 @@ This is a hard rule that applies to every feature:
   [02](02-the-commander.md)), but handling is deliberately simplified.
 - **Not photorealistic.** The retro style is intentional. It keeps huge scale affordable on
   web and mobile hardware.
-- **Not a remake of any existing game.** 1stPRTS takes the classic fantasy RTS genre as its
+- **Not a remake of any existing game.** Banner & Bastion takes the classic fantasy RTS genre as its
   starting point, and its world, factions, units and look are its own.
 - **No pay-to-win or live-service mechanics.**

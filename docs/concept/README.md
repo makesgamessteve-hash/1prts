@@ -1,9 +1,10 @@
-# 1stPRTS — Game Concept
+# Banner & Bastion — Game Concept
 
-> **1stPRTS** (First-Person Real-Time Strategy), working title.
+> **Banner & Bastion**: *War through a commander's eyes.* (Codename **1stPRTS**, for
+> First-Person Real-Time Strategy; see Q1 in [13](13-open-questions.md).)
 > A fantasy real-time strategy game. You lead one of four peoples in a war across field, forest,
 > sea and sky, through tunnels and under the waves, and you see it only through your commander's
-> eyes.
+> eyes. You command with banners, horns and sending stones, from your fortresses.
 
 This folder is the game design concept. It describes **what** we build and **why**.
 The technical side is in [`../architecture/`](../architecture/README.md). Binding requirements
@@ -43,6 +44,7 @@ Delver, or the Brine League's fleets above and below the waves as their Tide-Adm
 | 12 | [Roadmap](12-roadmap.md) | Milestones M0–M10, each one an OpenSpec change |
 | 13 | [Open Questions](13-open-questions.md) | Decisions that are still open, with the default we'll use |
 | 14 | [Magic & Spells](14-magic-and-spells.md) | The 24 spells of the eight caster types, counters, rituals |
+| 15 | [Story](15-story.md) | The premise and hook at Harrowmark, the cast, the campaign in acts, the other factions' view, how story is told in first person |
 
 ## A match in six scenes
 

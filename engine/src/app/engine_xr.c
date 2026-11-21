@@ -273,8 +273,12 @@ static int pointer_rays(prts_engine *e, const prts_xr *xr, prts_dvec3 feet, prts
         prts_gfx_ray *r = &rays[n++];
         r->from = prts_dv3_add(feet, prts_dv3_from_v3(to_feet(x, ctl->aim.position, room)));
         prts_vec3 dir = prts_v3_rotate_y(prts_xr_forward(&ctl->aim), x->turn);
-        float reach = ctl == ptr && aiming ? PRTS_TELEPORT_RANGE : c->p.reach, dist = reach;
-        if (prts_cworld_raycast(e->cworld, v3_of(r->from), dir, reach, &dist) == -1) dist = reach;
+        bool teleport = ctl == ptr && aiming;
+        float reach = teleport ? PRTS_TELEPORT_RANGE : c->p.reach, dist = reach;
+        /* the use ray also ends at people (use-only boxes); a teleport ray only at solid things */
+        int hit = teleport ? prts_cworld_raycast(e->cworld, v3_of(r->from), dir, reach, &dist)
+                           : prts_cworld_raycast_use(e->cworld, v3_of(r->from), dir, reach, &dist);
+        if (hit == -1) dist = reach;
         r->to = prts_dv3_add(r->from, prts_dv3_from_v3(prts_v3_scale(dir, dist)));
         r->color = prts_v3_scale(RAY_IDLE, POINTER_DIM);
         if (ctl != ptr) continue;

@@ -11,7 +11,7 @@ so work can continue. Changing one later means updating the concept and, where m
 
 | # | Question | Default (in use now) | Alternatives | Affects |
 |---|---|---|---|---|
-| Q1 | Is **"1stPRTS"** the final title? | Working title "1stPRTS", executable `1stprts` | A fantasy-sounding name | Branding only |
+| Q1 | ~~Is **"1stPRTS"** the final title?~~ **Answered:** the game is called **Banner & Bastion**, subtitle *"War through a commander's eyes"*: you command with banners, horns and sending stones, from fortresses, and only through your own eyes. "1stPRTS" stays the internal codename (repository, executable `1stprts`, the `prts_` prefix, file and build target names) | Title in the menus, window, web page, docs and credits; codename everywhere else | Considered: "Behind the Visor", "Through the Arrow Slit", "Wallwarden" | Branding only |
 | Q2 | May the commander **take crew posts** (steer a ship, aim a trebuchet, fly a wyvern)? | Yes, with costs (stone and horn only, the crew member steps aside) | Never; or passenger only | M3 spec |
 | Q3 | **Succession** rules | 3 successors, 30 s respawn at a succession anchor, 60 s handover | Permadeath (one life); unlimited successors | M4 spec |
 | Q4 | **Command pause** in single player | Optional match rule, on for Normal, off for "Iron Crown" | Never pause; always allowed | M2 spec |

@@ -115,14 +115,15 @@ static int l_scene_box(lua_State *L)
     prts_engine *e = prts_engine_from_lua(L);
     luaL_checktype(L, 1, LUA_TTABLE);
     prts_aabb b = prts_aabb_make(check_vec3(L, 1, "min"), check_vec3(L, 1, "max"));
-    int m = material_index(L, e, 1);
     prts_entity owner = opt_entity(L, 1, "entity");
-    if (field_bool(L, 1, "visible", true)) {
+    if (field_bool(L, 1, "visible", true)) { /* an invisible box needs no material */
+        int m = material_index(L, e, 1);
         if (field_bool(L, 1, "fit", false)) prts_scene_add_box_fitted(e->scene, b, m, owner);
         else prts_scene_add_box(e->scene, b, m, owner, field_number(L, 1, "tile", 2.0f));
     }
     int id = -1;
-    if (field_bool(L, 1, "solid", true)) id = prts_cworld_add_box(e->cworld, b, owner);
+    if (field_bool(L, 1, "use_only", false)) id = prts_cworld_add_use_box(e->cworld, b, owner);
+    else if (field_bool(L, 1, "solid", true)) id = prts_cworld_add_box(e->cworld, b, owner);
     lua_pushinteger(L, id);
     return 1;
 }

@@ -1,11 +1,11 @@
 <!doctype html>
-<!-- 1stPRTS web shell page (Emscripten --shell-file). MIT License. -->
+<!-- Banner & Bastion (codename 1stPRTS) web shell page (Emscripten --shell-file). MIT License. -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="color-scheme" content="dark">
-<title>1stPRTS</title>
+<title>Banner &amp; Bastion</title>
 <style>
   :root { --bg: #0d0f12; --fg: #e8e2d4; --dim: #9a948a; --accent: #d9a441; --panel: rgba(13, 15, 18, 0.92); }
   html, body { margin: 0; height: 100%; background: var(--bg); color: var(--fg); overflow: hidden;
@@ -18,6 +18,7 @@
     background: var(--panel); border: 1px solid #2a2d33; border-radius: 6px; text-align: center; }
   .prts-panel h1 { margin: 0 0 0.75rem; font-size: 1.6rem; letter-spacing: 0.08em; color: var(--accent); }
   .prts-panel p { margin: 0.5rem 0; }
+  #prts-subtitle { margin-top: -0.4rem; color: var(--dim); font-style: italic; }
   #prts-status { color: var(--dim); font-size: 0.95rem; min-height: 1.4em; }
   #prts-progress { width: 100%; height: 0.6rem; margin-top: 0.75rem; accent-color: var(--accent); }
   #prts-message { text-align: left; }
@@ -31,10 +32,11 @@
 </style>
 </head>
 <body data-prts-state="loading" data-prts-xr="unknown">
-<canvas id="canvas" tabindex="0" aria-label="1stPRTS game view" oncontextmenu="event.preventDefault()"></canvas>
+<canvas id="canvas" tabindex="0" aria-label="Banner &amp; Bastion game view" oncontextmenu="event.preventDefault()"></canvas>
 
 <div id="prts-overlay" class="prts-panel" aria-live="polite">
-  <h1>1stPRTS</h1>
+  <h1>Banner &amp; Bastion</h1>
+  <p id="prts-subtitle">War through a commander&rsquo;s eyes</p>
   <p id="prts-status">Loading…</p>
   <progress id="prts-progress" max="1"></progress>
 </div>
@@ -81,7 +83,7 @@
   if (!hasWebGL2()) {
     setState('no-webgl2');
     showMessage('WebGL 2 is required',
-      '1stPRTS needs WebGL 2, and this browser could not provide it, so the game cannot start.\n\n' +
+      'Banner & Bastion needs WebGL 2, and this browser could not provide it, so the game cannot start.\n\n' +
       'Use a current version of Chrome, Edge, Firefox or Safari, and check that hardware ' +
       'acceleration (graphics acceleration) is turned on in the browser settings.');
     return;
@@ -118,7 +120,7 @@
     }],
     onAbort: function (what) {
       setState('error');
-      showMessage('1stPRTS stopped', 'The game stopped because of an internal error.\n\n' +
+      showMessage('Banner & Bastion stopped', 'The game stopped because of an internal error.\n\n' +
         (lastErrors.length ? lastErrors.join('\n') : String(what)));
     },
     // Called by the engine (web/prts_web.js) for errors it would show in a dialog on desktop.
@@ -155,7 +157,7 @@
     return load(main.getAttribute('src'), main.getAttribute('src') ? null : main.textContent);
   }).catch(function (err) {
     setState('error');
-    showMessage('1stPRTS could not be loaded', String(err.message || err) +
+    showMessage('Banner & Bastion could not be loaded', String(err.message || err) +
       '\n\nCheck the connection and reload the page.');
   });
 })();
