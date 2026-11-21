@@ -66,6 +66,7 @@ function Sk.think(e, ticks)
   d.cd = math.max(0, d.cd - ticks)
   local x, y, z = S.pos(e)
   local K = require("rts.combat")
+  if d.board then return Sk.boarding(e, d, u) end
   local t = d.target
   if t and (not S.alive(t) or K.reach(x, z, t) > u.sight * 1.5) then t = nil end
   t = t or pick(e, d, u, x, z)
@@ -77,6 +78,8 @@ function Sk.think(e, ticks)
       d.goal = nil
       if d.cd == 0 then
         d.cd = math.floor(w.cooldown * 30 + 0.5)
+        local fire = require("rts.tiers").ignites(d.side, d.def)
+        if fire > 0 and S.data(t).kind == "structure" then require("rts.fire").ignite(t, fire) end
         K.hit(t, w.damage + require("rts.tiers").damage_bonus(d.side, d.def))
         prts.events.emit("rts_flyer_struck", e, t)
       end
@@ -90,6 +93,40 @@ function Sk.think(e, ticks)
   d.low = false
   if tx then d.goal = { tx, tz } end
   return t and "closing" or (tx and "flying" or "circling")
+end
+
+-- Sends flyers that can carry warriors (`boards` in their definition) to board a citadel.
+function Sk.board(e, citadel)
+  local u = D.unit(S.data(e).def)
+  if not u.boards then return false end
+  local d = S.data(e)
+  d.board, d.boarded, d.target = prts.entity.name(citadel), nil, nil
+  return true
+end
+
+-- A boarding flyer climbs to the citadel's height and, over its courtyard, puts its warriors aboard.
+function Sk.boarding(e, d, u)
+  local c = prts.entity.find(d.board)
+  if not c then
+    d.board, d.goal, d.alt = nil, nil, nil
+    return "circling"
+  end
+  local cx, cy, cz = prts.entity.pos(c)
+  local x, y, z = S.pos(e)
+  d.goal, d.alt = { cx, cz }, cy + 6
+  if S.dist(x, z, cx, cz) <= 12 and math.abs(y - (cy + 6)) < 3 then
+    local Ci = require("rts.citadel")
+    local company = S.new_company(d.side, "Boarders")
+    local rec = { id = company.id, units = {} }
+    local hp = D.unit(u.board_unit).hp
+    for i = 1, u.boards do rec.units[i] = { def = u.board_unit, hp = hp } end
+    Ci.receive(c, d.side, { rec })
+    prts.events.emit("rts_boarded", e, d.board, u.boards)
+    d.board, d.alt, d.boarded = nil, nil, true
+    d.goal = nil
+    return "boarded"
+  end
+  return "boarding"
 end
 
 -- Every tick: flyers move towards their goal at their speed and height.
@@ -107,7 +144,7 @@ function Sk.fly(dt)
         nx, nz = x + dx / dist * step, z + dz / dist * step
       end
     end
-    local want = ground(nx, nz) + (d.low and Sk.DIVE or Sk.HEIGHT)
+    local want = d.alt or (ground(nx, nz) + (d.low and Sk.DIVE or Sk.HEIGHT))
     local ny = y + math.max(-6 * dt, math.min(6 * dt, want - y))
     local yaw = d.goal and math.atan(-(d.goal[1] - x), -(d.goal[2] - z)) or prts.entity.yaw(e)
     prts.entity.place(e, { nx, ny, nz }, yaw)

@@ -12,9 +12,10 @@ P.FORGET = 3600      -- ticks before an old sighting is dropped
 -- What a side's eyes are: { x, z, r } for each living unit and finished structure.
 function P.eyes(side_id)
   local out = {}
+  local Storm = require("rts.storm")
   for _, e in ipairs(S.units(side_id)) do
-    local x, _, z = S.pos(e)
-    out[#out + 1] = { x, z, D.unit(S.data(e).def).sight }
+    local x, y, z = S.pos(e)
+    out[#out + 1] = { x, z, Storm.sight(y, D.unit(S.data(e).def).sight), y }
   end
   for _, e in ipairs(S.structures(side_id, nil, true)) do
     local x, _, z = S.pos(e)
@@ -27,6 +28,21 @@ function P.eyes(side_id)
     if S.alive(e) and S.data(e).side == side_id then
       local x, _, z = S.pos(e)
       out[#out + 1] = { x, z, D.ship(S.data(e).def).sight or 60 }
+    end
+  end
+  for _, e in ipairs(require("rts.citadel").all()) do -- a woken citadel looks down past the clouds
+    local cd = S.data(e)
+    if cd.state == "woken" and cd.side == side_id then
+      local x, _, z = S.pos(e)
+      out[#out + 1] = { x, z, require("rts.citadel").SIGHT }
+    end
+  end
+  local Sh = require("props.skyship")
+  for _, name in ipairs(Sh.ships) do -- the side's skyships
+    local e = prts.entity.find(name)
+    if e and S.data(e).side == side_id then
+      local x, y, z = S.pos(e)
+      out[#out + 1] = { x, z, Storm.sight(y, Sh.kind(e).sight or 80), y }
     end
   end
   return out
@@ -71,12 +87,14 @@ function P.update(side_id, now)
       end
     end
   end
-  for _, e in ipairs(require("rts.sky").flyers()) do -- enemy flyers
+  local Storm = require("rts.storm")
+  for _, e in ipairs(require("rts.sky").flyers()) do -- enemy flyers (hidden in the storm)
     local d = S.data(e)
     if d.side ~= side_id then
-      local x, _, z = S.pos(e)
+      local x, y, z = S.pos(e)
       for _, eye in ipairs(eyes) do
-        if S.dist(eye[1], eye[2], x, z) <= eye[3] then
+        local dist = S.dist(eye[1], eye[2], x, z)
+        if dist <= eye[3] and Storm.visible(eye[4], y, dist) then
           pic[e] = { x = x, z = z, def = d.def, what = "unit", side = d.side, seen = now }
           break
         end

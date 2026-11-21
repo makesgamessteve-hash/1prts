@@ -100,11 +100,26 @@ def person(d, step, kind, side="crown"):
         body, trim, legs, head_c = (104, 86, 62), (150, 70, 40), (70, 60, 48), (112, 128, 104)
         if kind == "giant":
             body, trim, legs, head_c = (120, 112, 100), (90, 80, 70), (100, 92, 84), (150, 140, 128)
+    elif kind == "magister":  # a long blue robe with silver trim, a tall hood
+        body, trim, legs, head_c = (46, 58, 128), (200, 204, 220), (40, 44, 80), (46, 58, 128)
+    elif kind == "bone_seer":  # hide robe, a bone mask, grey-green skin
+        body, trim, legs, head_c = (120, 96, 64), (236, 230, 210), (80, 66, 46), (236, 230, 210)
+    elif kind in ("delver", "basalt", "deep_pike", "slinger", "glimmer", "mycel"):  # the Durrow: small, pale, big-eyed
+        body, trim, legs, head_c = {"delver": ((96, 88, 80), (150, 120, 60)), "basalt": ((58, 56, 60), (110, 196, 210)),
+                                    "deep_pike": ((70, 66, 74), (150, 220, 230)), "slinger": ((88, 80, 96), (120, 230, 200)),
+                                    "glimmer": ((80, 120, 150), (190, 240, 255)),
+                                    "mycel": ((100, 84, 110), (210, 150, 200))}[kind] + ((60, 56, 58), (176, 170, 180))
+        if kind == "basalt":
+            head_c = (70, 68, 74)
     else:  # outrider: a long riding coat, a pennant
         body, trim, legs, head_c = shade(SIDES[side][0], 1.2), SIDES[side][1], (60, 50, 40), (96, 70, 44)
     skin, boots, wood, steel = (214, 164, 124), (58, 40, 26), (128, 92, 52), (196, 200, 210)
     if kind in ("kobb", "firebrand", "ghorr", "spear", "giant"):
         skin = head_c
+    if kind in ("delver", "basalt", "deep_pike", "slinger", "glimmer", "mycel"):
+        skin = (196, 190, 200)
+    if kind == "bone_seer":
+        skin = (112, 128, 104)
 
     # legs and boots (walking moves them forward/back; seen from the side that spreads them)
     spread = 3.0 * abs(facing) * swing
@@ -115,7 +130,8 @@ def person(d, step, kind, side="crown"):
         f.rect(lx - 2, ly, lx + 2 + facing * 1.5, ly + 3, boots)
     # torso / tabard or robe
     bottom = {"guard": 41, "clerk": 54, "serf": 42, "crossbow": 44, "outrider": 48, "kobb": 40, "firebrand": 40,
-              "ghorr": 42, "spear": 42, "giant": 44}[kind]
+              "ghorr": 42, "spear": 42, "giant": 44, "magister": 55, "bone_seer": 52, "delver": 40, "basalt": 42,
+              "deep_pike": 42, "slinger": 41, "glimmer": 53, "mycel": 53}[kind]
     f.rect(cx - width, 18 + bob, cx + width, bottom + bob, body)
     if front > 0.2 or (kind == "guard" and front < -0.2):
         stripe = cx + facing * 2.5
@@ -129,9 +145,13 @@ def person(d, step, kind, side="crown"):
         f.rect(ax - 1.2, 33 + bob + sw, ax + 1.2, 35 + bob + sw, skin)
     # head
     hy = 11 + bob
-    if kind in ("guard", "crossbow"):
+    if kind in ("guard", "crossbow", "basalt", "deep_pike"):
         f.ellipse(cx + facing * 0.8, hy, 5.2, 6.2, head_c)                  # helmet
         f.rect(cx - 6, hy + 0.5, cx + 6, hy + 1.2, shade(head_c, 0.75))     # brim
+    elif kind == "magister":  # a tall pointed hood
+        f.ellipse(cx + facing * 0.8, hy, 5.0, 6.2, head_c)
+        f.rect(cx - 2, hy - 10, cx + 2, hy - 4, head_c)
+        f.rect(cx - 1, hy - 13, cx + 1, hy - 10, head_c)
     else:
         f.ellipse(cx + facing * 0.8, hy, 4.8, 6.0, head_c)                  # hair
     if kind in ("kobb", "firebrand") and front > -0.6:  # the big ears
@@ -190,6 +210,32 @@ def person(d, step, kind, side="crown"):
         for y in range(18, 34):
             f.put(sx + (y - 18) * 0.15, y + bob, wood)
         f.rect(sx - 2, 17 + bob, sx + 2, 18 + bob, steel)
+    elif kind in ("magister", "glimmer", "bone_seer", "mycel"):  # a staff with a glowing head
+        sx = cx - math.cos(a) * (width + 1.2) * 0.9
+        for y in range(4, 56):
+            f.put(sx, y + bob, wood if kind != "bone_seer" else (236, 230, 210))
+        glow = {"magister": (140, 200, 255), "glimmer": (190, 255, 250), "bone_seer": (230, 240, 170),
+                "mycel": (230, 160, 230)}[kind]
+        f.ellipse(sx, 3 + bob, 2.4, 2.4, glow)
+    elif kind == "delver":  # a pick and a glowstone lamp
+        sx = cx - math.cos(a) * (width + 1.0)
+        for y in range(16, 34):
+            f.put(sx + (y - 16) * 0.15, y + bob, wood)
+        f.rect(sx - 3, 15 + bob, sx + 3, 17 + bob, steel)
+        f.ellipse(cx + math.cos(a) * (width + 1.0), 34 + bob, 1.6, 1.6, (150, 255, 220))
+    elif kind == "basalt":  # a tower shield of dark stone
+        sx = cx - math.cos(a) * (width - 1) - facing * 2
+        f.rect(sx - 4 * max(abs(front), 0.4), 18 + bob, sx + 4 * max(abs(front), 0.4), 44 + bob, (44, 42, 48))
+        f.rect(sx - 1, 24 + bob, sx + 1, 38 + bob, trim)
+    elif kind == "deep_pike":  # a long crystal-tipped pike
+        sx = cx - math.cos(a) * (width + 1.2) * 0.9
+        for y in range(0, 56):
+            f.put(sx, y + bob, wood)
+        f.rect(sx - 1, 0 + bob, sx + 1, 4 + bob, trim)
+    elif kind == "slinger":  # a sling with a glowing stone
+        sx = cx - math.cos(a) * (width + 1.2)
+        f.rect(sx - 0.5, 20 + bob, sx + 0.5, 34 + bob, (120, 100, 70))
+        f.ellipse(sx, 35 + bob, 1.6, 1.6, trim)
     else:  # outrider: a lance with a pennant in the side's colours
         sx = cx - math.cos(a) * (width + 1.2) * 0.9
         for y in range(1, 50):
@@ -223,7 +269,7 @@ def sheet(kind, side="crown"):
 
 MW, MH = 64, 64
 COATS = {"crown": (122, 84, 52), "red": (52, 40, 34), "wolf": (120, 120, 116), "boar": (70, 50, 36),
-         "wyvern": (70, 96, 64)}
+         "wyvern": (70, 96, 64), "drake": (128, 52, 36), "beetle": (40, 52, 70)}
 
 
 def mounted(d, step, rider, side="crown", animal="horse"):
@@ -248,6 +294,10 @@ def mounted(d, step, rider, side="crown", animal="horse"):
         half, by = 8 + 10 * abs(facing), 40 + bob
     elif animal == "wyvern":
         half, by = 6 + 12 * abs(facing), 38 + bob
+    elif animal == "drake":
+        half, by = 9 + 15 * abs(facing), 36 + bob
+    elif animal == "beetle":
+        half, by = 9 + 11 * abs(facing), 44 + bob
     # legs: four, at the body's ends, swinging in pairs
     for i, (lx, phase) in enumerate(((-1, 1), (-0.6, -1), (0.6, 1), (1, -1))):
         x = cx + lx * (half - 3) * (1 if abs(facing) > 0.3 else 0.4) + (0 if abs(facing) > 0.3 else (i - 1.5) * 2)
@@ -271,8 +321,14 @@ def mounted(d, step, rider, side="crown", animal="horse"):
         f.ellipse(hx + facing * 4, by - 15, 5, 3.2, coat)              # head
         f.put(hx + facing * 3, by - 16, (20, 16, 12))                  # eye
         f.rect(hx - 1, by - 21, hx + 1, by - 18, dark)                  # ears
-    if animal == "wyvern":  # wings spread over the body, a long tail
-        span = 10 + 18 * abs(front)
+    if animal == "beetle":  # a shell over the back, its sheen
+        f.ellipse(cx, by - 3, half + 3, 9, shade(coat, 1.3))
+        f.rect(cx - 1, by - 11, cx + 1, by + 4, shade(coat, 0.7))
+    if animal == "drake":  # horns, and a howdah on its back
+        f.rect(cx - 7, by - 16, cx + 7, by - 8, (120, 92, 52))
+        f.rect(cx - 7, by - 18, cx + 7, by - 16, (214, 172, 62))
+    if animal in ("wyvern", "drake"):  # wings spread over the body, a long tail
+        span = (10 + 18 * abs(front)) * (1.35 if animal == "drake" else 1.0)
         wing = shade(coat, 0.8)
         beat = 0 if step is None else (-3, 0, 3, 0)[step]
         for k in range(int(span)):
@@ -283,6 +339,14 @@ def mounted(d, step, rider, side="crown", animal="horse"):
         tx = cx + facing * (half + 6)
         f.rect(tx - 1, by - 8, tx + 1, by - 6, (236, 230, 210))
         f.rect(cx - half, by - 9, cx + half, by - 7, mane)
+    if rider == "durrow":  # a small rider in stone armour with a pike
+        rx, ry = cx - facing * 2, by - 10
+        w = 4 + 2 * abs(front)
+        f.rect(rx - w, ry - 10, rx + w, ry, (58, 56, 60))
+        f.ellipse(rx, ry - 14, 4, 4.5, (70, 68, 74))
+        for t in range(0, 24):
+            f.put(rx + facing * 2 + facing * t * 0.9, ry - 6 - t * (0.35 if abs(facing) > 0.3 else 0.9), (128, 92, 52))
+        rider = None
     if rider in ("ghorr", "kobb"):
         body, trim = (104, 86, 62), (150, 70, 40)
         rx, ry = cx - facing * 2, by - 9
@@ -370,7 +434,9 @@ MOUNTED = (("horse", None, "crown", "Saddled horse", 2.4),
            ("red_rider", "outrider", "red", "Rival outrider on horseback", 2.9),
            ("wb_wolf", "kobb", "crown", "Wildborn wolf runner", 2.0, "wolf"),
            ("wb_boar", "ghorr", "crown", "Wildborn boar rider", 2.8, "boar"),
-           ("wb_wyvern", "kobb", "crown", "Wildborn wyvern rider", 4.5, "wyvern"))
+           ("wb_wyvern", "kobb", "crown", "Wildborn wyvern rider", 4.5, "wyvern"),
+           ("elder_drake", "ghorr", "crown", "Wildborn elder drake with its war howdah", 9.0, "drake"),
+           ("gl_beetle", "durrow", "crown", "Gloam carapace rider on a cave beetle", 3.0, "beetle"))
 
 
 META = """-- {title}: 8 directions, idle and a 4-frame walk. Generated by tools/gen_sprites.py.
@@ -402,7 +468,15 @@ def main():
             ("wb_firebrand", "firebrand", "crown", "Wildborn Kobb firebrand", 1.1),
             ("wb_ghorr", "ghorr", "crown", "Wildborn Ghorr brute", 2.3),
             ("wb_spear", "spear", "crown", "Wildborn spearhurler", 2.2),
-            ("wb_giant", "giant", "crown", "Wildborn ridge giant", 6.0)):
+            ("wb_giant", "giant", "crown", "Wildborn ridge giant", 6.0),
+            ("magister", "magister", "crown", "Crown magister", 1.9),
+            ("bone_seer", "bone_seer", "crown", "Wildborn bone-seer", 2.0),
+            ("gl_delver", "delver", "crown", "Gloam delver", 1.4),
+            ("gl_basalt", "basalt", "crown", "Gloam basalt guard", 1.5),
+            ("gl_pike", "deep_pike", "crown", "Gloam deep pike", 1.5),
+            ("gl_slinger", "slinger", "crown", "Gloam slinger", 1.4),
+            ("gl_glimmer", "glimmer", "crown", "Gloam glimmer-wright", 1.5),
+            ("gl_mycel", "mycel", "crown", "Gloam mycel keeper", 1.5)):
         w, h, rgba = sheet(kind, side)
         write_png(os.path.join(OUT, name + ".png"), w, h, rgba)
         with open(os.path.join(OUT, name + ".lua"), "w") as f:

@@ -207,3 +207,24 @@ is missing. References are C unit tests (`suite.case`), test files and scripts (
 | sky | Over the hills by skyship | `tests/game/scenarios/skyship.lua` |
 | harbor-siege | Breaking the siege | `tests/game/scenarios/harbor_siege.lua` |
 | harbor-siege | The galleon lost | `tests/game/scenarios/harbor_siege_lost.lua` |
+| citadels | A citadel drifts on its track | `tests/game/scenarios/citadel_track.lua` |
+| citadels | Waking the citadel | `tests/game/scenarios/citadel_wake.lua` |
+| citadels | No caster, no waking | `tests/game/scenarios/citadel_wake.lua` |
+| citadels | Floating in the aether core | `tests/game/scenarios/aether_core.lua` |
+| citadels | Steering the citadel | `tests/game/scenarios/citadel_steer.lua` |
+| citadels | Seeing from the citadel | `tests/game/scenarios/citadel_steer.lua` |
+| citadels | Through the drop-gates | `tests/game/scenarios/citadel_drop.lua` |
+| citadels | Bombarding from the sky | `tests/game/scenarios/citadel_drop.lua` |
+| storm-layer | Inside the storm | `tests/game/scenarios/storm_layer.lua` |
+| storm-layer | Carried by the wind | `tests/game/scenarios/storm_layer.lua` |
+| storm-layer | Struck by lightning | `tests/game/scenarios/storm_layer.lua` |
+| magic | Firebolt | `tests/game/scenarios/spells.lua` |
+| magic | No aether, no spell | `tests/game/scenarios/spells.lua` |
+| magic | Wither | `tests/game/scenarios/spells.lua` |
+| magic | Far-sight | `tests/game/scenarios/far_sight.lua` |
+| high-sky-units | Only at tier six | `tests/game/scenarios/tier_six.lua` |
+| high-sky-units | The sky galleon's guns | `tests/game/scenarios/tier_six.lua` |
+| high-sky-units | Drakes board a citadel | `tests/game/scenarios/tier_six.lua` |
+| storm-the-citadel | Storming Caldrith | `tests/game/scenarios/storm_the_citadel.lua` |
+| storm-the-citadel | Caldrith broken | `tests/game/scenarios/storm_the_citadel_lost.lua` |
+| storm-the-citadel | A citadel over Thornmere | `tests/game/scenarios/citadel_skirmish.lua` |

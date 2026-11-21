@@ -204,6 +204,9 @@ local function build_shape(e, def, color)
   elseif kind == "harbor" or kind == "raft_yard" then SHAPES.harbor(e, w, d, kind == "harbor")
   elseif kind == "balloon" then require("props.balloon").build(e)
   elseif kind == "roost_cliffs" then SHAPES.cairn(e, w) SHAPES.totem(e, 4)
+  elseif kind == "arcanum" then SHAPES.watchtower(e, w * 0.6, d * 0.6) SHAPES.well(e, 4, true)
+  elseif kind == "spirit_lodge" then SHAPES.lodge(e, w * 0.8, d * 0.8, 1) SHAPES.totem(e, 3)
+  elseif kind == "sky_mast" then SHAPES.watchtower(e, 4, 4) SHAPES.totem(e, 2)
   elseif kind == "smithy" then SHAPES.hall(e, w, d, 4, "planks")
   elseif kind == "farmstead" then SHAPES.farmstead(e, w, d)
   elseif kind == "watchtower" then SHAPES.watchtower(e, w, d)
@@ -394,6 +397,8 @@ function B.order_kind(item, structure_def)
   if st and st.mobile then return "mobile", st, st.build end
   local ship = D.ship(item)
   if ship then return "ship", ship, ship.build end
+  local air = D.airship(item)
+  if air then return "airship", air, air.build end
   return nil
 end
 
@@ -417,7 +422,7 @@ function B.order(e, item)
     if Ti.upgrade_known(d.side, item) then return false, "already known" end
   elseif kind == "unit" then
     if not D.trains(it, d.def) then return false, "not trained here" end
-  elseif kind == "ship" then
+  elseif kind == "ship" or kind == "airship" then
     if it.at ~= d.def then return false, "not built here" end
   elseif it.at ~= d.def then
     return false, "not raised here"
@@ -453,6 +458,15 @@ function B.train_tick(e, seconds)
   end
   if kind == "hq_up" then return B.raise_stage(e) end
   local x, _, z = S.pos(e)
+  if kind == "airship" then -- it lifts off over the mast
+    local Sh = require("props.skyship")
+    local n = 1
+    while prts.entity.find("sky." .. d.side .. "." .. n) do n = n + 1 end
+    local ship = Sh.spawn("sky." .. d.side .. "." .. n, x, z + def.size[2] / 2 + 14, 0, it.kind, d.side)
+    S.dispatch(d.side, it.name, "Cast off and aloft.")
+    prts.events.emit("rts_airship", ship, d.side, item)
+    return ship
+  end
   if kind == "ship" then
     local sea = d.seaward or 1 -- which side of the building the water is on (+z, or -z)
     return require("rts.fleet").launch(d.side, item, x, z + sea * (def.size[2] / 2 + 18), sea > 0 and math.pi or 0)

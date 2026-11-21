@@ -299,7 +299,15 @@ static int l_scene_env(lua_State *L)
     env->fog_far = field_number(L, 1, "fog_far", env->fog_far);
     env->stars = field_number(L, 1, "stars", env->stars);
     env->moons = field_bool(L, 1, "moons", env->moons);
-    e->scene->revision++;
+    /* fog and sky colours are read every frame; only light changes need the scene baked again */
+    bool lit = false;
+    const char *light_fields[] = {"sun_dir", "sun_color", "ambient"};
+    for (int i = 0; i < 3; i++) {
+        lua_getfield(L, 1, light_fields[i]);
+        lit = lit || !lua_isnil(L, -1);
+        lua_pop(L, 1);
+    }
+    if (lit) e->scene->revision++;
     return 0;
 }
 
@@ -343,6 +351,26 @@ static int l_scene_surface(lua_State *L)
     sf.h = PRTS_CLAMP((int)size.y, 8, 1024);
     lua_pushinteger(L, prts_scene_add_surface(e->scene, &sf));
     return 1;
+}
+
+/* prts.scene.aim_surface(name, pos [, yaw [, pitch]]): moves a surface's camera (no rebuild) */
+static int l_scene_aim_surface(lua_State *L)
+{
+    prts_engine *e = prts_engine_from_lua(L);
+    int i = prts_scene_find_surface(e->scene, luaL_checkstring(L, 1));
+    if (i < 0) return luaL_error(L, "unknown surface '%s'", lua_tostring(L, 1));
+    prts_surface *sf = prts_array_at(&e->scene->surfaces, (size_t)i);
+    luaL_checktype(L, 2, LUA_TTABLE);
+    float v[3];
+    for (int k = 0; k < 3; k++) {
+        lua_rawgeti(L, 2, k + 1);
+        v[k] = (float)luaL_checknumber(L, -1);
+        lua_pop(L, 1);
+    }
+    sf->pos = prts_dv3_from_v3(prts_v3(v[0], v[1], v[2]));
+    if (!lua_isnoneornil(L, 3)) sf->yaw = (float)luaL_checknumber(L, 3);
+    if (!lua_isnoneornil(L, 4)) sf->pitch = (float)luaL_checknumber(L, 4);
+    return 0;
 }
 
 /* Loads (once) a sprite definition from its Lua metadata file through the VFS. */
@@ -918,7 +946,7 @@ void prts_engine_open_game_api(prts_engine *e)
         {"marker", l_scene_marker},     {"marker_pos", l_scene_marker_pos}, {"zone", l_scene_zone},
         {"env", l_scene_env},           {"illusion", l_scene_illusion}, {"cell", l_scene_cell},
         {"portal", l_scene_portal},     {"set_portal", l_scene_set_portal}, {"portal_open", l_scene_portal_open},
-        {"cells", l_scene_cells},       {"cell_at", l_scene_cell_at},   {"surface", l_scene_surface},
+        {"cells", l_scene_cells},       {"cell_at", l_scene_cell_at},   {"surface", l_scene_surface},   {"aim_surface", l_scene_aim_surface},
         {"sprite", l_scene_sprite},     {"sprite_anim", l_scene_sprite_anim}, {"model", l_scene_model},
         {"wedge", l_scene_wedge},       {"tube", l_scene_tube},       {"in_zone", l_scene_in_zone},
         {NULL, NULL}};

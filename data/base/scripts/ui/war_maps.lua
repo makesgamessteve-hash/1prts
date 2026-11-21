@@ -104,6 +104,27 @@ function W.picture(side, x, y, w, h, opts)
       rect(px - 3, py - 1, 7, 3, COL.own)
     end
   end
+  -- the citadels drifting overhead (every side can see them pass) and the side's skyships
+  for _, e in ipairs(require("rts.citadel").all()) do
+    local ex, _, ez = S.pos(e)
+    local px, py = at(ex, ez)
+    local cd = S.data(e)
+    if prts.entity.name(e) == chosen then prts.ui.draw_icon("ring", px - 9, py - 9, 18, 18, COL.selected) end
+    local col = cd.state == "woken" and (cd.side == side and COL.own or COL.enemy) or COL.old
+    rect(px - 5, py - 5, 11, 2, col)
+    rect(px - 5, py + 3, 11, 2, col)
+    rect(px - 5, py - 5, 2, 10, col)
+    rect(px + 4, py - 5, 2, 10, col)
+  end
+  for _, name in ipairs(require("props.skyship").ships) do
+    local e = prts.entity.find(name)
+    if e and S.data(e).side == side then
+      local ex, _, ez = S.pos(e)
+      local px, py = at(ex, ez)
+      if name == chosen then prts.ui.draw_icon("ring", px - 6, py - 6, 12, 12, COL.selected) end
+      rect(px - 2, py - 2, 5, 5, COL.own)
+    end
+  end
   -- what the side has seen of the enemy
   for _, s in ipairs(P.list(side, now)) do
     local px, py = at(s.x, s.z)
@@ -183,6 +204,15 @@ W.WORKS = {
                { "research:wildborn.bone_spears", "Spears+" }, { "research:wildborn.war_paint", "Paint" } },
 }
 
+-- The second row of works (M6): casters' buildings, far-sight, the sky and a citadel's orders.
+W.WORKS2 = {
+  crown = { { "build:crown.arcanum", "Arcanum" }, { "far_sight", "Far-sight" }, { "build:crown.sky_mast", "Mast" },
+            { "airship:crown.skyship", "Skyship" }, { "airship:crown.sky_galleon", "Galleon" },
+            { "drop", "Drop" }, { "bombard", "Bombard" } },
+  wildborn = { { "build:wildborn.spirit_lodge", "Lodge" }, { "far_sight", "Far-sight" },
+               { "build:wildborn.roost_cliffs", "Roost" }, { "drop", "Drop" }, { "bombard", "Bombard" } },
+}
+
 local function faction(side) return S.side(side).faction end
 
 W.TABLE_MAP = { 7, 14, 316, 172 } -- the picture's rectangle on the war table's surface
@@ -232,8 +262,13 @@ function W.draw_table(w, h, ptr)
       result = Cmd.work(b[1]) and "ordered" or "refused"
     end
   end
-  for i, line in ipairs(last_dispatches(side, 2)) do
-    prts.ui.draw_text(line, 7, 210 + i * 11, { color = COL.ink })
+  for i, b in ipairs(W.WORKS2[f] or {}) do
+    if W.button("war_table", b[1], b[2], 7 + (i - 1) * 44, 220, 42, 12, ptr) then
+      result = Cmd.work(b[1]) and "ordered" or "refused"
+    end
+  end
+  for i, line in ipairs(last_dispatches(side, 1)) do
+    prts.ui.draw_text(line, 7, 222 + i * 11, { color = COL.ink })
   end
   W.last_result = result or W.last_result
   return true

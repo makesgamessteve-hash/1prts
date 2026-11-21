@@ -9,7 +9,7 @@ face-to-face orders. Keeps, mines, war galleons, siege towers, skyships, walking
 and floating citadels are built at real size with real crews, and you can walk inside every one
 of them. The look is retro 3D: low-poly models, sprites and voxels.
 
-> **Status: M1 done; M2 (First Command) to M5 (Sail and Wing) playable.** The C engine runs on Windows, Linux, macOS
+> **Status: M1 done; M2 (First Command) to M6 (Skyfall) playable.** The C engine runs on Windows, Linux, macOS
 > and in the browser (WebGL 2, touch controls on phones, WebXR). It loads all content from
 > `data/` and plays two maps in first person. **Harrowmark**, the Crown's border castle, is the
 > story map ([the story](docs/concept/15-story.md)). **Ashford Vale** is the first skirmish. Serfs
@@ -47,11 +47,27 @@ of them. The look is retro 3D: low-poly models, sprites and voxels.
 > - the scenario **The Harbor Siege** on the Saltcoast: you start in the galleon's chart room
 >   at its war table, with a relief fleet to break the Wildborn siege of a harbor town.
 >
+> **M6 (Skyfall)** goes up through the clouds to the high sky:
+> - the **storm layer**, a cloud deck where sight drops to a few dozen metres, winds carry
+>   whatever flies and lightning strikes it;
+> - **floating citadels** drifting on slow tracks. You wake one at the aetherstone in its
+>   weightless core, where you float, with a caster aboard and aether to pay. You steer it from
+>   its throne hall's war table, whose scrying floor shows the land below; it drops troops
+>   through its drop-gates and bombards what lies beneath;
+> - casters and spells that cost aether: the Magister's Firebolt and the Bone-seer's Wither.
+>   Far-sight at the Arcanum and the Spirit lodge;
+> - tier 6: the Crown's **sky galleon** from the new sky mast, and the Wildborn's
+>   fire-breathing **elder drake**, which carries boarders up to a citadel;
+> - the scenario **Storm the Citadel** on the Caldmere: Caldrith rises out of the steaming
+>   crater lake with Ashby aboard, and you fly up by skyship to take it before the clans break
+>   its stone. Thornmere's skirmish has a citadel drifting over the field.
+>
 > The tasks of [`add-command-core`](openspec/changes/add-command-core/tasks.md) (M2),
 > [`add-mounts-and-engines`](openspec/changes/add-mounts-and-engines/tasks.md) (M3) and
 > [`add-economy-and-second-faction`](openspec/changes/add-economy-and-second-faction/tasks.md)
-> (M4) and [`add-water-and-sky-theaters`](openspec/changes/add-water-and-sky-theaters/tasks.md)
-> (M5) list what is done and how each part was verified.
+> (M4), [`add-water-and-sky-theaters`](openspec/changes/add-water-and-sky-theaters/tasks.md)
+> (M5) and [`add-high-sky-citadels`](openspec/changes/add-high-sky-citadels/tasks.md) (M6) list
+> what is done and how each part was verified.
 
 ![Harrowmark at dusk](docs/screenshots/01_approach_at_dusk.png)
 
@@ -68,6 +84,8 @@ of them. The look is retro 3D: low-poly models, sprites and voxels.
 | ![A behemoth](docs/screenshots/51_behemoth.png) | ![On the behemoth's back](docs/screenshots/52_behemoth_back.png) | ![Fire in the camp](docs/screenshots/53_fire_in_the_camp.png) |
 | ![Building in stages](docs/screenshots/54_building_in_stages.png) | ![The galleon's chart room](docs/screenshots/60_chart_room.png) | ![On the galleon's deck](docs/screenshots/61_galleon_deck.png) |
 | ![The gun deck](docs/screenshots/62_gun_deck.png) | ![From the balloon's basket](docs/screenshots/64_balloon_view.png) | ![The skyship at its mast](docs/screenshots/65_skyship_at_mast.png) |
+| ![Caldrith rising out of the Caldmere](docs/screenshots/70_caldrith_rising.png) | ![Into the storm on the skyship's deck](docs/screenshots/71_into_the_storm.png) | ![Above the clouds](docs/screenshots/72_above_the_clouds.png) |
+| ![The throne hall's war table and scrying floor](docs/screenshots/73_throne_hall.png) | ![Floating in the aether core, Ashby at the stone](docs/screenshots/74_aether_core.png) | ![Elder drakes over Caldrith](docs/screenshots/75_drakes_over_caldrith.png) |
 | ![Great hall](docs/screenshots/12_hall_benches_braziers.png) | ![Forge](docs/screenshots/05_forge.png) | ![Front-end menu](docs/screenshots/13_front_end_menu.png) |
 
 ## Read this first

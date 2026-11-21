@@ -10,6 +10,7 @@ S.maps = {
   { id = "greyfen_march", name = "Ride Out: Greyfen March" },
   { id = "thornmere", name = "Skirmish: Thornmere (Crown against Wildborn)" },
   { id = "saltcoast", name = "Scenario: The Harbor Siege" },
+  { id = "caldmere", name = "Scenario: Storm the Citadel" },
 }
 
 -- Starts map `id` (scripts/maps/<id>.lua). Only one map per run in M1: returns false if a

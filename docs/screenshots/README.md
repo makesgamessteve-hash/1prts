@@ -20,6 +20,11 @@ the notice board.
 time the Marshal walks into a part of the castle, and one of the castellan's orders done (the
 arrows counted in the barracks), reported by the quartermaster's tally.
 
+`70`–`75` show Skyfall (M6) on the Caldmere: Caldrith rising, the skyship climbing into the
+storm layer, the view above the clouds, the throne hall's war table over its scrying floor, the
+weightless aether core with Ashby at the stone, and elder drakes over the courtyard. They are
+staged scenes taken at 960×540 under Xvfb like the others.
+
 These images show Banner & Bastion art and are licensed under CC BY 4.0 like the rest of the
 art (see `LICENSING.md`). Credit: "Banner & Bastion screenshot" by The Banner & Bastion
 Contributors.

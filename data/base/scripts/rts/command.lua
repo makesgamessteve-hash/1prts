@@ -116,6 +116,10 @@ function Cmd.point(x, z, r)
   end
   local sel_ship = Cmd.state().ship and prts.entity.find(Cmd.state().ship)
   if sel_ship then return Cmd.sail(sel_ship, x, z) end
+  return Cmd.point_company(x, z)
+end
+
+function Cmd.point_company(x, z)
   local sel = Cmd.selected()
   if not sel then return "nothing" end
   local kind = Cmd.enemy_at(x, z) and "attack" or "move"
@@ -134,12 +138,46 @@ function Cmd.ship_at(x, z, r)
       if dist <= bd then best, bd = e, dist end
     end
   end
+  for _, e in ipairs(require("rts.citadel").all()) do -- a citadel woken by the side is steered like a ship
+    local cd = S.data(e)
+    if cd.state == "woken" and cd.side == side then
+      local sx, _, sz = S.pos(e)
+      local dist = S.dist(x, z, sx, sz)
+      if dist <= math.max(bd, 20) then best, bd = e, dist end
+    end
+  end
+  local Sh = require("props.skyship")
+  for _, name in ipairs(Sh.ships) do -- and the side's skyships
+    local e = prts.entity.find(name)
+    if e and S.data(e).side == side then
+      local sx, _, sz = S.pos(e)
+      local dist = S.dist(x, z, sx, sz)
+      if dist <= bd then best, bd = e, dist end
+    end
+  end
   return best
 end
 
 -- Sends a ship to a point: on the water it sails there; pointing at land, a ship with troops
 -- aboard sails to the nearest water deep enough off that shore and lands them.
 function Cmd.sail(ship, x, z)
+  local kind = S.data(ship).kind
+  if kind == "citadel" then return require("rts.citadel").order(ship, x, z) and "steer" or "nothing" end
+  if kind == "skyship" then -- over a citadel: dock there; else fly there at the height it holds
+    local Ci = require("rts.citadel")
+    local Sh = require("props.skyship")
+    for _, c in ipairs(Ci.all()) do
+      local cx, _, cz = S.pos(c)
+      if S.dist(x, z, cx, cz) <= Ci.HALF then
+        Sh.dock(ship, c)
+        return "dock"
+      end
+    end
+    local _, y = S.pos(ship)
+    local ground = prts.scene.height(x, z)
+    Sh.order(ship, x, z, y - ground > Sh.HEIGHT + 10 and y or nil)
+    return "fly"
+  end
   local Fl = require("rts.fleet")
   local Wa = require("rts.water")
   local def = D.ship(S.data(ship).def)
@@ -270,6 +308,32 @@ function Cmd.work(what)
   local kind, id = what:match("^(%a+):(.+)$")
   if kind == "build" then return Cmd.build(id) ~= nil end
   if kind == "mandate" then return require("rts.tiers").buy_mandate(side, id) end
+  if kind == "airship" then -- at the side's sky mast
+    local a = D.airship(id)
+    local mast = a and S.structures(side, a.at, true)[1]
+    if not mast then return false, "no sky mast" end
+    return B.order(mast, id)
+  end
+  if what == "far_sight" then -- the far-sight building looks at the staff's mark
+    local mark = Cmd.state().mark
+    local f = D.FACTIONS[S.side(side).faction].far_sight
+    local at = f and S.structures(side, f, true)[1]
+    if not at then return false, "no far-sight building" end
+    if not mark then return false, "no mark" end
+    return require("rts.spells").far_sight(at, mark[1], mark[2])
+  end
+  if what == "bombard" or what == "drop" then -- the citadel the commander holds
+    local Ci = require("rts.citadel")
+    for _, c in ipairs(Ci.all()) do
+      local cd = S.data(c)
+      if cd.state == "woken" and cd.side == side then
+        if what == "drop" then return Ci.drop(c, side) > 0 end
+        cd.bombard = not cd.bombard
+        return true
+      end
+    end
+    return false, "no citadel"
+  end
   if kind == "research" then
     local up = D.upgrade(id)
     local shop = up and S.structures(side, up.at, true)[1]

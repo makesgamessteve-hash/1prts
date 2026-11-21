@@ -414,6 +414,42 @@ def cannon(rnd):
     return normalize(out, 0.85)
 
 
+def thunder(rnd):
+    """Lightning close by: a sharp crack and a long rumble rolling away."""
+    n = int(3.2 * RATE)
+    out = [0.0] * n
+    crack = highpass([math.exp(-i / 900.0) * rnd.uniform(-1, 1) for i in range(int(0.3 * RATE))], 1200)
+    mix_into(out, 0, crack, 1.5)
+    roll = lowpass(noise(rnd, n), 160)
+    env = [math.sin(min(1.0, i / (0.25 * RATE)) * math.pi / 2) * math.exp(-i / (1.1 * RATE)) for i in range(n)]
+    mix_into(out, int(0.08 * RATE), [s * 3.0 * env[i] for i, s in enumerate(roll[: n - int(0.08 * RATE)])])
+    return normalize(out, 0.85)
+
+
+def rumble(rnd):
+    """Rock shifting underground: a low tremor with stones trickling down."""
+    n = int(2.4 * RATE)
+    out = [0.0] * n
+    low = lowpass(noise(rnd, n), 90)
+    mix_into(out, 0, [s * 3.5 * math.sin(math.pi * i / n) for i, s in enumerate(low)])
+    for _ in range(14):
+        at = rnd.randint(int(0.2 * RATE), n - 3000)
+        tick = bandpass([math.exp(-i / 200.0) * rnd.uniform(-1, 1) for i in range(2500)], rnd.uniform(800, 2200), 3)
+        mix_into(out, at, tick, 0.5)
+    return normalize(out, 0.8)
+
+
+def dig(rnd):
+    """A pick biting into rock, twice."""
+    n = int(1.1 * RATE)
+    out = [0.0] * n
+    for k in range(2):
+        hit = bandpass([math.exp(-i / 500.0) * rnd.uniform(-1, 1) for i in range(5000)], 1900, 4)
+        mix_into(out, int(k * 0.5 * RATE), hit, 1.0)
+        mix_into(out, int(k * 0.5 * RATE), thump(4000, 160, 70, 0.05), 0.6)
+    return normalize(out, 0.75)
+
+
 EFFECTS = [
     ("door_open", door_open),
     ("door_close", door_close),
@@ -433,6 +469,9 @@ EFFECTS = [
     ("crossbow_shot", crossbow_shot),
     ("fall_cry", fall_cry),
     ("cannon", cannon),
+    ("thunder", thunder),
+    ("rumble", rumble),
+    ("dig", dig),
 ]
 
 

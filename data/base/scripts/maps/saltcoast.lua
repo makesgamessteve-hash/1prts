@@ -105,16 +105,7 @@ M.SIDES = {
 }
 
 -- Adds a company of `n` men of `unit` to a ship's cargo (they wait aboard to be landed).
-function M.cargo(ship, side, unit, label, n)
-  local c = S.new_company(side, label)
-  local rec = { id = c.id, units = {} }
-  local hp = require("rts.defs").unit(unit).hp
-  for i = 1, n do rec.units[i] = { def = unit, hp = hp } end
-  local d = prts.entity.data(ship)
-  d.cargo[#d.cargo + 1] = rec
-  c.aboard = prts.entity.name(ship)
-  return c
-end
+M.cargo = function(...) return S.cargo(...) end
 
 function M.on_started(id, opts)
   if id ~= M.ID then return false end

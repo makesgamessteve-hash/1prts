@@ -57,6 +57,7 @@ function K.hit(t, damage)
   local td = S.data(t)
   if td.kind == "structure" then return B.damage(t, damage) end
   if td.kind == "ship" then return require("rts.fleet").hit(t, damage) end
+  if td.kind == "skyship" then return require("props.skyship").hit(t, damage) end
   local u = D.unit(td.def)
   td.hp = td.hp - math.max(1, damage - (u.armor or 0))
   if td.hp > 0 then return false end
@@ -186,6 +187,7 @@ function K.think(e, ticks)
     end
     return "idle"
   end
+  if u.spells and order.kind == "attack" and require("rts.spells").auto(e, t) then return "casting" end
   local dist = K.reach(x, z, t)
   local reach = w.range + (S.data(t).kind == "unit" and 0.6 or 1.0)
   if dist <= reach then

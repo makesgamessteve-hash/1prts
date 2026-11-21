@@ -12,6 +12,9 @@ M.WEST = { x = -600, z = 0 }
 M.EAST = { x = 600, z = 0 }
 M.HALF = { x = 780, z = 460 }
 M.music = "music/proving_ground.ogg"
+-- M6: a dormant citadel, Vael Tor, drifts high over the field on a slow track round the old stones
+M.CITADEL = { name = "Vael Tor", y = 140, track = { { -320, -220 }, { 320, -220 }, { 320, 220 }, { -320, 220 } } }
+M.STORM = { low = 75, high = 105, wind = { -2, 1 } }
 
 local function materials()
   local m = prts.scene.material
@@ -36,6 +39,7 @@ local function materials()
   m{ id = "hand_board", surface = "rts.hand", emissive = true }
   require("rts.structures").materials()
   require("props.horse").materials()
+  require("rts.citadel").materials()
 end
 
 local function forest(rand, x, z, w, d, n)
@@ -87,6 +91,8 @@ function M.build()
     local y = prts.scene.height(x, z)
     B.box("rock", x - 0.8, y - 0.5, z - 0.6, x + 0.8, y + 3.5 + (i % 2), z + 0.6)
   end
+  require("rts.storm").setup{ low = M.STORM.low, high = M.STORM.high, wind = M.STORM.wind,
+                              area = { -1024, -1024, 1024, 1024 }, fog = { 180, 1000 } }
   prts.scene.marker("start", { M.WEST.x, prts.scene.height(M.WEST.x, M.WEST.z) + 0.06, M.WEST.z + 2.6 }, 0)
   prts.scene.marker("gate", { M.WEST.x, prts.scene.height(M.WEST.x, M.WEST.z + 18), M.WEST.z + 18 }, 0)
   return true
@@ -106,6 +112,8 @@ function M.on_started(id, opts)
   require("rts.command").AREA = { -800, -435, 800, 435 } -- what the war table shows
   if not (opts and opts.no_match) then
     require("rts.match").start{ sides = M.SIDES, serfs = 5 }
+    local c = M.CITADEL
+    require("rts.citadel").spawn{ name = c.name, x = c.track[4][1], z = c.track[4][2], y = c.y, track = c.track }
   end
   return true
 end

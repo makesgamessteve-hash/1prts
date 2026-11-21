@@ -202,6 +202,18 @@ end
 
 function S.company(id) return S.match().companies[id] end
 
+-- Adds a company of `n` men of `unit` to a ship's or skyship's cargo (they wait aboard).
+function S.cargo(ship, side, unit, label, n)
+  local c = S.new_company(side, label)
+  local rec = { id = c.id, units = {} }
+  local hp = require("rts.defs").unit(unit).hp
+  for i = 1, n do rec.units[i] = { def = unit, hp = hp } end
+  local d = prts.entity.data(ship)
+  d.cargo[#d.cargo + 1] = rec
+  c.aboard = prts.entity.name(ship)
+  return c
+end
+
 -- Spawns one unit of def at (x, z) for a side, in company c (optional).
 function S.spawn_unit(side_id, def_id, x, z, company)
   local u = D.unit(def_id)

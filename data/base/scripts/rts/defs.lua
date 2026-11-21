@@ -100,6 +100,8 @@ D.FACTIONS = {
 require("rts.wildborn")(D)
 -- Ships, harbors and flyers (M5).
 require("rts.ships")(D)
+-- Casters, far-sight, the sky mast and tier 6 (M6).
+require("rts.skyfall")(D)
 
 -- Gold mines and trees.
 D.MINE_GOLD = 4000
