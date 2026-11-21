@@ -18,7 +18,7 @@ uint32_t prts_rng_next(prts_rng *r)
     r->state = old * 6364136223846793005ULL + r->inc;
     uint32_t xorshifted = (uint32_t)(((old >> 18u) ^ old) >> 27u);
     uint32_t rot = (uint32_t)(old >> 59u);
-    return (xorshifted >> rot) | (xorshifted << ((-rot) & 31u));
+    return (xorshifted >> rot) | (xorshifted << ((32u - rot) & 31u));
 }
 
 double prts_rng_next_double(prts_rng *r) { return prts_rng_next(r) / 4294967296.0; }

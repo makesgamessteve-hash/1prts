@@ -302,7 +302,7 @@ int prts_cworld_raycast(const prts_cworld *cw, prts_vec3 origin, prts_vec3 dir, 
     float best_t = max_dist;
     for (size_t i = 0; i < cw->boxes.len; i++) {
         cbox *b = prts_array_at(&cw->boxes, i);
-        float t;
+        float t = 0.0f;
         if (b->enabled && ray_box(origin, dir, b->world, &t) && t <= best_t) {
             best_t = t;
             best = (int)i;
@@ -327,7 +327,7 @@ bool prts_cworld_occluded(const prts_cworld *cw, prts_vec3 origin, prts_vec3 dir
     dir = prts_v3_normalize(dir);
     for (size_t i = 0; i < cw->boxes.len; i++) {
         cbox *b = prts_array_at(&cw->boxes, i);
-        float t;
+        float t = 0.0f;
         if (b->enabled && ray_box(origin, dir, b->world, &t) && t <= max_dist) return true;
     }
     if (cw->hf) {

@@ -10,7 +10,8 @@ node_modules/
 *.gcda
 *.gcno
 *.gcov
-coverage/
+/coverage/
+build/**/lua-coverage/
 test-results/
 playwright-report/
 

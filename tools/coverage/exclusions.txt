@@ -1,0 +1,3 @@
+# Coverage exclusions (reviewed). One entry per line: <path> | <reason>
+# Adding an entry needs review. Third-party code (third_party/) is never measured.
+apps/1stprts/main.c | SDL3 app-callback entry point; exercised by every executable run but not linked into prts_tests
