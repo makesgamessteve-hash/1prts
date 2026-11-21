@@ -1,10 +1,13 @@
--- The Proving Ground: a test map with a three-storey keep (switchback stairs, a hoist lift
--- and a war room with a placeholder war table) in open country at dusk. MIT License.
+-- The Proving Ground: Harrowmark, a great concentric castle (an outer and an inner curtain with
+-- twenty towers, two gatehouses and the Raven Tower) around a three-storey keep (switchback and
+-- spiral stairs, a hoist lift and a war room with its war table) in open country at dusk.
+-- MIT License.
 local B = require("lib.build")
 local Door = require("props.door")
 local Lift = require("props.lift")
 local NPC = require("props.npc")
 local Notice = require("props.notice_board")
+local Castle = require("lib.castle")
 
 local M = {}
 
@@ -18,6 +21,13 @@ M.LIFT = { x = -9.3, z = 0, gate = -7.4 }
 M.SPIRAL = { x = 9.6, z = -7.35, radius = 0.9, start = -math.pi / 3, steps = 18 }
 M.HATCH = { x0 = 8.2, x1 = 11.0, z0 = -8.8, z1 = -5.9 }  -- the opening in the roof above it
 M.music = "music/proving_ground.ogg"
+
+-- Harrowmark, the castle around the Great Keep. Coordinates are the inner faces of the walls.
+M.INNER = { x0 = -44, x1 = 44, z0 = -48, z1 = 40, thick = 3, height = 15 }   -- the Inner Ward
+M.OUTER = { x0 = -80, x1 = 80, z0 = -84, z1 = 100, thick = 2.5, height = 10 } -- the Outer Ward
+M.RAVEN = { x = 0, z = -53, radius = 9.5, wall = 2.5, height = 36 }           -- the great tower
+M.LION_GATE = { x = 0, half = 9 }                                             -- inner gatehouse
+M.KINGS_GATE = { x = 0, half = 10 }                                           -- outer gatehouse
 
 local function materials()
   local m = prts.scene.material
@@ -334,6 +344,106 @@ local function watchtower(x, z)
   B.box("flame", x - 0.15, y + 9.3, z - 0.15, x + 0.15, y + 9.8, z + 0.15, { solid = false })
 end
 
+-- Banners of the Crown on a gatehouse's outer face, and lights in its passage.
+local function dress_gate(gate, outer_z, outward, tower_radius, tower_height, passage_height)
+  -- a banner down the front of each drum tower
+  for _, sx in ipairs({ -1, 1 }) do
+    local tx = gate.x + sx * (gate.half - tower_radius * 0.6)
+    local z = outer_z + outward * (tower_radius + 0.08)
+    B.box("banner", tx - 0.9, tower_height - 8, math.min(z, z + outward * 0.06), tx + 0.9, tower_height - 1.5,
+          math.max(z, z + outward * 0.06), { solid = false })
+  end
+  prts.scene.light{ pos = { gate.x, passage_height - 1.0, outer_z - outward * 2 }, color = { 1.3, 0.75, 0.4 }, radius = 10 }
+  prts.scene.light{ pos = { gate.x, passage_height - 1.0, outer_z + outward * 3 }, color = { 1.3, 0.75, 0.4 }, radius = 9 }
+end
+
+-- The garrison: guards at the gates, at the Raven Tower and walking the inner wall-walk.
+local function garrison()
+  local I, O, R = M.INNER, M.OUTER, M.RAVEN
+  local guard = "sprites/crown_guard.lua"
+  local south = O.z1 + O.thick + 4  -- the King's Gate's outer face
+  local list = {
+    NPC.make{ name = "npc.kings_gate_left", sprite = guard, pos = { -3.6, 0, south + 1.2 }, yaw = math.pi },
+    NPC.make{ name = "npc.kings_gate_right", sprite = guard, pos = { 3.6, 0, south + 1.2 }, yaw = math.pi },
+    NPC.make{ name = "npc.lion_gate", sprite = guard, pos = { 3.4, 0, I.z1 + I.thick + 4.2 }, yaw = math.pi },
+    NPC.make{ name = "npc.raven_door", sprite = guard, pos = { R.x + 2.2, 0, R.z + R.radius + 1.2 }, yaw = math.pi },
+    NPC.make{ name = "npc.wall_patrol", sprite = guard, pos = { -34, I.height, I.z1 + 1.2 }, speed = 1.1,
+              patrol = { { -12, I.height, I.z1 + 1.2 }, { -34, I.height, I.z1 + 1.2 } } },
+    NPC.make{ name = "npc.outer_patrol", sprite = guard, pos = { -60, 0, 80 }, speed = 1.2,
+              patrol = { { 60, 0, 80 }, { 60, 0, -70 }, { -60, 0, -70 }, { -60, 0, 80 } } },
+  }
+  return #list
+end
+
+-- The Inner Ward: a 15 m curtain with corner and side towers, the Raven Tower on the north
+-- side (with a spiral stair to its top) and the Lion Gate on the south side.
+local function inner_ward()
+  local I, R = M.INNER, M.RAVEN
+  local t, h = I.thick, I.height
+  local cx0, cx1, cz0, cz1 = I.x0 - t / 2, I.x1 + t / 2, I.z0 - t / 2, I.z1 + t / 2
+  local corner = { radius = 6.5, height = 22 }
+  local towers = {
+    { x = cx0, z = cz0, radius = corner.radius, height = corner.height },
+    { x = cx1, z = cz0, radius = corner.radius, height = corner.height },
+    { x = cx0, z = cz1, radius = corner.radius, height = corner.height },
+    { x = cx1, z = cz1, radius = corner.radius, height = corner.height },
+    { x = cx0, z = -4, radius = 5.5, height = 20 },
+    { x = cx1, z = -4, radius = 5.5, height = 20 },
+    { x = R.x, z = R.z, radius = R.radius, wall = R.wall, height = R.height,
+      stair = { radius = 2.6, size = 1.3, rise = 0.3, start = math.pi / 2, post = "oak" } },
+  }
+  Castle.curtain_ring{ x0 = I.x0, x1 = I.x1, z0 = I.z0, z1 = I.z1, thick = t, height = h, material = "stone",
+                       floor_material = "stone_floor", towers = towers,
+                       gates = { { side = "south", a0 = M.LION_GATE.x - M.LION_GATE.half, a1 = M.LION_GATE.x + M.LION_GATE.half } } }
+  M.lion_gate = Castle.gatehouse{ name = "harrowmark.lion_gate", x = M.LION_GATE.x, z0 = I.z1 - 3, z1 = I.z1 + t + 3,
+                                  half = M.LION_GATE.half, height = h, outward = 1, passage = { half = 2.5, height = 5.5 },
+                                  tower = { radius = 4.5, height = 21 }, material = "stone", floor_material = "stone_floor" }
+  -- stairs up to the wall-walk along the inner face of the south and north walls
+  dress_gate(M.LION_GATE, I.z1 + t + 3, 1, 4.5, 21, 5.5)
+  Castle.wall_stair("stone", { axis = "x", sign = 1, start = -38, w0 = I.z1 - 1.8, w1 = I.z1, base = 0, top = h })
+  Castle.wall_stair("stone", { axis = "x", sign = -1, start = 38, w0 = I.z0, w1 = I.z0 + 1.8, base = 0, top = h })
+  -- the chapel, the kitchens and the well
+  Castle.hall{ x0 = 18, z0 = -40, x1 = 30, z1 = -20, height = 7, ridge = 4, material = "plaster",
+               door = { side = "x0", at = -30, width = 2 } }
+  Castle.hall{ x0 = -34, z0 = 18, x1 = -18, z1 = 30, height = 5, ridge = 3, material = "plaster",
+               door = { side = "x1", at = 24, width = 1.6 } }
+  prts.scene.tube{ base = { -22, -1, -26 }, radius = 1.4, inner = 0.9, height = 1.9, sides = 12, material = "stone" }
+  B.box("stone", -23.2, -1, -27.2, -20.8, 0.9, -24.8, { visible = false })
+  prts.scene.marker("raven_tower_door", { R.x, 0, R.z + R.radius + 1.5 }, 0)
+  prts.scene.marker("inner_wall_stair", { -38.5, 0, I.z1 - 0.9 }, -math.pi / 2)
+end
+
+-- The Outer Ward: a 10 m curtain with eleven towers and the King's Gate, where the road comes in;
+-- stables, barracks and a smithy inside it.
+local function outer_ward()
+  local O = M.OUTER
+  local t, h = O.thick, O.height
+  local cx0, cx1, cz0, cz1 = O.x0 - t / 2, O.x1 + t / 2, O.z0 - t / 2, O.z1 + t / 2
+  local towers = {}
+  local function tower(x, z) towers[#towers + 1] = { x = x, z = z, radius = 5, wall = 1.3, height = 14 } end
+  tower(cx0, cz0) tower(cx1, cz0) tower(cx0, cz1) tower(cx1, cz1)
+  for _, x in ipairs({ -40, 0, 40 }) do tower(x, cz0) end
+  for _, x in ipairs({ -45, 45 }) do tower(x, cz1) end
+  for _, z in ipairs({ -39, 8, 55 }) do tower(cx0, z) tower(cx1, z) end
+  Castle.curtain_ring{ x0 = O.x0, x1 = O.x1, z0 = O.z0, z1 = O.z1, thick = t, height = h, material = "stone",
+                       floor_material = "stone_floor", towers = towers,
+                       gates = { { side = "south", a0 = M.KINGS_GATE.x - M.KINGS_GATE.half, a1 = M.KINGS_GATE.x + M.KINGS_GATE.half } } }
+  M.kings_gate = Castle.gatehouse{ name = "harrowmark.kings_gate", x = M.KINGS_GATE.x, z0 = O.z1 - 3, z1 = O.z1 + t + 4,
+                                   half = M.KINGS_GATE.half, height = h, outward = 1, passage = { half = 2.75, height = 6 },
+                                   tower = { radius = 5, height = 16 }, material = "stone", floor_material = "stone_floor" }
+  dress_gate(M.KINGS_GATE, O.z1 + t + 4, 1, 5, 16, 6)
+  Castle.wall_stair("stone", { axis = "x", sign = 1, start = 18, w0 = O.z1 - 1.8, w1 = O.z1, base = 0, top = h })
+  Castle.wall_stair("stone", { axis = "x", sign = -1, start = -18, w0 = O.z0, w1 = O.z0 + 1.8, base = 0, top = h })
+  Castle.hall{ x0 = -76, z0 = -30, x1 = -64, z1 = 0, height = 4.5, ridge = 3, material = "planks",
+               roof_material = "slate", door = { side = "x1", at = -15, width = 3 } }       -- stables
+  Castle.hall{ x0 = 62, z0 = -10, x1 = 76, z1 = 20, height = 6, ridge = 3.5, material = "plaster",
+               door = { side = "x0", at = 5, width = 1.8 } }                                -- barracks
+  Castle.hall{ x0 = -60, z0 = 62, x1 = -48, z1 = 72, height = 4.5, ridge = 2.5, material = "stone",
+               door = { side = "x1", at = 67, width = 2.2 } }                               -- smithy
+  prts.scene.marker("outer_ward", { 0, 0, 72 }, 0)
+  prts.scene.marker("outer_wall_stair", { 17.5, 0, O.z1 - 0.9 }, -math.pi / 2)
+end
+
 local function countryside()
   prts.scene.cells{ "outside" }
   B.wedge("stone_floor", -1.6, 0, M.HZ, 1.6, M.FLOORS[1], M.HZ + 1.4, { axis = "z", sign = -1 }) -- door ramp
@@ -343,8 +453,8 @@ local function countryside()
   for _, c in ipairs({ { 4.3, 11.2, 0, 0.2 }, { 5.2, 11.0, 0, -0.3 }, { 4.7, 11.1, 0.84, 0.9 } }) do
     model("models/crate.vox", c[1], prts.scene.height(c[1], c[2]) + c[3], c[2], { yaw = c[4], scale = 0.07, solid = true })
   end
-  -- the road to the keep's door
-  for i = 0, 15 do
+  -- the road from the countryside through both gates to the keep's door
+  for i = 0, 23 do
     local z0 = 10 + i * 6
     local y = prts.scene.height(0, z0 + 3)
     B.box("dirt", -1.6, y - 0.3, z0, 1.6, y + 0.04, z0 + 6, { solid = false })
@@ -352,13 +462,13 @@ local function countryside()
   watchtower(30, 70)
   cottage(-26, 52, 6, 5)
   cottage(-36, 64, 5, 5)
-  cottage(22, 40, 5, 6)
+  cottage(26, 62, 5, 6)
   local rand = B.rng(1407)
   local placed = 0
   for _ = 1, 400 do
-    local a, r = rand(0, 2 * math.pi), rand(75, 480)
+    local a, r = rand(0, 2 * math.pi), rand(150, 480)
     local x, z = math.cos(a) * r, math.sin(a) * r
-    if math.abs(x) > 6 or z < 0 then
+    if math.abs(x) > 30 or z < 0 then -- the approach to the King's Gate stays open
       local y = prts.scene.height(x, z)
       local s = rand(0.8, 1.4)
       prts.scene.prism{ base = { x, y - 0.2, z }, radius = 0.35 * s, top_radius = 0.25 * s, height = 3 * s, sides = 5, material = "bark", solid = true }
@@ -369,7 +479,7 @@ local function countryside()
   end
   for _ = 1, 60 do
     local x, z = rand(-400, 400), rand(-400, 400)
-    if x * x + z * z > 90 * 90 then
+    if x * x + (z - 8) * (z - 8) > 160 * 160 then
       local y, s = prts.scene.height(x, z), rand(0.6, 2.2)
       B.box("rock", x - s, y - 0.4, z - s * 0.8, x + s, y + s * 0.7, z + s * 0.8)
     end
@@ -407,7 +517,7 @@ function M.build()
   define_portals()
   prts.scene.cells{ "outside" }
   prts.scene.terrain{ size = 1024, spacing = 4, seed = 7, height = 26, octaves = 4, material = "grass",
-                      flats = { { x = 0, z = 15, radius = 48, height = 0, blend = 70 } } }
+                      flats = { { x = 0, z = 8, radius = 140, height = 0, blend = 80 } } }
   prts.scene.env{
     sun_dir = { -0.75, 0.22, 0.25 }, sun_color = { 1.05, 0.66, 0.42 }, ambient = { 0.20, 0.22, 0.32 },
     fog_color = { 0.56, 0.44, 0.46 }, fog_near = 90, fog_far = 780,
@@ -437,12 +547,15 @@ function M.build()
   prts.scene.cells{ "outside", "keep.hall" }
   M.door = Door.make{ name = "keep.door", hinge = { -1.1, M.FLOORS[1], M.HZ - 0.5 }, width = 2.2, height = 3.2,
                       thickness = 0.16, material = "oak", portal = "keep.door" }
+  inner_ward()
+  outer_ward()
+  M.guards = garrison()
   M.trees = countryside()
   M.people = people()
   prts.scene.cells()
 
   local F = M.FLOORS
-  prts.scene.marker("start", { 0, 0, 42 }, 0)
+  prts.scene.marker("start", { 0, 0, 132 }, 0) -- on the road, before the King's Gate
   prts.scene.marker("keep_door", { 0, 0, 11.8 }, 0)
   prts.scene.marker("keep_hall_lift", { -6.4, F[1], 1.65 }, math.pi / 2)
   prts.scene.marker("stair_base", { 9.8, F[1], -1.2 }, 0)

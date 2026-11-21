@@ -809,20 +809,24 @@ UTEST(audio, engine_listener_and_attached_sounds)
     prts_mixer *m = prts_audio_mixer(e->audio);
     /* the commander stands at the start marker; turned to look along -x, +z is on the left */
     e->commander.yaw = (float)(PRTS_PI / 2);
-    prts_voice_id v = (prts_voice_id)lua_int(e, "prts.audio.play{ sound = 'sounds/footstep.wav', at = { 0, 1.7, 46 }, loop = true }");
+    /* positions are taken relative to the start marker, wherever the map puts it */
+    ASSERT_TRUE(prts_script_run_string(e->script, "__sx, __sy, __sz = prts.scene.marker_pos('start')", "=test"));
+    prts_voice_id v = (prts_voice_id)lua_int(
+        e, "prts.audio.play{ sound = 'sounds/footstep.wav', at = { __sx, __sy + 1.7, __sz + 4 }, loop = true }");
     ASSERT_TRUE(prts_engine_frame(e, 1.0 / 30.0));
     prts_voice_info info;
     ASSERT_TRUE(prts_mixer_voice_info(m, v, &info));
     ASSERT_GT(info.gain_left, 3.0f * info.gain_right);
     /* a sound played on an entity follows it, and stops when it is gone */
-    ASSERT_TRUE(prts_script_run_string(e->script, "__noisy = prts.entity.spawn{ name = 'noisy', pos = { 3, 0, 40 } }", "=test"));
+    ASSERT_TRUE(prts_script_run_string(e->script, "__noisy = prts.entity.spawn{ name = 'noisy', pos = { __sx + 3, __sy, __sz - 2 } }", "=test"));
     v = (prts_voice_id)lua_int(e, "prts.audio.play{ sound = 'sounds/torch_loop.wav', entity = __noisy, loop = true }");
     prts_entity ent = (prts_entity)lua_int(e, "__noisy");
-    prts_world_set_local(e->world, ent, prts_dv3(6, 0, 40), 0.0f);
+    double sx = (double)lua_int(e, "__sx"), sz = (double)lua_int(e, "__sz");
+    prts_world_set_local(e->world, ent, prts_dv3(sx + 6, 0, sz - 2), 0.0f);
     prts_world_begin_tick(e->world);
     ASSERT_TRUE(prts_engine_frame(e, 1.0 / 30.0));
     ASSERT_TRUE(prts_mixer_voice_info(m, v, &info));
-    ASSERT_NEAR(6.0, info.pos.x, 1e-6);
+    ASSERT_NEAR(sx + 6.0, info.pos.x, 1e-6);
     prts_world_despawn(e->world, ent);
     ASSERT_TRUE(prts_engine_frame(e, 1.0 / 30.0));
     ASSERT_TRUE(prts_mixer_voice_info(m, v, &info));

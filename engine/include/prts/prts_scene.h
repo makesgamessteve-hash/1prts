@@ -214,6 +214,18 @@ const prts_scene_image *prts_scene_find_image(const prts_scene *s, const char *n
 /* Vertical prism (cylinder or cone): sides >= 3, top_radius 0 makes a cone. */
 void prts_scene_add_prism(prts_scene *s, prts_vec3 base, float radius, float top_radius, float height, int sides,
                           int material, prts_entity owner);
+/* A hollow round wall (a castle tower): `sides` flat sides, side i centred on the angle
+ * i * 2pi / sides (0 is +x, then towards +z). Sides whose bit is set in `open` are left out
+ * (doors, windows), with their edges closed. Drawn only; scripts add collision. */
+typedef struct prts_tube {
+    prts_vec3 base;
+    float radius, inner, height;
+    int sides;
+    uint64_t open;
+    bool cap; /* the top ring */
+    float tile;
+} prts_tube;
+void prts_scene_add_tube(prts_scene *s, const prts_tube *t, int material, prts_entity owner);
 /* Generates terrain from value noise, flattening the given areas. Replaces old terrain. */
 void prts_scene_terrain(prts_scene *s, const prts_terrain_params *p, const prts_terrain_flat *flats, int nflats);
 float prts_scene_height(const prts_scene *s, float x, float z);

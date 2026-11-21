@@ -1,7 +1,7 @@
 -- Render golden images (task 7.9). Fixed views of the Proving Ground for the resolution
 -- presets, each effect toggle, a field map in front of a 20 km horizon, a directional sprite
 -- from three sides, a door that hides a room, and the live war table.
--- tools/golden/run.py renders this at 640x360 and compares the shots with tests/golden/ref/;
+-- tools/golden/run.cmake renders this at 640x360 and compares the shots with tests/golden/ref/;
 -- tools/golden/update refreshes the references. Needs a window (skipped shots when headless).
 -- MIT License.
 local DEFAULT = { preset = "retro", dither = true, snap = true, affine = false, fog = true }
@@ -24,7 +24,8 @@ return {
     end
 
     -- Spec: Changing the preset; Dusk lighting
-    t.place("start", 0.05)
+    -- far down the road, so the castle stands in the dusk haze (fog starts at 90 m)
+    t.place(0, prts.scene.height(0, 250), 250, 0, 0.06)
     shot("approach_authentic", { preset = "authentic" })
     shot("approach_retro")
     shot("approach_crisp", { preset = "crisp" })
@@ -82,9 +83,9 @@ return {
 
     -- Spec: Field map and horizon in one view. A placeholder map held 0.4 m in front of the
     -- eyes, and a mountain ridge 20 km away, drawn in the same view without fog.
-    t.place(0, 0, 60, math.pi, -0.35)
+    t.place(0, 0, 160, math.pi, -0.35) -- on the road outside the castle, looking south
     local _, _, eye = prts.commander.view()
-    prts.scene.box{ min = { -0.2, eye - 0.17, 60.3 }, max = { 0.2, eye - 0.16, 60.6 }, material = "rug", solid = false }
+    prts.scene.box{ min = { -0.2, eye - 0.17, 160.3 }, max = { 0.2, eye - 0.16, 160.6 }, material = "rug", solid = false }
     prts.scene.box{ min = { -6000, -200, 20000 }, max = { 6000, 2600, 21500 }, material = "rock", solid = false,
                     tile = 1000 }
     shot("field_map_and_horizon", { fog = false })

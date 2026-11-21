@@ -142,6 +142,35 @@ static int l_scene_wedge(lua_State *L)
     return 0;
 }
 
+/* prts.scene.tube{ base, radius, inner, height, sides, open = { i, ... }, cap, material, entity, tile } */
+static int l_scene_tube(lua_State *L)
+{
+    prts_engine *e = prts_engine_from_lua(L);
+    luaL_checktype(L, 1, LUA_TTABLE);
+    prts_tube t;
+    memset(&t, 0, sizeof(t));
+    t.base = check_vec3(L, 1, "base");
+    t.radius = field_number(L, 1, "radius", 4.0f);
+    t.inner = field_number(L, 1, "inner", t.radius - 1.0f);
+    t.height = field_number(L, 1, "height", 4.0f);
+    t.sides = (int)field_number(L, 1, "sides", 16.0f);
+    t.cap = field_bool(L, 1, "cap", true);
+    t.tile = field_number(L, 1, "tile", 2.0f);
+    if (t.inner >= t.radius) return luaL_error(L, "inner radius must be smaller than the radius");
+    lua_getfield(L, 1, "open");
+    if (lua_istable(L, -1)) {
+        for (int i = 1; lua_rawgeti(L, -1, i) == LUA_TNUMBER; i++) {
+            lua_Integer side = lua_tointeger(L, -1);
+            if (side >= 0 && side < 64) t.open |= (uint64_t)1 << side;
+            lua_pop(L, 1);
+        }
+        lua_pop(L, 1);
+    }
+    lua_pop(L, 1);
+    prts_scene_add_tube(e->scene, &t, material_index(L, e, 1), opt_entity(L, 1, "entity"));
+    return 0;
+}
+
 static int l_scene_prism(lua_State *L)
 {
     prts_engine *e = prts_engine_from_lua(L);
@@ -774,7 +803,7 @@ void prts_engine_open_game_api(prts_engine *e)
         {"portal", l_scene_portal},     {"set_portal", l_scene_set_portal}, {"portal_open", l_scene_portal_open},
         {"cells", l_scene_cells},       {"cell_at", l_scene_cell_at},   {"surface", l_scene_surface},
         {"sprite", l_scene_sprite},     {"sprite_anim", l_scene_sprite_anim}, {"model", l_scene_model},
-        {"wedge", l_scene_wedge},       {"in_zone", l_scene_in_zone},
+        {"wedge", l_scene_wedge},       {"tube", l_scene_tube},       {"in_zone", l_scene_in_zone},
         {NULL, NULL}};
     static const prts_script_fn entity[] = {
         {"spawn", l_entity_spawn},   {"pos", l_entity_pos},         {"local_pos", l_entity_local_pos},

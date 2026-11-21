@@ -301,6 +301,59 @@ void prts_scene_add_prism(prts_scene *s, prts_vec3 base, float radius, float top
     s->revision++;
 }
 
+/* A quad whose front faces `facing`: the corner order is flipped when needed. */
+static void quad_facing(prts_mesh_cpu *m, prts_vec3 a, prts_vec3 b, prts_vec3 c, prts_vec3 d, prts_vec3 facing,
+                        prts_vec3 color, float uv_scale, float tile)
+{
+    if (prts_v3_dot(prts_v3_cross(prts_v3_sub(b, a), prts_v3_sub(d, a)), facing) < 0.0f) {
+        prts_mesh_add_quad(m, a, d, c, b, color, uv_scale, tile);
+    } else {
+        prts_mesh_add_quad(m, a, b, c, d, color, uv_scale, tile);
+    }
+}
+
+void prts_scene_add_tube(prts_scene *s, const prts_tube *t, int material, prts_entity owner)
+{
+    int sides = PRTS_CLAMP(t->sides, 3, 64);
+    prts_mesh_group *g = prts_scene_group(s, material, owner);
+    prts_material *m = material_at(s, material);
+    float step = (float)(2.0 * PRTS_PI) / (float)sides, tile = t->tile > 0.0f ? t->tile : 2.0f;
+    prts_vec3 up = prts_v3(0, t->height, 0);
+    for (int i = 0; i < sides; i++) {
+        /* side i is centred on the angle i * step (0 is +x, then towards +z) */
+        float a0 = ((float)i - 0.5f) * step, a1 = ((float)i + 0.5f) * step;
+        prts_vec3 d0 = prts_v3(cosf(a0), 0, sinf(a0)), d1 = prts_v3(cosf(a1), 0, sinf(a1));
+        prts_vec3 o0 = prts_v3_add(t->base, prts_v3_scale(d0, t->radius));
+        prts_vec3 o1 = prts_v3_add(t->base, prts_v3_scale(d1, t->radius));
+        prts_vec3 n0 = prts_v3_add(t->base, prts_v3_scale(d0, t->inner));
+        prts_vec3 n1 = prts_v3_add(t->base, prts_v3_scale(d1, t->inner));
+        bool open = (t->open >> i) & 1u;
+        if (open) {
+            /* the sides of the opening (where the wall next to it is closed) */
+            if (!((t->open >> ((i + sides - 1) % sides)) & 1u)) {
+                quad_facing(&g->mesh, n0, o0, prts_v3_add(o0, up), prts_v3_add(n0, up), prts_v3(-d0.z, 0, d0.x), m->tint,
+                            m->uv_scale, tile);
+            }
+            if (!((t->open >> ((i + 1) % sides)) & 1u)) {
+                quad_facing(&g->mesh, n1, o1, prts_v3_add(o1, up), prts_v3_add(n1, up), prts_v3(d1.z, 0, -d1.x), m->tint,
+                            m->uv_scale, tile);
+            }
+            continue;
+        }
+        prts_vec3 mid = prts_v3_normalize(prts_v3_add(d0, d1));
+        quad_facing(&g->mesh, o0, o1, prts_v3_add(o1, up), prts_v3_add(o0, up), mid, m->tint, m->uv_scale, tile);
+        if (t->inner > 0.0f) {
+            quad_facing(&g->mesh, n0, n1, prts_v3_add(n1, up), prts_v3_add(n0, up), prts_v3_scale(mid, -1.0f), m->tint,
+                        m->uv_scale, tile);
+        }
+        if (t->cap) {
+            quad_facing(&g->mesh, prts_v3_add(n0, up), prts_v3_add(o0, up), prts_v3_add(o1, up), prts_v3_add(n1, up),
+                        prts_v3(0, 1, 0), m->tint, m->uv_scale, tile);
+        }
+    }
+    s->revision++;
+}
+
 /* --- terrain -------------------------------------------------------------- */
 
 static float lattice(uint64_t seed, int x, int z)

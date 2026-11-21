@@ -9,9 +9,11 @@ return {
     t.place("start", 0.05)
     t.ticks(3)
     t.screenshot("01_approach_at_dusk")
-    t.place(-52, 0, 108, -0.44, 0.06)
+    -- Harrowmark from the road, far to the south
+    local hx, hz = -14, 290
+    t.place(hx, prts.scene.height(hx, hz), hz, math.atan(hx, hz), 0.04)
     t.ticks(3)
-    t.screenshot("02_keep_and_cottages")
+    t.screenshot("02_harrowmark_from_afar")
     t.place("keep_door")
     t.face("keep.door", 1.1, 1.6, 0)
     t.input.press("use")
@@ -55,5 +57,23 @@ return {
     t.face(-0.6, 0.6, -0.6)
     t.ticks(3)
     t.screenshot("12_hall_benches_braziers")
+    -- the castle: the Outer Ward before the Lion Gate, the inner wall-walk, the Raven Tower's top
+    t.place("outer_ward", 0.12)
+    t.ticks(3)
+    t.screenshot("18_outer_ward")
+    t.place(-30, 15, 41.2, -math.pi / 2, -0.05)
+    t.ticks(3)
+    t.screenshot("19_wall_walk")
+    -- on the wall top, at a crenel (the gaps are on the odd sides of the 16-sided tower)
+    local a = 5 * 2 * math.pi / 16
+    t.place(math.cos(a) * 7.9, 36, -53 + math.sin(a) * 7.9, math.atan(-math.cos(a), -math.sin(a)) + math.pi, -0.42)
+    t.ticks(3)
+    t.screenshot("20_raven_tower_view")
+    t.place(-32, 0, -34, math.atan(-32, -34), 0.12)
+    t.ticks(3)
+    t.screenshot("21_inner_ward")
+    t.place(-6, 0, 135, math.atan(6, 135 - 106), 0.14)
+    t.ticks(3)
+    t.screenshot("22_kings_gate")
   end,
 }
