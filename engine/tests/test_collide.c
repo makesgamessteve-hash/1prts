@@ -227,6 +227,13 @@ static int brute_raycast(const prts_aabb *boxes, const bool *on, int n, prts_vec
     return best;
 }
 
+/* A small deterministic generator (a function, so several calls in one expression are fine). */
+static float lcg(uint32_t *seed)
+{
+    *seed = *seed * 1664525u + 1013904223u;
+    return (float)(*seed >> 8) / 16777216.0f;
+}
+
 UTEST(collide, bvh_matches_checking_every_box)
 {
     enum { N = 300 };
@@ -235,7 +242,7 @@ UTEST(collide, bvh_matches_checking_every_box)
     prts_cworld *cw = prts_cworld_create();
     prts_world *w = prts_world_create();
     uint32_t seed = 12345u;
-#define RND() ((seed = seed * 1664525u + 1013904223u), (float)(seed >> 8) / 16777216.0f)
+#define RND() lcg(&seed)
     for (int i = 0; i < N; i++) {
         prts_vec3 c = prts_v3(RND() * 200.0f - 100.0f, RND() * 20.0f, RND() * 200.0f - 100.0f);
         prts_vec3 h = prts_v3(0.2f + RND() * 4.0f, 0.2f + RND() * 3.0f, 0.2f + RND() * 4.0f);

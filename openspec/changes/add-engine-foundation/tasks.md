@@ -124,59 +124,38 @@
 
 ## Implementation notes
 
-Status on 2026-11-21: 24 of 75 tasks are done and verified (checked above). The engine boots,
-renders the Proving Ground under OpenGL 3.3 core, and passes 8 CTest suites on Linux
-(C unit tests, Lua unit tests, 5 headless scenarios, 1 rendered run under Xvfb + Mesa llvmpipe)
-with 99% C and 99.8% Lua line coverage.
+Status on 2026-11-21: 79 of 80 tasks are done and verified (checked above); 14.5 is the final
+check of the whole pipeline. CTest runs 31 suites on Linux (C unit tests, Lua unit tests,
+headless scenarios, determinism record/replay checks, rendered runs and golden images under
+Xvfb + Mesa llvmpipe) with 99% C and 99.9% Lua line coverage; 21 browser tests run against the
+web build; CI builds and tests on Windows, Linux and macOS and packages all four platforms.
 
-Partly done (still unchecked):
-- 1.2 SDL3 is fetched and pinned; building against a system SDL3 has not been tried.
-- 1.3 Lua 5.4.7, stb_image/stb_image_write, cgltf and utest.h are vendored. stb_vorbis and
-  microui come with the tasks that use them. ogt_vox is not used (see 7.3).
-- 1.4 Strict warnings are on; `.clang-format` / `.clang-tidy` are missing.
-- 1.5 Done. Every job (linux-coverage, linux-sanitize, windows, macos, web, checks, package on
-  three desktops, package-web) ran green on pushes to main; the repository does not use pull
-  requests yet, so "green on a pull request" was checked on the push that a pull request would
-  run.
-- 2.1 Arrays, strings and logging exist. Arena allocators and a hash map do not yet.
-- 3.1 Window, GL context, events, time and paths work. The job system and threads (3.5) don't
-  exist yet.
-- 4.4 The desktop user area works. The web (IDBFS) part is missing.
-- 5.5 Done except `prts.def`.
-- 5.6 Manifests and the API check work. Dependencies and load order are missing.
-- 5.8 The runner and coverage gate work. Results go to the log, not to JUnit XML.
-- 6.2 Done, with components kept by the module that uses them and keyed by entity handle
-  rather than in one component store: transform, frame, velocity, movers (platforms) and the
-  usable flag in `sim/world.c`; colliders in `phys/collide.c`; meshes, sprites and lights in
-  the scene; sound sources in the mixer; doors, triggers (`lib/triggers.lua`) and other script
-  components as entity data in Lua.
-- 6.6 Determinism is tested with two identical runs (matching state hashes). Replay recording
-  is missing.
-- 7.3 Done. `.vox` files are read by a small C parser in `engine/src/scene/vox.c` instead of
+How some tasks were done (where it differs from the task text):
+- 1.3 Lua 5.4.7, stb_image/stb_image_write, stb_vorbis, cgltf, microui and utest.h are
+  vendored with their licenses. ogt_vox is not used (see 7.3).
+- 1.5 Every job (linux-coverage, linux-sanitize, windows, macos, web, checks, package on three
+  desktops, package-web) ran green on pushes to main; the repository does not use pull
+  requests yet, so "green on a pull request" was checked on the push a pull request would run.
+- 6.2 Components are kept by the module that uses them and keyed by entity handle rather than
+  in one component store: transform, frame, velocity, movers (platforms) and the usable flag in
+  `sim/world.c`; colliders in `phys/collide.c`; meshes, sprites and lights in the scene; sound
+  sources in the mixer; doors, triggers (`lib/triggers.lua`) and other script components as
+  entity data in Lua.
+- 7.3 `.vox` files are read by a small C parser in `engine/src/scene/vox.c` instead of
   ogt_vox, whose header is C++ only (the engine is C11).
-- 7.4–7.9 Done. Golden images (`tests/golden/`) render at 640x360, so the `hd` and `native`
-  presets (540 lines and full size) both draw at the window size there; the three lower
-  presets have their own images. The far depth layer now reaches 120 km.
-- 8.4 The scheme is detected. Events to scripts and the web hint are missing.
-- 9.1 Done with boxes: static boxes are in one BVH for the whole map (not one per mesh), boxes
-  owned by entities are checked one by one, and the terrain is a height grid. Queries are box
-  sweeps and rays; there is no capsule (see 9.2).
-- 9.2 Done with a box controller (design D8 as built): sliding, step-up 0.4 m, riding platforms
-  and a 45-degree slope limit on terrain. `sprint_into_wall.lua` covers *Wall at sprint speed*.
-- 9.4 Use/interaction and doors work. The on-screen prompt, door sounds and portal state are
-  missing.
-- 9.6 Release builds have no camera other than the commander's. The developer observer camera
-  doesn't exist yet.
-- 10.1 / 10.2 Done. Brushes are Lua helpers in `lib/build.lua` (box, wall with openings, door and
+- 7.4–7.9 Golden images (`tests/golden/`) render at 640x360, so the `hd` and `native` presets
+  (540 lines and full size) both draw at the window size there; the three lower presets have
+  their own images. The far depth layer reaches 120 km.
+- 9.1 Static boxes are in one BVH for the whole map (not one per mesh), boxes owned by entities
+  are checked one by one, and the terrain is a height grid. Queries are box sweeps and rays.
+- 9.2 A box controller (design D8 as built): sliding, step-up 0.4 m, riding platforms and a
+  45-degree slope limit on terrain.
+- 10.1 / 10.2 Brushes are Lua helpers in `lib/build.lua` (box, wall with openings, door and
   window frames, stairs, spiral stair, ramp); cells and portals are declared next to them in
-  the map. The keep has switchback stairs between floors 1-3 and a spiral stair from the war
+  the map. The keep has switchback stairs between floors 1–3 and a spiral stair from the war
   room floor to the roof.
-- 10.3 Seventeen original textures, generated by `tools/gen_placeholder_art.py`, with credits.
-  Sprites, voxels, sounds, music and fonts are missing.
-- 10.4 Credits coverage and texture references are checked. Format parsing is not.
-
-Not started: 3.4, 3.5, 5.9, 5.10, 6.3, 7.6–7.9, 8.3, 8.5, 10.5, 11.x (audio), 12.x (UI,
-menus, console), 13.x (web and WebXR), 14.1, 14.3, 14.5.
+- 12.1 In-world UI surfaces are shown on objects through materials (`surface = <id>`), for
+  example the notice board in the great hall.
 
 Deviations from `design.md` (recorded there too):
 - WebXR (13.2-13.4): head and hand poses reach the simulation as per-tick commander input
