@@ -4,7 +4,7 @@
 -- MIT License.
 local B = {}
 B.TOP = 40
-B.SPEED = 3
+B.SPEED = 1.6
 B.SIGHT = 320
 
 local function box(e, mat, x0, y0, z0, x1, y1, z1, solid)

@@ -3,7 +3,8 @@
 ## Water (`rts/water.lua`)
 
 - `Wa.setup{ level, area = { x0, z0, x1, z1 } }`: the water surface is a non-solid box at
-  `level`. A hidden solid floor at `level - 1.1` lets the commander wade.
+  `level`. In deep water the commander is held up 1.1 m under the surface each tick (a hidden
+  floor box would also lie under the land, and the navigation grid takes the lowest surface).
 - `Wa.depth(x, z)` is `level - ground`.
 - While the commander wades (depth > 0.4 under the feet), their speeds drop to half. The tick
   restores them on dry land.
@@ -61,8 +62,8 @@
 
 - **The observation balloon:**
   - an envelope on a basket, tethered to a winch post;
-  - the winch is a lift: use raises or lowers the basket between 2 m and 40 m. The commander
-    in the basket rides up.
+  - the winch is a lift: use raises or lowers the basket between 2 m and 40 m at 1.6 m/s (the
+    lift's speed: faster, the commander loses the floor). The commander in the basket rides up.
   - While up, it is an eye for its side with sight 320 m (picture).
   - It can be shot down (hp 300; only missiles and flyers reach it).
 - **Wyvern riders** (`wildborn.wyvern`, at roost cliffs, tier 3):

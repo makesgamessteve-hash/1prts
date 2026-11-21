@@ -407,7 +407,7 @@ a reload the engine calls `on_reload(names)` if `scripts/main.lua` defines it, w
 reloaded module names. `scripts/main.lua` itself is not re-run. Hot reload is on for interactive
 runs of developer builds and can be turned on for tests with `--hot-reload`.
 
-## Base-game modules for factions, machines and mounts (M3, M4)
+## Base-game modules for factions, machines, ships and flyers (M3 to M5)
 
 These are Lua modules of the base game (`data/base/scripts/`), not engine functions. Mods
 `require` them to build their own machines.
@@ -422,6 +422,9 @@ These are Lua modules of the base game (`data/base/scripts/`), not engine functi
 | `rts.tiers` | `tier(side)`, `allowed(side, def)`, `buy_mandate(side, id)`, `damage_bonus(side, unit)`, `ignites(side, unit)`. Events `rts_mandate`, `rts_upgraded`, `rts_hq_stage`. |
 | `rts.fire`, `rts.presence`, `rts.succession` | `ignite(e, n)` and `quench(e, seconds)`; `near(side, x, z)` (within 50 m of the commander); `hurt(n)`, `fallen()`, `anchor(side)`, `silent(side)`, with `DELAY`, `HANDOVER` and `SUCCESSORS` as match rules. Events `rts_fire`, `rts_fire_out`, `commander_hurt`, `commander_fell`, `commander_succeeded`, `commander_defeated`. |
 | `props.behemoth` | `spawn(side, def, x, z)`, `order(e, x, z)`, `war_room_point(e)`. Events `rts_behemoth` and `rts_behemoth_arrived`. |
+| `rts.water` | `setup{ level, area }`, `level()`, `depth(x, z)`, `close_grid()` (after `prts.nav.build`: deep water closed to land units). Event `wading` (true or false). |
+| `rts.fleet`, `rts.ships` | Ships as data (`D.SHIPS`: hull size, draft, speed, guns or ram, cargo, crew, deck plan, hull rooms) and as moving frames: `spawn(side, ship, x, z, yaw, name)`, `order(e, x, z)`, `hit(e, n)`, `sink(e)`, `embark(e, company)`, `land(e)`, `enemy_ship(side, x, z, r)`, `aboard(e)`. Events `rts_ship_launched`, `rts_ship_arrived`, `rts_broadside`, `rts_rammed`, `rts_embarked`, `rts_landed`, `rts_ship_sinking`, `rts_ship_sunk`. |
+| `rts.sky`, `props.balloon`, `props.skyship` | Flying units (`flying = true` in a unit's definition): `flyers()`, `nearest_enemy(side, x, z, r)`. The balloon: `toggle(e)`, `up(e)`, `basket(e)` (event `rts_balloon`). The skyship: `spawn(name, x, z, yaw)`, `order(e, x, z)` (event `skyship_arrived`). |
 | `props.wagon`, `props.siege_tower`, `props.mine` | The wagon on its road with a driver's seat; the siege tower with push bar, bridge lever, crew and rooms (`damage(e, room, n)`, `push_speed(e)`, `lower_bridge(e)`); the gold mine's galleries and lift cage. Events `siege_push`, `siege_halt`, `siege_tower_at_wall` and `siege_bridge_lowered` (tower name). |
 
 ## Scenario tests (`t`)

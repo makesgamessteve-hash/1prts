@@ -194,3 +194,15 @@ is missing. References are C unit tests (`suite.case`), test files and scripts (
 | presence-and-succession | Holding with the commander | `tests/game/scenarios/presence_succession.lua` |
 | presence-and-succession | The banner passes to the second | `tests/game/scenarios/presence_succession.lua` |
 | presence-and-succession | No one left to lead | `tests/game/scenarios/presence_succession.lua` |
+| water-and-ships | Wading at the shore | `tests/game/scenarios/wading.lua`, `engine/tests/test_nav.c` (`nav.deep_water_is_closed`) |
+| water-and-ships | A cog lands troops | `tests/game/scenarios/ships.lua` |
+| water-and-ships | A broadside | `tests/game/scenarios/naval_battle.lua` (with a ram) |
+| water-and-ships | Holed below the waterline | `tests/game/scenarios/damage_control.lua` |
+| water-and-ships | The pumps keep her afloat | `tests/game/scenarios/damage_control.lua` |
+| water-and-ships | A ship from the harbor | `tests/game/scenarios/harbor.lua` |
+| water-and-ships | Orders from the chart room | `tests/game/scenarios/harbor.lua` |
+| sky | Up in the basket | `tests/game/scenarios/balloon.lua` |
+| sky | Wyverns against a balloon | `tests/game/scenarios/wyverns.lua` |
+| sky | Over the hills by skyship | `tests/game/scenarios/skyship.lua` |
+| harbor-siege | Breaking the siege | `tests/game/scenarios/harbor_siege.lua` |
+| harbor-siege | The galleon lost | `tests/game/scenarios/harbor_siege_lost.lua` |

@@ -175,7 +175,17 @@ function K.think(e, ticks)
     end
     d.target = t
   end
-  if not t then return "idle" end
+  if not t then
+    -- an attack-move carries on to its objective once what it met is beaten
+    local now = prts.time.tick()
+    if order.kind == "attack" and order.x and not prts.agent.info(e).moving and S.dist(x, z, order.x, order.z) > 10
+       and now >= (d.advance_at or 0) then
+      -- try again in two seconds, or in twenty if there is no way there (paths are costly)
+      d.advance_at = now + (prts.agent.move(e, order.x, order.z) and 60 or 600)
+      return "advancing"
+    end
+    return "idle"
+  end
   local dist = K.reach(x, z, t)
   local reach = w.range + (S.data(t).kind == "unit" and 0.6 or 1.0)
   if dist <= reach then

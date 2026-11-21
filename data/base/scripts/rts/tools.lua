@@ -140,7 +140,9 @@ function T.furnish(hold, base)
   local hd = S.data(hold)
   if hd.furnished then return false end
   hd.furnished = true
-  if D.structure(hd.def).mobile and not base then return require("props.behemoth").furnish(hold) end
+  local sdef = hd.def and D.structure(hd.def)
+  if sdef and sdef.mobile and not base then return require("props.behemoth").furnish(hold) end
+  local moving = base ~= nil -- a table set into a frame (a behemoth's howdah, a galleon's chart room)
   base = base or { 0, 0, 0 }
   local t = T.TABLE
   local bx, by, bz = base[1], base[2], base[3]
@@ -150,7 +152,7 @@ function T.furnish(hold, base)
                   material = "war_table_map", entity = hold, solid = false, fit = true }
   -- a lantern over the table: war rooms have few windows
   prts.scene.light{ pos = { bx, by + 3.2, bz + 0.6 }, color = { 1.0, 0.82, 0.55 }, radius = 9, entity = hold }
-  Cmd.state().table = { host = hold, base = base }
+  Cmd.state().table = { host = hold, base = base, moving = moving }
   T.place_table_surface()
   return true
 end
@@ -203,6 +205,8 @@ function T.tick()
     st.prev[id] = down or nil
   end
   if not active and st.held then T.lower() end
+  -- a table in a moving frame: its surface follows it (after the frames moved this tick)
+  if st.table and st.table.moving and T.table_host() then T.place_table_surface() end
   return st.held
 end
 

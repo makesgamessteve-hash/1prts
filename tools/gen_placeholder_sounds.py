@@ -402,6 +402,18 @@ def fall_cry(rnd):
     return normalize(out, 0.65)
 
 
+def cannon(rnd):
+    """A ship's gun: a deep boom with a crack and a rolling tail."""
+    n = int(1.6 * RATE)
+    out = [0.0] * n
+    mix_into(out, 0, thump(n, 90, 32, 0.35), 1.2)
+    crack = highpass([math.exp(-i / 300.0) * rnd.uniform(-1, 1) for i in range(3000)], 900)
+    mix_into(out, 0, crack, 1.4)
+    roll = lowpass(noise(rnd, n), 220)
+    mix_into(out, int(0.05 * RATE), [s * 2.2 * math.exp(-i / (0.45 * RATE)) for i, s in enumerate(roll)])
+    return normalize(out, 0.85)
+
+
 EFFECTS = [
     ("door_open", door_open),
     ("door_close", door_close),
@@ -420,6 +432,7 @@ EFFECTS = [
     ("sword_clash", sword_clash),
     ("crossbow_shot", crossbow_shot),
     ("fall_cry", fall_cry),
+    ("cannon", cannon),
 ]
 
 

@@ -91,6 +91,18 @@ function S.side(id) return S.match().sides[id] end
 
 function S.alive(e) return e ~= nil and prts.entity.alive(e) end
 
+-- Before an entity goes: a commander near it is set down where they stand, so that if they were
+-- aboard (on its deck, in its howdah) they stay in the world instead of going with it.
+function S.release_commander(e, r)
+  local c = prts.commander.entity()
+  if not c or not S.alive(e) then return false end
+  local x, y, z = prts.entity.pos(c)
+  local ex, _, ez = prts.entity.pos(e)
+  if (x - ex) ^ 2 + (z - ez) ^ 2 > (r or 60) ^ 2 then return false end
+  prts.commander.place({ x, y, z })
+  return true
+end
+
 function S.data(e) return prts.entity.data(e) end
 
 function S.pos(e)

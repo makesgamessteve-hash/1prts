@@ -93,7 +93,7 @@ function M.tick(now)
     m.units = S.compact(m.units)
     m.structures = S.compact(m.structures)
     for id, c in prts.sorted_pairs(m.companies) do
-      if #C.members(c) == 0 then m.companies[id] = nil end
+      if #C.members(c) == 0 and not c.aboard then m.companies[id] = nil end -- aboard a ship: kept
     end
     Cmd.idle_serfs()
     M.check_end(now)

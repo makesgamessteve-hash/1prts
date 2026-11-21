@@ -101,16 +101,64 @@ end
 -- selects it; elsewhere orders the selected company there, to attack when an enemy is seen
 -- there. `r` widens the pick (metres). Returns "selected" | "move" | "attack" | "cut_off" | "nothing".
 function Cmd.point(x, z, r)
+  local ship = Cmd.ship_at(x, z, math.max(r or Cmd.PICK, 20))
+  if ship then
+    Cmd.state().ship = prts.entity.name(ship)
+    Cmd.state().selected = nil
+    prts.events.emit("rts_ship_selected", prts.entity.name(ship))
+    return "ship"
+  end
   local c = Cmd.company_at(x, z, r)
   if c then
     Cmd.select(c.id)
+    Cmd.state().ship = nil
     return "selected"
   end
+  local sel_ship = Cmd.state().ship and prts.entity.find(Cmd.state().ship)
+  if sel_ship then return Cmd.sail(sel_ship, x, z) end
   local sel = Cmd.selected()
   if not sel then return "nothing" end
   local kind = Cmd.enemy_at(x, z) and "attack" or "move"
   if not C.send(sel, { kind = kind, x = x, z = z }) then return "cut_off" end
   return kind
+end
+
+-- The commander's ship nearest (x, z) within r, or nil.
+function Cmd.ship_at(x, z, r)
+  local side = Cmd.side()
+  local best, bd = nil, r
+  for _, e in ipairs(S.match().ships or {}) do
+    if S.alive(e) and S.data(e).side == side and not S.data(e).sinking then
+      local sx, _, sz = S.pos(e)
+      local dist = S.dist(x, z, sx, sz)
+      if dist <= bd then best, bd = e, dist end
+    end
+  end
+  return best
+end
+
+-- Sends a ship to a point: on the water it sails there; pointing at land, a ship with troops
+-- aboard sails to the nearest water deep enough off that shore and lands them.
+function Cmd.sail(ship, x, z)
+  local Fl = require("rts.fleet")
+  local Wa = require("rts.water")
+  local def = D.ship(S.data(ship).def)
+  if Wa.depth(x, z) >= def.draft + 0.5 then
+    Fl.order(ship, x, z)
+    return "sail"
+  end
+  local sx, _, sz = S.pos(ship)
+  local dx, dz = sx - x, sz - z
+  local len = math.sqrt(dx * dx + dz * dz)
+  for k = 1, math.floor(len / 4) do
+    local px, pz = x + dx / len * k * 4, z + dz / len * k * 4
+    if Wa.depth(px, pz) >= def.draft + 1.0 then
+      Fl.order(ship, px, pz)
+      S.data(ship).land_on_arrival = #S.data(ship).cargo > 0 or nil
+      return "landing"
+    end
+  end
+  return "nothing"
 end
 
 -- The marking staff: marks a point on the ground.

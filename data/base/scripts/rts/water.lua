@@ -1,6 +1,6 @@
 -- Water (M5): a map's sea level. The water's surface is drawn over the area; where the ground
--- lies below it the water is deep. The commander wades, slowly, on a hidden floor a little under
--- the surface; land units keep to land (the navigation grid is closed over deep water); ships
+-- lies below it the water is deep. The commander wades slowly, and in deep water is held up a
+-- little under the surface (treading water); land units keep to land (the navigation grid is closed over deep water); ships
 -- keep to water deep enough for their draft. MIT License.
 local Wa = {}
 Wa.WADE = 1.1        -- the hidden floor this far under the surface
@@ -9,12 +9,11 @@ Wa.SLOW = 0.5        -- the commander's speeds while wading
 
 local level -- nil: the map has no sea
 
--- cfg = { level, area = { x0, z0, x1, z1 } }: the sea's surface and the hidden wading floor.
+-- cfg = { level, area = { x0, z0, x1, z1 } }: the sea's surface over the area.
 function Wa.setup(cfg)
   level = cfg.level
   local a = cfg.area
   prts.scene.box{ min = { a[1], level - 0.05, a[2] }, max = { a[3], level, a[4] }, material = "water", solid = false }
-  prts.scene.box{ min = { a[1], level - Wa.WADE - 0.4, a[2] }, max = { a[3], level - Wa.WADE, a[4] }, visible = false }
   Wa.area = a
   return level
 end
@@ -55,6 +54,7 @@ function Wa.tick()
     prts.entity.despawn(st)
     prts.events.emit("wading", false)
   end
+  if wading and y < level - Wa.WADE then prts.commander.place({ x, level - Wa.WADE, z }) end -- treading water
   return wading
 end
 

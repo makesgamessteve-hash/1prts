@@ -14,7 +14,7 @@ Fl.CELL = 1.2
 Fl.LEAK = 0.004      -- flood per second per damaged hull room
 Fl.BAIL = 0.0006     -- flood bailed per second per person at the pumps
 Fl.SINK_TIME = 6     -- seconds a ship takes to go under
-Fl.EMBARK = 25       -- metres from the ship a company's men may be to come aboard
+Fl.EMBARK = 35       -- metres from the ship a company's men may be to come aboard
 Fl.SOUNDS = { gun = "sounds/cannon.wav", hit = "sounds/land_thud.wav" }
 
 function Fl.ships()
@@ -127,6 +127,10 @@ function Fl.sail(dt)
         if dist < 3 then
           d.dest = nil
           prts.events.emit("rts_ship_arrived", e, d.side)
+          if d.land_on_arrival then
+            d.land_on_arrival = nil
+            Fl.land(e)
+          end
         else
           local want = math.atan(-dx, -dz)
           local diff = (want - yaw + math.pi) % (2 * math.pi) - math.pi
@@ -134,7 +138,16 @@ function Fl.sail(dt)
           yaw = yaw + turn
           local speed = def.speed * (1 - 0.6 * d.flood)
           local bx, bz = bow_point(e, 6)
-          if Wa.depth(bx, bz) < def.draft + 0.5 then speed = 0 end -- the shallows ahead
+          if Wa.depth(bx, bz) < def.draft + 0.5 and math.abs(diff) < 0.3 then
+            -- the shallows ahead, heading for them: as near as she goes (a landing is made from here)
+            d.dest = nil
+            prts.events.emit("rts_ship_arrived", e, d.side)
+            if d.land_on_arrival then
+              d.land_on_arrival = nil
+              Fl.land(e)
+            end
+            speed = 0
+          end
           local step = math.min(speed * dt, dist)
           x, z = x - math.sin(yaw) * step, z - math.cos(yaw) * step
           n = n + 1
@@ -185,6 +198,7 @@ function Fl.gone(e)
     if s ~= e then keep[#keep + 1] = s end
   end
   m.ships = keep
+  S.release_commander(e)
   prts.entity.despawn(e)
 end
 
@@ -349,8 +363,8 @@ function Fl.land(e)
 end
 
 -- A ship launched off a harbor's seaward side (training at a harbor or raft-yard).
-function Fl.launch(side_id, ship_id, x, z)
-  local e = Fl.spawn(side_id, ship_id, x, z, math.pi)
+function Fl.launch(side_id, ship_id, x, z, yaw)
+  local e = Fl.spawn(side_id, ship_id, x, z, yaw or math.pi)
   S.dispatch(side_id, D.ship(ship_id).name, "Launched and ready.")
   return e
 end

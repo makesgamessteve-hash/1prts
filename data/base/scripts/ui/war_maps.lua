@@ -94,11 +94,23 @@ function W.picture(side, x, y, w, h, opts)
     prts.ui.draw_icon("disc", px - 3, py - 3, 6, 6, c.broken and COL.old or COL.own)
     if opts.labels ~= false then prts.ui.draw_text(tostring(i), px + 4, py - 9, { color = COL.text }) end
   end
+  -- the side's ships (the chosen one ringed)
+  local chosen = Cmd.state().ship
+  for _, e in ipairs(S.match().ships or {}) do
+    if S.alive(e) and S.data(e).side == side then
+      local ex, _, ez = S.pos(e)
+      local px, py = at(ex, ez)
+      if prts.entity.name(e) == chosen then prts.ui.draw_icon("ring", px - 6, py - 6, 12, 12, COL.selected) end
+      rect(px - 3, py - 1, 7, 3, COL.own)
+    end
+  end
   -- what the side has seen of the enemy
   for _, s in ipairs(P.list(side, now)) do
     local px, py = at(s.x, s.z)
     local col = s.state == "seen" and COL.enemy or COL.old
-    if s.what == "structure" then rect(px - 3, py - 3, 6, 6, col) else prts.ui.draw_icon("disc", px - 2, py - 2, 4, 4, col) end
+    if s.what == "structure" then rect(px - 3, py - 3, 6, 6, col)
+    elseif s.what == "ship" then rect(px - 3, py - 1, 7, 3, col)
+    else prts.ui.draw_icon("disc", px - 2, py - 2, 4, 4, col) end
   end
   local mark = Cmd.state().mark
   if mark then
@@ -297,8 +309,6 @@ local AWAY = { origin = { 0, -10000, 0 }, right = { 0.01, 0, 0 }, down = { 0, -0
 function W.on_ui(surface, w, h)
   if surface == Tools.TABLE.id then
     if Tools.active() then
-      local host = Tools.table_host()
-      if host and D.structure(S.data(host).def).mobile then Tools.place_table_surface() end
       W.draw_table(w, h, pointer())
     end
   elseif surface == Tools.HAND.id then

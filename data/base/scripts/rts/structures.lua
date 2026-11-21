@@ -347,6 +347,7 @@ function B.rebuild(e, def_id)
     if s == e then m.structures[i] = fresh end
   end
   if fd.spring and S.alive(fd.spring) then S.data(fd.spring).well = fresh end
+  S.release_commander(e)
   prts.entity.despawn(e)
   build_shape(fresh, D.structure(fd.def), S.side(fd.side).color)
   return fresh
@@ -452,7 +453,10 @@ function B.train_tick(e, seconds)
   end
   if kind == "hq_up" then return B.raise_stage(e) end
   local x, _, z = S.pos(e)
-  if kind == "ship" then return require("rts.fleet").launch(d.side, item, x, z + def.size[2] / 2 + 18) end
+  if kind == "ship" then
+    local sea = d.seaward or 1 -- which side of the building the water is on (+z, or -z)
+    return require("rts.fleet").launch(d.side, item, x, z + sea * (def.size[2] / 2 + 18), sea > 0 and math.pi or 0)
+  end
   return require("props.behemoth").spawn(d.side, item, x, z + def.size[2] / 2 + 24)
 end
 
@@ -544,6 +548,7 @@ function B.damage(e, amount)
   if prts.audio then prts.audio.play{ sound = "sounds/portcullis_slam.wav", at = { x, y + 2, z }, range = 300 } end
   S.dispatch(d.side, def.name, "The " .. def.name:lower() .. " has fallen.")
   prts.events.emit("rts_structure_fell", e, d.side, d.def)
+  S.release_commander(e)
   prts.entity.despawn(e)
   return true
 end

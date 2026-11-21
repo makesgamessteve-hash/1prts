@@ -51,12 +51,14 @@ function C.order(c, order)
       local d = S.data(e)
       d.target = nil
       local x, z = C.slot(i, #members, order.x, order.z, order.x - cx, order.z - cz)
-      prts.agent.move(e, x, z)
+      if d.flying then d.goal = { x, z } else prts.agent.move(e, x, z) end -- flyers fly (rts/sky.lua)
     end
   elseif order.kind == "follow" then
     C.follow_step(c, true)
   elseif order.kind == "hold" or order.kind == "idle" then
-    for _, e in ipairs(members) do prts.agent.stop(e) end
+    for _, e in ipairs(members) do
+      if not S.data(e).flying then prts.agent.stop(e) end
+    end
   end
   prts.events.emit("rts_order", c.id, order.kind)
   return true
@@ -173,7 +175,7 @@ function C.follow_step(c, force)
   local members = C.members(c)
   for i, e in ipairs(members) do
     local sx, sz = C.slot(i, #members, tx, tz, fx, fz)
-    prts.agent.move(e, sx, sz)
+    if S.data(e).flying then S.data(e).goal = { sx, sz } else prts.agent.move(e, sx, sz) end
   end
   return true
 end

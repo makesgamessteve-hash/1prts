@@ -103,6 +103,7 @@ M.SIDES = {
 function M.on_started(id, opts)
   if id ~= M.ID then return false end
   prts.nav.build{ min = { -M.HALF.x, -M.HALF.z }, max = { M.HALF.x, M.HALF.z }, cell = 2 }
+  require("rts.command").AREA = { -800, -435, 800, 435 } -- what the war table shows
   if not (opts and opts.no_match) then
     require("rts.match").start{ sides = M.SIDES, serfs = 5 }
   end

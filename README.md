@@ -9,7 +9,7 @@ face-to-face orders. Keeps, mines, war galleons, siege towers, skyships, walking
 and floating citadels are built at real size with real crews, and you can walk inside every one
 of them. The look is retro 3D: low-poly models, sprites and voxels.
 
-> **Status: M1 done; M2 (First Command), M3 (Ride Out) and M4 (Hold and Harvest) playable.** The C engine runs on Windows, Linux, macOS
+> **Status: M1 done; M2 (First Command) to M5 (Sail and Wing) playable.** The C engine runs on Windows, Linux, macOS
 > and in the browser (WebGL 2, touch controls on phones, WebXR). It loads all content from
 > `data/` and plays two maps in first person. **Harrowmark**, the Crown's border castle, is the
 > story map ([the story](docs/concept/15-story.md)). **Ashford Vale** is the first skirmish. Serfs
@@ -38,10 +38,20 @@ of them. The look is retro 3D: low-poly models, sprites and voxels.
 > - workshop upgrades, buildings that rise in stages, timber that burns and is put out;
 > - the commander's presence, and succession when the commander falls.
 >
+> **M5 (Sail and Wing)** takes the war onto the water and into the sky:
+> - water, which the commander wades and soldiers keep out of;
+> - ships you walk while they sail: the cog, caravel and war galleon, the longship and ram
+>   galley. They fight with broadsides and rams, take hits in their rooms, flood and are
+>   pumped out or sink. Cogs land troops, and harbors launch ships;
+> - the observation balloon, wyvern riders and the dwarven skyship;
+> - the scenario **The Harbor Siege** on the Saltcoast: you start in the galleon's chart room
+>   at its war table, with a relief fleet to break the Wildborn siege of a harbor town.
+>
 > The tasks of [`add-command-core`](openspec/changes/add-command-core/tasks.md) (M2),
 > [`add-mounts-and-engines`](openspec/changes/add-mounts-and-engines/tasks.md) (M3) and
 > [`add-economy-and-second-faction`](openspec/changes/add-economy-and-second-faction/tasks.md)
-> (M4) list what is done and how each part was verified.
+> (M4) and [`add-water-and-sky-theaters`](openspec/changes/add-water-and-sky-theaters/tasks.md)
+> (M5) list what is done and how each part was verified.
 
 ![Harrowmark at dusk](docs/screenshots/01_approach_at_dusk.png)
 
@@ -56,7 +66,8 @@ of them. The look is retro 3D: low-poly models, sprites and voxels.
 | ![Riding with the knights](docs/screenshots/41_riding_with_the_knights.png) | ![On the wagon](docs/screenshots/42_on_the_wagon.png) | ![Inside the siege tower](docs/screenshots/43_inside_the_siege_tower.png) |
 | ![The bridge onto the wall](docs/screenshots/44_bridge_to_the_wall.png) | ![The gold mine's gallery and lift cage](docs/screenshots/45_mine_gallery_and_cage.png) | ![A Wildborn camp](docs/screenshots/50_wildborn_camp.png) |
 | ![A behemoth](docs/screenshots/51_behemoth.png) | ![On the behemoth's back](docs/screenshots/52_behemoth_back.png) | ![Fire in the camp](docs/screenshots/53_fire_in_the_camp.png) |
-| ![Building in stages](docs/screenshots/54_building_in_stages.png) | | |
+| ![Building in stages](docs/screenshots/54_building_in_stages.png) | ![The galleon's chart room](docs/screenshots/60_chart_room.png) | ![On the galleon's deck](docs/screenshots/61_galleon_deck.png) |
+| ![The gun deck](docs/screenshots/62_gun_deck.png) | ![From the balloon's basket](docs/screenshots/64_balloon_view.png) | ![The skyship at its mast](docs/screenshots/65_skyship_at_mast.png) |
 | ![Great hall](docs/screenshots/12_hall_benches_braziers.png) | ![Forge](docs/screenshots/05_forge.png) | ![Front-end menu](docs/screenshots/13_front_end_menu.png) |
 
 ## Read this first
