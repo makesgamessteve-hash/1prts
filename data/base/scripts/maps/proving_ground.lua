@@ -414,6 +414,10 @@ function M.build()
   prts.scene.cells{ "keep.floor2", "keep.floor3", "keep.stairs", "keep.lift" }
   slab(M.FLOORS[3])
   M.lift = lift_shaft()
+  -- a lantern hanging in the lift cage: the light rides up and down with the platform
+  prts.scene.cells{ "keep.lift" }
+  prts.scene.light{ pos = { 1.2, 2.3, -1.4 }, color = { 1.1, 0.75, 0.4 }, radius = 5, entity = M.lift }
+  prts.scene.cells()
   great_hall()
   forge_room()
   quarters()

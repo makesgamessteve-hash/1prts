@@ -466,7 +466,13 @@ static int pick_lights(const frame_ctx *f, prts_light *out)
     float best_d[MAX_LIGHTS];
     prts_vec3 eye = prts_v3((float)f->view->eye.x, (float)f->view->eye.y, (float)f->view->eye.z);
     for (size_t i = 0; i < lights->len; i++) {
-        const prts_light *l = prts_array_at(lights, i);
+        prts_light lit = *(const prts_light *)prts_array_at(lights, i);
+        if (lit.owner != PRTS_ENTITY_NONE && f->world && prts_world_alive(f->world, lit.owner)) {
+            prts_dvec3 o = prts_world_pos_interp(f->world, lit.owner, f->alpha);
+            prts_vec3 r = prts_v3_rotate_y(lit.pos, prts_world_yaw_interp(f->world, lit.owner, f->alpha));
+            lit.pos = prts_v3((float)o.x + r.x, (float)o.y + r.y, (float)o.z + r.z);
+        }
+        const prts_light *l = &lit;
         float d = prts_v3_length(prts_v3_sub(l->pos, eye)) - l->radius;
         int slot = n < MAX_LIGHTS ? n++ : -1;
         if (slot < 0) {

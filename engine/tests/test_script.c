@@ -86,6 +86,14 @@ UTEST(script, require_through_vfs_with_overrides)
     ASSERT_STREQ("<error>", eval_str(s, "require('game.broken')"));
     ASSERT_STREQ("<error>", eval_str(s, "require('game.fails')"));
     prts_script_destroy(s);
+
+    /* a module required for the first time from inside a coroutine (scenarios and game
+     * scripts run in coroutines) loads on that coroutine's stack */
+    s = make(&v, false);
+    ASSERT_STREQ("base rules", eval_str(s, "select(2, coroutine.resume(coroutine.create(function() "
+                                           "return require('game.rules').name end)))"));
+    ASSERT_STREQ("false", eval_str(s, "(coroutine.resume(coroutine.create(function() return require('game.missing') end)))"));
+    prts_script_destroy(s);
     prts_vfs_destroy(v);
 
     s = make(&v, true);

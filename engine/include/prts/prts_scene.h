@@ -67,9 +67,10 @@ typedef struct prts_mesh_group {
 } prts_mesh_group;
 
 typedef struct prts_light {
-    prts_vec3 pos;
+    prts_vec3 pos; /* in the owner's frame (or the world) */
     prts_vec3 color;
     float radius;
+    prts_entity owner; /* the light moves with this entity, if set */
 } prts_light;
 
 /* A camera that renders the scene into a texture every frame (in-world displays). */

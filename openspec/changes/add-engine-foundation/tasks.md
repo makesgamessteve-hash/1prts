@@ -46,7 +46,7 @@
 ## 6. Simulation core
 
 - [x] 6.1 Implement the fixed 30 Hz tick with accumulator, the catch-up limit and interpolation factors; verify unit tests with simulated frame times of 1/30 s, 1/144 s and 1 s (spec *Different frame rates, same simulation*, *Very slow frame*)
-- [ ] 6.2 Implement the entity store with index+generation handles, component arrays (transform, frame, body, collider, render, light, audio_source, door, platform, trigger, script) and events; verify unit tests including slot reuse (spec *Slot reuse*)
+- [x] 6.2 Implement the entity store with index+generation handles, component arrays (transform, frame, body, collider, render, light, audio_source, door, platform, trigger, script) and events; verify unit tests including slot reuse (spec *Slot reuse*)
 - [x] 6.3 Implement script components with plain-data checks; verify tests that functions and userdata are rejected when the state is serialized
 - [x] 6.4 Implement the reference-frame tree with double-precision world transforms, frame volumes and reparenting that keeps world transform and velocity; verify unit tests (spec *Riding a moving frame*, *Changing parent without a jump*)
 - [x] 6.5 Implement the 64-bit state hash over all simulation state; verify a test that a 1 mm position change changes the hash (spec *Divergence is detected*)
@@ -111,7 +111,7 @@
 - [ ] 13.3 Implement XR body handling: head offset within the play area, collision push-back for the head, seated mode; verify unit tests (spec *Leaning toward a wall*)
 - [ ] 13.4 Implement comfort options (smooth and teleport movement, snap and smooth turn, vignette) and XR effect defaults; verify unit tests and a Playwright XR-mock test (spec *Teleport movement*, *Comfort defaults*)
 - [x] 13.5 Implement XR availability detection and the "Enter VR" control, hidden when unsupported; verify Playwright tests with and without the mock (spec *No XR support*)
-- [ ] 13.6 Add the browser end-to-end suite (desktop boot and keyboard, mobile emulation, XR mock) to the `web` job with test hooks enabled only by `?test=1` in test builds; verify all tests pass in CI
+- [x] 13.6 Add the browser end-to-end suite (desktop boot and keyboard, mobile emulation, XR mock) to the `web` job with test hooks enabled only by `?test=1` in test builds; verify all tests pass in CI
 - [x] 13.7 Write `docs/testing/xr-checklist.md` and `docs/testing/mobile-checklist.md` (manual checks on real headsets and phones); verify the checklists cover every scenario in `xr-presentation` and the touch scenarios in `input-actions`
 
 ## 14. Packaging and integration
@@ -143,7 +143,11 @@ Partly done (still unchecked):
 - 5.5 Done except `prts.def`.
 - 5.6 Manifests and the API check work. Dependencies and load order are missing.
 - 5.8 The runner and coverage gate work. Results go to the log, not to JUnit XML.
-- 6.2 Handles, slot reuse and movers work. The component set is smaller than listed.
+- 6.2 Done, with components kept by the module that uses them and keyed by entity handle
+  rather than in one component store: transform, frame, velocity, movers (platforms) and the
+  usable flag in `sim/world.c`; colliders in `phys/collide.c`; meshes, sprites and lights in
+  the scene; sound sources in the mixer; doors, triggers (`lib/triggers.lua`) and other script
+  components as entity data in Lua.
 - 6.6 Determinism is tested with two identical runs (matching state hashes). Replay recording
   is missing.
 - 7.3 Done. `.vox` files are read by a small C parser in `engine/src/scene/vox.c` instead of

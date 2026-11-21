@@ -81,9 +81,9 @@ bool prts_script_call(prts_script *s, int nargs, int nresults)
 }
 
 /* Pushes the environment table for a mount (created on first use). */
-static void push_env(prts_script *s, const char *mount_id)
+/* L is the running thread (a coroutine may require modules too). */
+static void push_env(lua_State *L, const char *mount_id)
 {
-    lua_State *L = s->L;
     lua_getfield(L, LUA_REGISTRYINDEX, REG_ENVS);
     if (lua_getfield(L, -1, mount_id) != LUA_TTABLE) {
         lua_pop(L, 1);
@@ -100,10 +100,9 @@ static void push_env(prts_script *s, const char *mount_id)
     lua_remove(L, -2);
 }
 
-/* Loads a VFS file as a function with its mod's environment; pushes it. */
-static bool load_vfs_chunk(prts_script *s, const char *vpath)
+/* Loads a VFS file as a function with its mod's environment; pushes it onto L. */
+static bool load_vfs_chunk_on(prts_script *s, lua_State *L, const char *vpath)
 {
-    lua_State *L = s->L;
     char *src = NULL;
     size_t size = 0;
     prts_vfs_result r = prts_vfs_read(s->vfs, vpath, &src, &size);
@@ -120,12 +119,14 @@ static bool load_vfs_chunk(prts_script *s, const char *vpath)
     if (rc == LUA_OK) {
         const char *dir = prts_vfs_mount_dir(s->vfs, (size_t)mount);
         prts_coverage_register_chunk(s, L, chunk + 1, dir);
-        push_env(s, prts_vfs_mount_id(s->vfs, (size_t)mount));
+        push_env(L, prts_vfs_mount_id(s->vfs, (size_t)mount));
         lua_setupvalue(L, -2, 1);
     }
     prts_free(chunk);
     return rc == LUA_OK;
 }
+
+static bool load_vfs_chunk(prts_script *s, const char *vpath) { return load_vfs_chunk_on(s, s->L, vpath); }
 
 bool prts_script_run_file(prts_script *s, const char *vpath)
 {
@@ -194,7 +195,7 @@ static int l_require(lua_State *L)
     prts_str_append(&path, "scripts/");
     for (const char *p = name; *p; p++) prts_str_append_n(&path, *p == '.' ? "/" : p, 1);
     prts_str_append(&path, ".lua");
-    bool ok = load_vfs_chunk(s, path.data);
+    bool ok = load_vfs_chunk_on(s, L, path.data);
     if (ok && s->reload) prts_reload_track(s, name, path.data);
     prts_str_free(&path);
     if (!ok) return lua_error(L);

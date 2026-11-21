@@ -202,7 +202,8 @@ static int l_scene_light(lua_State *L)
 {
     prts_engine *e = prts_engine_from_lua(L);
     luaL_checktype(L, 1, LUA_TTABLE);
-    prts_light l = {check_vec3(L, 1, "pos"), prts_v3(1, 0.8f, 0.5f), field_number(L, 1, "radius", 8.0f)};
+    prts_light l = {check_vec3(L, 1, "pos"), prts_v3(1, 0.8f, 0.5f), field_number(L, 1, "radius", 8.0f),
+                    opt_entity(L, 1, "entity")};
     read_vec3(L, 1, "color", &l.color);
     prts_scene_add_light(e->scene, l);
     return 0;
@@ -227,6 +228,19 @@ static int l_scene_marker_pos(lua_State *L)
     lua_pushnumber(L, m->pos.z);
     lua_pushnumber(L, m->yaw);
     return 4;
+}
+
+/* prts.scene.in_zone(name, x, y, z) -> true if the point is inside the named zone */
+static int l_scene_in_zone(lua_State *L)
+{
+    prts_engine *e = prts_engine_from_lua(L);
+    const char *name = luaL_checkstring(L, 1);
+    const prts_zone *z = prts_scene_find_zone(e->scene, name);
+    if (!z) return luaL_error(L, "unknown zone '%s'", name);
+    prts_vec3 p = prts_v3((float)luaL_checknumber(L, 2), (float)luaL_checknumber(L, 3), (float)luaL_checknumber(L, 4));
+    lua_pushboolean(L, p.x >= z->box.min.x && p.x <= z->box.max.x && p.y >= z->box.min.y && p.y <= z->box.max.y &&
+                           p.z >= z->box.min.z && p.z <= z->box.max.z);
+    return 1;
 }
 
 static int l_scene_zone(lua_State *L)
@@ -759,7 +773,7 @@ void prts_engine_open_game_api(prts_engine *e)
         {"portal", l_scene_portal},     {"set_portal", l_scene_set_portal}, {"portal_open", l_scene_portal_open},
         {"cells", l_scene_cells},       {"cell_at", l_scene_cell_at},   {"surface", l_scene_surface},
         {"sprite", l_scene_sprite},     {"sprite_anim", l_scene_sprite_anim}, {"model", l_scene_model},
-        {"wedge", l_scene_wedge},
+        {"wedge", l_scene_wedge},       {"in_zone", l_scene_in_zone},
         {NULL, NULL}};
     static const prts_script_fn entity[] = {
         {"spawn", l_entity_spawn},   {"pos", l_entity_pos},         {"local_pos", l_entity_local_pos},

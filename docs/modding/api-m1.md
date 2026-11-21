@@ -132,10 +132,11 @@ by an entity (`entity = e`) is in that entity's frame and moves with it.
 | `prts.scene.prism{ base, radius, top_radius, height, sides, material, entity, solid }` | A prism or cone (tree trunks, roofs, towers); solid only with `solid = true`. |
 | `prts.scene.terrain{ size, spacing, seed, height, octaves, material, flats }` | Generates the terrain height field; `flats` is a list of `{ x, z, radius, height, blend }` areas levelled for buildings. |
 | `prts.scene.height(x, z)` | Terrain height at a point. |
-| `prts.scene.light{ pos, color, radius }` | A point light (baked into vertex lighting). |
+| `prts.scene.light{ pos, color, radius, entity }` | A point light (up to 8 nearest are used per view). With `entity`, `pos` is in that entity's frame and the light moves with it (a lantern in the lift cage). |
 | `prts.scene.marker(name, pos [, yaw])` | A named position (spawn points, test markers). |
 | `prts.scene.marker_pos(name)` | `x, y, z, yaw` of a marker, or nothing. |
 | `prts.scene.zone(name, min, max)` | A named box used by tests and scripts to ask "is it inside?". |
+| `prts.scene.in_zone(name, x, y, z)` | `true` if the point is inside the named zone; errors on an unknown zone. `lib/triggers.lua` uses it to send `zone_enter` and `zone_exit` events for watched entities. |
 | `prts.scene.env{ sun_dir, sun_color, ambient, fog_color, sky_horizon, sky_zenith, fog_near, fog_far, stars, moons }` | Lighting, fog and sky. |
 | `prts.scene.illusion{ center, size_x, size_z, relief, levels, area, color, entity }` | A glowing contour-line model of the terrain in `area = { x0, z0, x1, z1 }`, for the war table. |
 | `prts.scene.cell{ name, min, max }` | An interior cell (a room or group of rooms). Geometry added afterwards belongs to the cells set with `prts.scene.cells`. At most 63 cells; `"outside"` always exists. |
