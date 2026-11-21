@@ -195,6 +195,10 @@ int prts_scene_find_material(const prts_scene *s, const char *id);
 /* Mesh group for (material, owner), created on first use. */
 prts_mesh_group *prts_scene_group(prts_scene *s, int material, prts_entity owner);
 void prts_scene_add_box(prts_scene *s, prts_aabb box, int material, prts_entity owner, float tile);
+/* A ramp filling the box: its top rises from the box's floor at one end to its top at the
+ * other, along `axis` (0 = x, 2 = z) in the direction `sign` (+1 or -1). Drawn only; scripts
+ * add collision (for example as small invisible steps). */
+void prts_scene_add_wedge(prts_scene *s, prts_aabb b, int axis, int sign, int material, prts_entity owner, float tile);
 /* Like add_box, but each face maps the whole texture once (for display surfaces). */
 void prts_scene_add_box_fitted(prts_scene *s, prts_aabb box, int material, prts_entity owner);
 int prts_scene_add_surface(prts_scene *s, const prts_surface *surface);

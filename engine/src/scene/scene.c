@@ -214,6 +214,39 @@ void prts_scene_add_box(prts_scene *s, prts_aabb b, int material, prts_entity ow
     box_faces(s, b, material, owner, tile, false);
 }
 
+/* A point of a wedge: t along the rising direction (0 low end, 1 high end), w across it, and
+ * top/bottom. Every mapping below keeps the handedness, so one face list fits all four. */
+static prts_vec3 wedge_point(prts_aabb b, int axis, int sign, float t, float w, bool top)
+{
+    float rt = sign > 0 ? t : 1.0f - t, rw = sign > 0 ? w : 1.0f - w;
+    float x, z;
+    if (axis == 0) {
+        x = b.min.x + (b.max.x - b.min.x) * rt;
+        z = b.min.z + (b.max.z - b.min.z) * rw;
+    } else {
+        z = b.min.z + (b.max.z - b.min.z) * rt;
+        x = b.min.x + (b.max.x - b.min.x) * (1.0f - rw);
+    }
+    return prts_v3(x, top ? b.max.y : b.min.y, z);
+}
+
+void prts_scene_add_wedge(prts_scene *s, prts_aabb b, int axis, int sign, int material, prts_entity owner, float tile)
+{
+    prts_mesh_group *g = prts_scene_group(s, material, owner);
+    prts_material *m = material_at(s, material);
+    prts_vec3 c = m->tint;
+    axis = axis == 2 ? 2 : 0;
+    prts_vec3 l0 = wedge_point(b, axis, sign, 0, 0, false), l1 = wedge_point(b, axis, sign, 0, 1, false);
+    prts_vec3 h0 = wedge_point(b, axis, sign, 1, 0, false), h1 = wedge_point(b, axis, sign, 1, 1, false);
+    prts_vec3 t0 = wedge_point(b, axis, sign, 1, 0, true), t1 = wedge_point(b, axis, sign, 1, 1, true);
+    add_quad(&g->mesh, l0, h0, h1, l1, c, m->uv_scale, tile, false); /* bottom */
+    add_quad(&g->mesh, h1, h0, t0, t1, c, m->uv_scale, tile, false); /* high end */
+    add_quad(&g->mesh, l0, l1, t1, t0, c, m->uv_scale, tile, false); /* slope */
+    add_quad(&g->mesh, h0, l0, t0, t0, c, m->uv_scale, tile, false); /* side w = 0 */
+    add_quad(&g->mesh, l1, h1, t1, t1, c, m->uv_scale, tile, false); /* side w = 1 */
+    s->revision++;
+}
+
 void prts_scene_add_box_fitted(prts_scene *s, prts_aabb b, int material, prts_entity owner)
 {
     box_faces(s, b, material, owner, 1e6f, true);

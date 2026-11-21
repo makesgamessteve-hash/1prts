@@ -37,6 +37,8 @@ the base functions except `dofile`, `loadfile` and `collectgarbage`. `os`, `io`,
 | `prts.engine_version` | Engine version string, for example `"0.1.0"`. |
 | `prts.platform` | `"desktop"` or `"web"`. |
 | `prts.sorted_pairs(t)` | Like `pairs`, but in key order: numbers ascending, then strings ascending (other keys are skipped). Use it wherever iteration order affects the simulation. |
+| `prts.boot` | How this run was started: `{ auto_start, front_end, developer, headless, test, map }`. `auto_start` is true for headless, test, scenario and `--start` runs (unless `--front-end`), which begin a map at once instead of showing the front-end menu; `map` is the `--start` map; `developer` says whether `prts.dev` exists. |
+| `prts.licenses()` | The third-party libraries linked into the executable, for the credits screen: array of `{ name, version, license, copyright, url }` (`version` may be `""`). |
 
 ## `prts.log`
 
@@ -69,6 +71,8 @@ are case-sensitive; `..`, `\`, drive letters and absolute paths are refused).
 | `prts.vfs.read(path)` | The file's contents as a string, or `nil` and a reason (`"not found"`, `"invalid path"`). |
 | `prts.vfs.exists(path)` | `true` if a mount has the file. |
 | `prts.vfs.list([dir])` | Sorted array of `{ name = ..., dir = bool }` entries, merged over all mounts (`""` or nothing for the root). Errors on an invalid path. |
+| `prts.vfs.mounts()` | Array of `{ id = ... }` for every mounted pack (`"base"`, then the enabled mods) in load order; later mounts override earlier ones. |
+| `prts.vfs.read_from(mount, path)` | A file of one pack only (by mount id), not the merged view: its contents, or `nil` and a reason (`"not found"`, also for an unknown mount; `"invalid path"`). The credits screen reads each pack's `CREDITS.md` this way. |
 
 ## `prts.events`
 
@@ -89,6 +93,8 @@ Events sent by the engine:
 | `tick` | tick number | After each simulation tick's systems ran. |
 | `use` | entity, entity name | The commander pressed `use` while looking at a usable entity within reach. |
 | `move_done` | entity, entity name | A move started with `prts.entity.move_to` or `rotate_to` finished. |
+| `ui` | surface name, width, height | Every frame, once for each UI surface: the world surfaces (`prts.ui.surface`), then `"screen"`. Handlers draw with `prts.ui`. |
+| `input_scheme` | scheme name | The active input scheme changed (see `prts.input.scheme`). |
 
 ## `prts.def`
 
@@ -122,6 +128,7 @@ by an entity (`entity = e`) is in that entity's frame and moves with it.
 |---|---|
 | `prts.scene.material{ id, texture, tint, uv_scale, emissive }` | Defines a material (`uv_scale` default 2, `emissive` default false). Returns its index. |
 | `prts.scene.box{ min, max, material, entity, visible, solid, tile }` | An axis-aligned box: drawn unless `visible = false`, solid unless `solid = false`. Returns its collision box id, or -1. |
+| `prts.scene.wedge{ min, max, axis, sign, material, entity, tile }` | A ramp filling the box: its top rises from the box's floor to its top along `axis` (`"x"` or `"z"`) in the direction `sign` (1 or -1). Drawn only; add collision yourself (`lib/build.lua`'s `B.wedge` adds walkable invisible steps). |
 | `prts.scene.prism{ base, radius, top_radius, height, sides, material, entity, solid }` | A prism or cone (tree trunks, roofs, towers); solid only with `solid = true`. |
 | `prts.scene.terrain{ size, spacing, seed, height, octaves, material, flats }` | Generates the terrain height field; `flats` is a list of `{ x, z, radius, height, blend }` areas levelled for buildings. |
 | `prts.scene.height(x, z)` | Terrain height at a point. |
@@ -141,6 +148,7 @@ by an entity (`entity = e`) is in that entity's frame and moves with it.
 | `prts.scene.sprite{ sprite, pos, yaw, entity, anim }` | A billboard person or creature from a sprite sheet description (`sprites/<name>.lua`: `texture`, `frame = { w, h }`, `columns`, `rows`, `height`, `directions`, `anims = { { name, first_row, frames, fps } }`). It shows the frame for the viewing angle (8 directions) and follows `entity` if given. Returns the sprite id. |
 | `prts.scene.sprite_anim(id, name)` | Switches a sprite's animation (restarting it). |
 | `prts.scene.model{ path, pos, yaw, scale, entity, name, solid }` | Loads a glTF 2.0 (`.glb`, `.gltf`) or MagicaVoxel (`.vox`) model. glTF keeps its origin and is scaled by `scale` (default 1); nodes named `marker_<x>` become markers `<name>.<x>`. Voxel models stand centred on `pos`, and `scale` is the size of one voxel (default 0.1 m). `solid = true` adds the bounding box as collision. Returns `ok, { min, max }`; a missing or broken model shows a glowing magenta box and `ok` is false. |
+| `prts.scene.finish()` | Finishes building the map: hands the terrain to collision, moves the collision boxes of entity geometry to their entities' poses and, in windowed runs, bakes sunlight and shadows into the vertex lighting if the scene changed since the last bake. The engine calls it after `scripts/main.lua`; a map started later (from the menu) calls it itself. |
 
 ## `prts.audio`
 
@@ -181,14 +189,25 @@ and the commander's cell is closed. Audio never affects the simulation.
 ## `prts.input`
 
 Actions are defined by scripts (`data/base/scripts/input/defaults.lua`); the engine maps devices to
-action values.
+action values. Touch axes 0 and 1 are the movement stick, 2 and 3 the look drag; touch button 0 is
+a tap on the look side, 1 and up the context buttons of the touch layout. Players rebind actions
+per scheme (`kbm`, `gamepad`, `touch`); their overrides are kept in `prts.settings`.
 
 | Function | What it does |
 |---|---|
-| `prts.input.action{ id, keys, mouse_buttons, mouse_axes, pad_buttons, pad_axes }` | Defines an action or replaces its bindings. `keys` are key names (`"W"`, `"Left Shift"`); the other lists hold codes or `{ code = n, scale = s }`. |
+| `prts.input.action{ id, label, keys, mouse_buttons, mouse_axes, pad_buttons, pad_axes, touch_axes, touch_buttons, always }` | Defines an action or replaces its default bindings. `keys` are key names (`"W"`, `"Left Shift"`); the other lists hold codes or `{ code = n, scale = s }`. `label` names it in the controls menu; `always = true` keeps it working while a menu or the console blocks game input. The player's saved override of a scheme replaces that scheme's defaults (an invalid one is ignored with a warning). |
 | `prts.input.value(action)` | The action's current value (buttons 0 or 1, axes signed). |
 | `prts.input.down(action)` | `true` while the action is held. |
+| `prts.input.went_down(action)` | `true` if the action went down in the latest input update, once per frame (for menus, which run per frame rather than per tick). `false` for an unknown action. |
 | `prts.input.scheme()` | The active input scheme: `"kbm"`, `"gamepad"`, `"touch"` or `"xr"`. |
+| `prts.input.actions()` | Array of `{ id, label }` for every action in definition order (`label` is the id when the definition has none). |
+| `prts.input.bindings(action)` | The action's current bindings by scheme: `{ kbm = { ... }, gamepad = { ... }, touch = { ... } }`, each a list of `{ kind, code, scale, name }`. `kind` is `"key"`, `"mouse_button"`, `"mouse_axis"`, `"pad_button"`, `"pad_axis"`, `"touch_axis"` or `"touch_button"`; `name` (keys only) is the key name. Errors on an unknown action. |
+| `prts.input.rebind(action, scheme, binding)` | Replaces the bindings of one scheme (`"kbm"`, `"gamepad"` or `"touch"`) with `binding`: a table of lists like the definition's (`{ keys = { "F" } }`, `{ pad_axes = { { code = 2, scale = -1 } } }`, `{}` for none) or, for `kbm`, a key name. Stores it as the player's override (settings key `bindings.<scheme>.<action>`, written by `prts.settings.save`) and returns `true`. Errors on an unknown action or scheme, on lists of another scheme and on an invalid binding (the old bindings stay). |
+| `prts.input.reset_bindings([scheme])` | Forgets the player's overrides of one scheme (or of all) and rebinds the defaults. |
+| `prts.input.capture(scheme)` | For a controls menu: the first key or mouse button (`"kbm"`), or gamepad button or axis pushed past 0.6 (`"gamepad"`), pressed since the last frame, as a binding table for `prts.input.rebind`; `nil` if none, and always for `"touch"`. |
+| `prts.input.touch_layout{ split, stick_radius, look_speed, tap_distance, tap_seconds, buttons }` | Replaces the touch controls. A finger landing left of `split` (fraction of the width, default 0.5) drives the movement stick, fully deflected at `stick_radius` (fraction of the height, default 0.12); one on the right drags the look (`look_speed` look units per screen height, default 1000) or taps if it moves at most `tap_distance` (default 0.03 of the height) within `tap_seconds` (default 0.3). `buttons = { { id, x, y, radius }, ... }`: up to 15 round context buttons (position as fractions of the screen, radius of its height); button `i` drives touch button `i`, and all start hidden. Returns the number of buttons. |
+| `prts.input.touch_visible(id, on)` | Shows or hides a context button; hidden buttons ignore fingers. Errors on an unknown id. |
+| `prts.input.touch_state()` | For drawing the overlay (the engine draws none itself): `{ stick = { ox, oy, kx, ky }, buttons = { { id, x, y, radius, visible, held, touch_button }, ... } }`. `stick` (the stick's origin and knob, fractions of the screen) is there only while a finger holds it; `touch_button` is the code to bind with `touch_buttons`. |
 
 ## `prts.commander`
 
@@ -197,12 +216,65 @@ action values.
 | `prts.commander.spawn{ marker \| pos, yaw, walk_speed, run_speed, sprint_speed, crouch_speed, jump_speed, eye_stand, eye_crouch, step_height, reach, look_sensitivity }` | Creates (or re-creates) the commander, the player's first-person body, at a marker or position. Returns its entity. |
 | `prts.commander.entity()` | The commander's entity, or nothing before it is spawned. |
 | `prts.commander.view()` | `yaw, pitch, eye_height, on_ground`. |
+| `prts.commander.target()` | `entity, name` of the usable entity in view within reach, or nothing (also before the commander is spawned). |
 
 ## `prts.render`
 
 | Function | What it does |
 |---|---|
 | `prts.render.settings([t])` | Changes settings given in `t` (`preset` = `"authentic"`, `"retro"`, `"crisp"`, `"hd"` or `"native"`; booleans `dither`, `snap`, `affine`, `fog`, `crosshair`; `fov` in degrees) and returns the current ones (`lines`, `dither`, `snap`, `fog`, `renderer`). |
+
+## `prts.ui`
+
+An immediate-mode UI: scripts draw it again every frame from a `ui` event handler,
+`prts.events.on("ui", name, function(surface, w, h) ... end)`, which runs once per frame for each
+surface: `"screen"` (the overlay over the view) or an in-world surface (`prts.ui.surface`).
+Scripts never see microui; they get windows, rows, widgets and direct drawing. Positions and sizes
+are pixels of the surface; the screen is the window size divided by a whole-number scale, so it is
+about 360 pixels high. Colors are `{ r, g, b [, a] }` from 0 to 255 (default white). Drawing
+outside a `ui` handler, a widget outside a window, a text over 1024 bytes (8192 for
+`prts.ui.text`) and too much UI in one frame are errors; an error inside a window's or panel's
+`fn` still closes it.
+
+In screen space the First-Person Contract allows only a minimal HUD (`ui/hud.lua`) and the touch
+overlay; menus (front-end, pause, options, credits) are allowed. Displays the commander reads
+during play belong on surfaces in the world.
+
+| Function | What it does |
+|---|---|
+| `prts.ui.window(title, x, y, w, h [, opts], fn)` | A window at `x, y` of size `w, h` (at least 16): calls `fn` to fill it, then closes it. The title also identifies the window. `opts` holds booleans, all default true: `title` (title bar), `frame`, `scroll` (scroll bars) and `input` (takes the pointer). Windows stay where the script puts them; the player cannot move, resize or close them. At most 24 windows and 40 windows and panels per frame, nested at most 12 deep. |
+| `prts.ui.panel(name, fn [, scroll_to_end])` | A scrollable area filling the next layout cell, filled by `fn`. `scroll_to_end = true` scrolls it to the bottom (for logs). |
+| `prts.ui.row(widths [, height])` | Lays out the following widgets in rows of 1–16 cells with these widths; widgets fill the cells left to right and wrap into another row of the same widths. `0` (and the default height) is the standard size; a negative value `-n` stretches the cell to `n - 1` pixels before the right (or bottom) edge, so `-1` fills the rest. |
+| `prts.ui.label(text [, centered])` | One line of text in the next cell, centered if `centered` is true. |
+| `prts.ui.text(text)` | A paragraph in the next cell, wrapped to its width (up to 8192 bytes). |
+| `prts.ui.button(label [, id])` | A button; returns `true` in the frame it is clicked. `id` (default: the label) keeps its identity when the label changes; tests can click it by either. |
+| `prts.ui.checkbox(label, value [, id])` | A checkbox showing `value`; returns the new value and whether it changed this frame. The script keeps the value and passes it in every frame. |
+| `prts.ui.slider(id, value, low, high [, step])` | A horizontal slider showing its value (whole numbers when `step >= 1`, else two decimals). Returns the new value, clamped to `low..high` and rounded to `step` while dragged (`0`, the default: no rounding), and whether it changed. Needs `low < high` and `step >= 0`. |
+| `prts.ui.textbox(id [, text [, focus]])` | A one-line text field showing `text` (default `""`, at most 255 bytes); returns the edited text and `true` in the frame Return is pressed. `focus = true` gives it the keyboard focus. |
+| `prts.ui.draw_text(text, x, y [, { align, scale, color }])` | Draws text over the widgets, also outside windows. `align` is `"left"` (default), `"center"` or `"right"` of `x`; `scale` is a whole number from 1 to 8 (default 1). |
+| `prts.ui.draw_rect(x, y, w, h [, color])` | A filled rectangle over the widgets. |
+| `prts.ui.draw_icon(name, x, y, w, h [, color])` | An icon of the UI font stretched over the rectangle: `"white"`, `"check"`, `"close"`, `"collapsed"`, `"expanded"`, `"disc"` or `"ring"`. Errors on any other name. |
+| `prts.ui.text_width(text)` | Width of `text` in pixels at scale 1. Works outside a frame too. |
+| `prts.ui.font()` | `{ height, line_height }` of the UI font (`fonts/ui.lua`). |
+| `prts.ui.size()` | `w, h` of the surface being drawn, or of the screen outside a frame. |
+| `prts.ui.set_modal(on)` | Menu mode: while on, the pointer belongs to the menu, game actions read as released (except actions defined with `always = true`, such as `menu`) and world surfaces ignore the commander's view. |
+| `prts.ui.modal()` | `true` while menu mode is on. |
+| `prts.ui.hovered()` | `true` if the pointer was over a window on the screen in the last frame. |
+| `prts.ui.surface{ id, width, height, origin, right, down }` | Adds an in-world UI surface, or resizes the one with that `id`, and returns its slot. `width` and `height` are 8–1024 pixels (default 256); at most 7 surfaces; the id `"screen"` is taken. `origin` is the world position of the top-left corner, `right` and `down` the vectors along the top and left edges (meters). Within 4 m the commander's view (or a finger) points at it, and `use` or the left mouse button clicks. `ui` handlers draw it when `surface` is its id. In M1 it is rendered into a texture that no material shows yet. |
+
+## `prts.settings`
+
+The player's settings: one table of plain data, read from `config.lua` in the user data folder
+at start (before any script runs) and written back only by `prts.settings.save`. Keys are dotted
+paths of 1–8 names, each shorter than 64 bytes: `"video.fov"` is `settings.video.fov`. Setting a
+value applies nothing by itself; game scripts read the settings (`game/settings.lua` applies the
+video and audio ones). Binding overrides live under `bindings` (see `prts.input.rebind`).
+
+| Function | What it does |
+|---|---|
+| `prts.settings.get(key [, default])` | A copy of the value, or `default` if there is none. |
+| `prts.settings.set(key, value)` | Sets a value, creating tables along the path; `nil` removes it. Values are plain data (booleans, finite numbers, strings, and tables of them with string or integer keys); anything else is an error. |
+| `prts.settings.save()` | Writes every setting to `config.lua`, keys sorted so the file stays stable. Returns `true`, or `nil` and the reason. |
 
 ## `prts.save`
 
@@ -215,6 +287,18 @@ tick and every entity's script data) on top of the booted map. Slot names use 1�
 |---|---|
 | `prts.save.write(slot)` | Saves now. Returns `true`, or `nil` and the reason (for example a field of entity data that is a function). |
 | `prts.save.load(slot)` | Checks the save and loads it at the start of the next tick. Returns `true`, or `nil` and the reason. Refused while a replay is recorded or played. |
+
+## `prts.app` and `prts.dev`
+
+`prts.dev` exists only in developer builds, and not with `--no-dev` (`prts.boot.developer` says
+which). Release builds have no developer console and no observer camera (First-Person Contract).
+
+| Function | What it does |
+|---|---|
+| `prts.app.quit()` | Stops the frame loop after the current frame (the menus' Quit button). Lua unit tests, which do not run the frame loop, carry on. |
+| `prts.dev.console([open])` | Opens or closes the developer console (the backquote key does the same) and returns whether it is open. |
+| `prts.dev.observer([on])` | Turns the observer camera on or off and returns whether it is on: a free camera labeled "DEVELOPER VIEW" on screen, moved with the mouse, W/A/S/D, Space, Left Ctrl and Left Shift, while game input is blocked. |
+| `prts.dev.run(line)` | Runs a console command as if it was typed: `help`, `clear`, `reload` (hot reload, where the build has it), `observer` (toggles the camera), or any other line as Lua in the shared script environment (the values of an expression are printed to the console). |
 
 ## Mod manifests (`mod.lua`)
 
@@ -274,6 +358,21 @@ game through the same actions as real input; `t` offers:
 | `t.headless()` | `true` without a window. |
 | `t.screenshot(name)` | Saves `<name>.png` to the `--out` folder (windowed runs only). |
 | `t.expect(value [, what])` | Returns checks that fail the scenario with a message: `.is_true()`, `.equals(x)`, `.near(x, tolerance)`. |
+| `t.ui_has(text [, surface])` | `true` if a text drawn in the last frame on the surface (default the screen) contains `text`: labels, paragraphs, window titles, button and checkbox labels and `prts.ui.draw_text`, also when scrolled out of view. |
+| `t.ui_texts([surface])` | Array of those texts. Errors on an unknown surface. |
+| `t.ui_click(label)` | Clicks the screen widget (button, checkbox, slider or text box) whose label or, failing that, id is `label`, at its centre, over a few ticks. Fails if no such widget was drawn in the last frame. |
+| `t.key(name)` | Presses and releases a key by name (`"Escape"`, `"Return"`, `` "`" ``), one tick each; the keyboard becomes the last used device. Errors on an unknown key name. |
+| `t.type_text(s)` | Types text into the focused text field or the console, 16 bytes per tick. |
+| `t.scheme(name)` | Switches the active input scheme (`"kbm"`, `"gamepad"`, `"touch"` or `"xr"`). |
+| `t.pad_button(code, down)` / `t.pad_axis(code, value)` | A connected gamepad: presses or releases button `code` (0–31), or sets axis `code` (0–5). |
+| `t.touch(slot, x, y, down)` | Puts finger `slot` (1–10) down at `x, y` (fractions of the window), or lifts it. |
+| `t.console_open()` | `true` while the developer console is open. |
+| `t.console_lines()` | The developer console's lines (empty without a console). |
+| `t.observer()` | `true` while the observer camera is on. |
+| `t.camera()` | `x, y, z, yaw` of the view being rendered (the observer camera when it is on). |
+
+The UI and device helpers, `t.ui_has` to `t.camera`, also exist on `T` in Lua unit tests, where
+each step runs one UI frame at once instead of waiting a tick.
 
 A scenario that only uses actions and look direction after its first wait can be recorded with
 `--record <file>` and checked with `--replay <file>`; `tests/game/determinism/` holds such walks.
@@ -290,6 +389,8 @@ Files in `scripts/tests/` (run with `1stprts --headless --test-lua`) register ca
 | `T.is_true(v [, what])` | Fails unless `v` is `true`. |
 | `T.near(a, b, tolerance [, what])` | Fails unless `a` is within `tolerance` of `b`. |
 | `T.fails(fn [, what])` | Fails unless calling `fn` raises an error. |
+| `T.ui_frame([n])` | Runs `n` UI frames at once (default 1): input, every `ui` handler and the drawing records `T.ui_has` reads, without simulation ticks. |
+| `T.ui_has`, `T.ui_click`, `T.key`, ... | The UI and device helpers of the scenario object `t` (see above). |
 
 ## Command line (for tests and CI)
 

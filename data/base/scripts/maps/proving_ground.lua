@@ -13,6 +13,9 @@ M.FLOORS = { 0.2, 4.7, 9.2 }  -- walking height of each storey
 M.SLAB = 0.3
 M.ROOF = 13.7
 M.LIFT = { x = -9.3, z = 0, gate = -7.4 }
+-- The spiral stair from the war room floor to the roof, under the roof turret's hood.
+M.SPIRAL = { x = 9.6, z = -7.35, radius = 0.9, start = -math.pi / 3, steps = 18 }
+M.HATCH = { x0 = 8.2, x1 = 11.0, z0 = -8.8, z1 = -5.9 }  -- the opening in the roof above it
 M.music = "music/proving_ground.ogg"
 
 local function materials()
@@ -56,6 +59,9 @@ local function define_portals()
   local F, p = M.FLOORS, prts.scene.portal
   p{ name = "keep.door", a = "outside", b = "keep.hall", min = { -1.1, F[1], M.HZ - M.T }, max = { 1.1, F[1] + 3.2, M.HZ } }
   p{ name = "keep.forge.door", a = "keep.hall", b = "keep.forge", min = { -9.0, F[1], -4.3 }, max = { -7.8, F[1] + 2.4, -3.9 } }
+  local h = M.HATCH
+  p{ name = "keep.roof.hatch", a = "keep.stairs", b = "outside", min = { h.x0, M.ROOF - M.SLAB - 0.05, h.z0 },
+     max = { h.x1, M.ROOF + 0.05, h.z1 } }
   for f, cell in ipairs({ "keep.hall", "keep.floor2", "keep.floor3" }) do
     p{ name = "keep.stairs." .. f, a = "keep.stairs", b = cell, min = { 6, F[f], -1.05 }, max = { 11, F[f] + 3.9, -0.95 } }
     p{ name = "keep.lift.gate" .. (f - 1), a = "keep.lift", b = cell, min = { -7.6, F[f], -1.2 }, max = { -7.2, F[f] + 2.8, 1.2 } }
@@ -149,6 +155,17 @@ local function stairwell()
     B.stairs("stone_floor", { axis = "z", sign = 1, start = -5.7, w0 = 6, w1 = 8.4, steps = 9,
                               rise = 0.25, run = 0.3, base = mid })
   end
+  -- war room level: a gallery above the lower flight and a floor above the landing, where the
+  -- spiral stair climbs through the roof hatch
+  prts.scene.cells{ "keep.stairs", "keep.floor3" }
+  local F3 = F[3]
+  B.box("planks", 8.6, F3 - M.SLAB, -5.7, 11, F3, -3)
+  B.box("planks", 6, F3 - M.SLAB, -9, 11, F3, -5.7)
+  prts.scene.cells{ "keep.stairs", "keep.floor3", "outside" }
+  local sp = M.SPIRAL
+  M.spiral_top = B.spiral("stone_floor", { center = { sp.x, sp.z }, base = F3, steps = sp.steps, radius = sp.radius,
+                                           start = sp.start, post = "oak", headroom = 1.0 })
+  prts.scene.light{ pos = { 10.4, F3 + 2.6, -5.0 }, color = { 1.2, 0.7, 0.35 }, radius = 8 }
 end
 
 local function lift_shaft()
@@ -202,8 +219,8 @@ end
 local function forge_room()
   local F = M.FLOORS
   prts.scene.cells{ "keep.forge", "keep.hall" }
-  B.wall("plaster", "x", -11, -4.9, -4.3, -3.9, F[1] - 0.2, F[2] - M.SLAB,
-         { { from = -9.0, to = -7.8, bottom = F[1], top = F[1] + 2.4 } })
+  B.door_frame("plaster", "x", -11, -4.9, -4.3, -3.9, F[1] - 0.2, F[2] - M.SLAB,
+               { from = -9.0, to = -7.8, height = 2.4 + 0.2 })
   B.box("plaster", -5.3, F[1] - 0.2, -9, -4.9, F[2] - M.SLAB, -4.3)
   Door.make{ name = "keep.forge.door", hinge = { -9.0, F[1], -4.1 }, width = 1.2, height = 2.4, material = "oak",
              portal = "keep.forge.door" }
@@ -267,8 +284,12 @@ end
 
 local function roof()
   local HX, HZ = M.HX, M.HZ
-  prts.scene.cells{ "outside", "keep.floor3" }
-  B.box("stone_floor", -HX, M.ROOF - M.SLAB, -HZ, HX, M.ROOF, HZ)
+  prts.scene.cells{ "outside", "keep.floor3", "keep.stairs" }
+  local h, y0r = M.HATCH, M.ROOF - M.SLAB
+  B.box("stone_floor", -HX, y0r, -HZ, h.x0, M.ROOF, HZ)      -- the roof around the hatch
+  B.box("stone_floor", h.x1, y0r, -HZ, HX, M.ROOF, HZ)
+  B.box("stone_floor", h.x0, y0r, -HZ, h.x1, M.ROOF, h.z0)
+  B.box("stone_floor", h.x0, y0r, h.z1, h.x1, M.ROOF, HZ)
   prts.scene.cells{ "outside" }
   local y0, y1 = M.ROOF, M.ROOF + 1.2
   for x = -HX, HX - 1.2, 2.0 do
@@ -279,10 +300,14 @@ local function roof()
     B.box("stone", HX - 0.6, y0, z, HX, y1, z + 1.2)
     B.box("stone", -HX, y0, z, -HX + 0.6, y1, z + 1.2)
   end
-  prts.scene.prism{ base = { 9.6, M.ROOF, -7.6 }, radius = 2.2, top_radius = 2.2, height = 4.0, sides = 10, material = "stone", solid = true }
-  prts.scene.prism{ base = { 9.6, M.ROOF + 4.0, -7.6 }, radius = 2.8, top_radius = 0, height = 3.6, sides = 10, material = "slate" }
-  B.box("oak", 9.55, M.ROOF + 7.4, -7.65, 9.65, M.ROOF + 10, -7.55, { solid = false })
-  B.box("banner", 9.65, M.ROOF + 8.6, -7.62, 11.6, M.ROOF + 9.8, -7.58, { solid = false })
+  -- the turret over the spiral stair: an open hood on four posts
+  for _, c in ipairs({ { h.x0, h.z0 }, { h.x1 - 0.25, h.z0 }, { h.x0, h.z1 - 0.25 }, { h.x1 - 0.25, h.z1 - 0.25 } }) do
+    B.box("oak", c[1], M.ROOF, c[2], c[1] + 0.25, M.ROOF + 3.0, c[2] + 0.25)
+  end
+  B.box("oak", h.x0 - 0.2, M.ROOF + 3.0, h.z0 - 0.2, h.x1 + 0.2, M.ROOF + 3.3, h.z1 + 0.2)
+  prts.scene.prism{ base = { 9.6, M.ROOF + 3.3, -7.35 }, radius = 2.6, top_radius = 0, height = 3.0, sides = 10, material = "slate" }
+  B.box("oak", 9.55, M.ROOF + 5.8, -7.4, 9.65, M.ROOF + 8.4, -7.3, { solid = false })
+  B.box("banner", 9.65, M.ROOF + 7.0, -7.37, 11.6, M.ROOF + 8.2, -7.33, { solid = false })
 end
 
 local function cottage(x, z, w, d)
@@ -306,6 +331,7 @@ end
 
 local function countryside()
   prts.scene.cells{ "outside" }
+  B.wedge("stone_floor", -1.6, 0, M.HZ, 1.6, M.FLOORS[1], M.HZ + 1.4, { axis = "z", sign = -1 }) -- door ramp
   for _, x in ipairs({ -2.6, 2.6 }) do                                -- banners at the door
     model("models/banner_stand.glb", x, prts.scene.height(x, 10.6), 10.6)
   end
@@ -408,6 +434,11 @@ function M.build()
   prts.scene.marker("hall_view", { 8.5, F[1], 7.5 }, math.pi / 4)
   prts.scene.marker("war_room_view", { 0.2, F[3], 7.4 }, 0)
   prts.scene.marker("forge_door", { -8.4, F[1], -2.8 }, 0)
+  local sp = M.SPIRAL
+  local a = sp.start - math.pi / 3 -- two steps' turn before the first step, clear of it
+  -- facing along the turn: forward (-sin yaw, -cos yaw) = (-sin a, cos a)
+  prts.scene.marker("spiral_base", { sp.x + sp.radius * math.cos(a), F[3], sp.z + sp.radius * math.sin(a) },
+                    math.atan(math.sin(a), -math.cos(a)))
   return M
 end
 

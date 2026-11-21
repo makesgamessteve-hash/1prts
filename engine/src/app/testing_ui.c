@@ -190,6 +190,7 @@ static int t_camera(lua_State *L)
 
 void prts_engine_open_test_ui(prts_engine *e, int table, bool synchronous)
 {
+    /* api-docs: t */
     static const luaL_Reg fns[] = {
         {"_ui_find", t_ui_find},         {"_ui_pointer", t_ui_pointer},     {"ui_texts", t_ui_texts},
         {"_key", t_key},                 {"_type", t_type_text},            {"scheme", t_scheme},

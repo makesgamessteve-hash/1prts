@@ -62,8 +62,8 @@ is missing. References are C unit tests (`suite.case`), test files and scripts (
 | commander-locomotion | Developer observer camera | pending (task 9.6) |
 | commander-locomotion | Walking speed | `tests/game/scenarios/walk_speed.lua`, `commander.walking_speed_and_crouch` |
 | commander-locomotion | Crouching lowers the view | `commander.walking_speed_and_crouch` |
-| commander-locomotion | Stairs | `tests/game/scenarios/keep_stairs.lua` |
-| commander-locomotion | Wall at sprint speed | `collide.sliding_stepping_and_ground`; the sprint scenario is pending (task 9.2) |
+| commander-locomotion | Stairs | `tests/game/scenarios/spiral_stair.lua` (the keep's spiral stair to the roof), `tests/game/scenarios/keep_stairs.lua` |
+| commander-locomotion | Wall at sprint speed | `tests/game/scenarios/sprint_into_wall.lua`, `collide.sliding_stepping_and_ground`, `collide.slope_limit_on_terrain` |
 | commander-locomotion | Opening a door | `tests/game/scenarios/keep_door.lua` |
 | commander-locomotion | Riding the keep's hoist lift | `tests/game/scenarios/keep_lift.lua`, `commander.rides_a_moving_platform_and_uses_things` |
 | commander-locomotion | Walking during movement | `commander.rides_a_moving_platform_and_uses_things` |

@@ -127,6 +127,20 @@ static int l_scene_box(lua_State *L)
     return 1;
 }
 
+/* prts.scene.wedge{ min, max, axis = "x"|"z", sign = 1|-1, material, entity, tile }: a ramp */
+static int l_scene_wedge(lua_State *L)
+{
+    prts_engine *e = prts_engine_from_lua(L);
+    luaL_checktype(L, 1, LUA_TTABLE);
+    prts_aabb b = prts_aabb_make(check_vec3(L, 1, "min"), check_vec3(L, 1, "max"));
+    const char *axis = field_string(L, 1, "axis", "x");
+    if (strcmp(axis, "x") != 0 && strcmp(axis, "z") != 0) return luaL_error(L, "axis must be \"x\" or \"z\"");
+    int sign = field_number(L, 1, "sign", 1.0f) < 0.0f ? -1 : 1;
+    prts_scene_add_wedge(e->scene, b, axis[0] == 'z' ? 2 : 0, sign, material_index(L, e, 1), opt_entity(L, 1, "entity"),
+                         field_number(L, 1, "tile", 2.0f));
+    return 0;
+}
+
 static int l_scene_prism(lua_State *L)
 {
     prts_engine *e = prts_engine_from_lua(L);
@@ -745,6 +759,7 @@ void prts_engine_open_game_api(prts_engine *e)
         {"portal", l_scene_portal},     {"set_portal", l_scene_set_portal}, {"portal_open", l_scene_portal_open},
         {"cells", l_scene_cells},       {"cell_at", l_scene_cell_at},   {"surface", l_scene_surface},
         {"sprite", l_scene_sprite},     {"sprite_anim", l_scene_sprite_anim}, {"model", l_scene_model},
+        {"wedge", l_scene_wedge},
         {NULL, NULL}};
     static const prts_script_fn entity[] = {
         {"spawn", l_entity_spawn},   {"pos", l_entity_pos},         {"local_pos", l_entity_local_pos},
