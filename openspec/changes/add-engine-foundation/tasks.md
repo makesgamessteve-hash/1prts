@@ -70,7 +70,7 @@
 - [x] 8.2 Implement the action mapper (button and axis actions, input contexts, per-scheme bindings) and Lua action definitions in `data/base/scripts/input/`; verify C and Lua tests, including a mod adding an action (spec *Mod adds an action*)
 - [x] 8.3 Implement binding overrides saved in `config.lua` in the user area; verify a test that a rebind survives a restart (spec *Rebinding use*)
 - [x] 8.4 Implement scheme detection and switching on the last-used device, with scheme-changed events to scripts and the web start-up hint from the JS glue; verify unit tests and Lua tests (spec *Prompt update*, *Tablet with a keyboard*)
-- [ ] 8.5 Implement the touch overlay (floating stick, look drag, tap to use, context buttons) with its layout defined in Lua; verify unit tests of multi-touch handling (spec *Touch movement and look*) and the Playwright mobile-emulation test (spec *Phone browser*, *Emulated phone*)
+- [x] 8.5 Implement the touch overlay (floating stick, look drag, tap to use, context buttons) with its layout defined in Lua; verify unit tests of multi-touch handling (spec *Touch movement and look*) and the Playwright mobile-emulation test (spec *Phone browser*, *Emulated phone*)
 
 ## 9. Physics and commander
 
@@ -87,7 +87,7 @@
 - [x] 10.2 Build the Proving Ground: ≥ 1 km × 1 km terrain, dusk lighting, the three-storey keep (great hall, side rooms, spiral stair, hoist lift, war room with a placeholder war table), a `.vox` crate, a person sprite and a forge room; verify the scenario test *Reaching the war room*
 - [x] 10.3 Create the placeholder art (textures, sprite sheet, voxel crate, sounds, music loop, bitmap font) as original CC BY 4.0 work with `data/base/CREDITS.md` entries; verify the asset validator passes
 - [x] 10.4 Implement `tools/validate-assets` (credits coverage, references resolve, formats parse, manifests valid) and add it to `checks`; verify it fails on an uncredited fixture file (spec *Uncredited asset detected*)
-- [ ] 10.5 Write the commander-is-there smoke scenario set (walk, stairs, door, lift, war table) and run it in CI on Windows, Linux, macOS and web; verify all report passed with the same final cell (spec *Same scenario result on desktop and web*)
+- [x] 10.5 Write the commander-is-there smoke scenario set (walk, stairs, door, lift, war table) and run it in CI on Windows, Linux, macOS and web; verify all report passed with the same final cell (spec *Same scenario result on desktop and web*)
 
 ## 11. Audio
 
@@ -95,7 +95,7 @@
 - [x] 11.2 Connect the mixer to SDL3 audio streams with the lock-free command queue, plus a null device for headless mode; verify a smoke test with a real device under CI where available and the null device otherwise
 - [x] 11.3 Implement WAV and OGG loading, OGG streaming and script-controlled cross-fades; verify unit tests on fixture files (spec *Cross-fade*)
 - [x] 11.4 Implement muffling between cells from portal state; verify a scenario test checking the voice's filter state when the forge room door closes (spec *Door closes on a noisy room*)
-- [ ] 11.5 Implement the browser audio unlock with queued start requests; verify a Playwright test that music starts after the first click (spec *First click starts music*)
+- [x] 11.5 Implement the browser audio unlock with queued start requests; verify a Playwright test that music starts after the first click (spec *First click starts music*)
 
 ## 12. UI, menus and developer console
 
@@ -179,6 +179,9 @@ Not started: 3.4, 3.5, 5.9, 5.10, 6.3, 7.6–7.9, 8.3, 8.5, 10.5, 11.x (audio), 
 menus, console), 13.x (web and WebXR), 14.1, 14.3, 14.5.
 
 Deviations from `design.md` (recorded there too):
+- Browser audio unlock (11.5): no separate queue. Until the browser lets audio run, the mixer
+  mixes nothing, so sounds and music requested before the first click wait at their first
+  sample and start when audio unlocks.
 - Audio (D11): the main thread mixes a little ahead every frame and queues it on an SDL audio
   stream (about 80 ms). There is no audio-thread mixer and no command queue. Music files are
   kept compressed in memory and decoded a little at a time.
