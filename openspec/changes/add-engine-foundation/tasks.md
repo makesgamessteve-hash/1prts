@@ -116,7 +116,7 @@
 
 ## 14. Packaging and integration
 
-- [ ] 14.1 Implement the `package` job: desktop archives (executable + `data/` + `LICENSE`, `LICENSE-ASSETS`, `LICENSING.md`, third-party licenses) and the web bundle; verify an extract-and-run smoke test on each desktop platform (spec *Extract and run*, *Licenses included*)
+- [x] 14.1 Implement the `package` job: desktop archives (executable + `data/` + `LICENSE`, `LICENSE-ASSETS`, `LICENSING.md`, third-party licenses) and the web bundle; verify an extract-and-run smoke test on each desktop platform (spec *Extract and run*, *Licenses included*)
 - [x] 14.2 Run the headless runner on a display-less CI machine with the Proving Ground; verify exit status 0 (spec *Headless on a server*)
 - [x] 14.3 Check that every scenario in this change's specs is linked to at least one automated test (a mapping table in `tests/README.md`, checked by a script in `checks`); verify the script passes
 - [x] 14.4 Update `README.md` with build, run and test instructions for every platform; verify the documented commands work as written in a clean checkout
