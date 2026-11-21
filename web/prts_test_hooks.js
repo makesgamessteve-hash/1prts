@@ -44,11 +44,16 @@
     },
     // User gestures reported to the engine (the audio unlock).
     gestures: function () { return ready() ? Module['_prts_test_gestures']() : 0; },
+    // XR session state and the comfort options (vignetteOn; snap: vertex snapping in XR;
+    // vignette: its current strength; teleport movement; turn: the play area's yaw; seat).
     xr: function () {
       var f = function (i) { return ready() ? Module['_prts_test_xr'](i) : 0; };
       return {
         supported: f(0) === 1, active: f(1) === 1, views: f(2), frames: f(3), sessions: f(4),
         controllers: f(5), framebuffer: f(6), headHeight: num(f(7)), secondViewX: num(f(8)),
+        // comfort options and their state (game/settings.lua, engine/src/app/engine_xr.c)
+        vignetteOn: f(9) === 1, snap: f(10) === 1, vignette: num(f(11)), teleport: f(12) === 1,
+        turn: num(f(13)), seat: num(f(14)),
         control: document.body.dataset.prtsXr || 'unknown',
       };
     },

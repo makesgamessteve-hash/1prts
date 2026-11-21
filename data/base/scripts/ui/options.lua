@@ -1,5 +1,6 @@
--- The options menu: video (retro resolution preset and each retro effect), audio volumes and
--- controls. Video changes apply at once, without a restart, and are saved. MIT License.
+-- The options menu: video (retro resolution preset and each retro effect), audio volumes,
+-- controls and VR (comfort options and the video settings in a headset). Video and VR changes
+-- apply at once, without a restart, and are saved. MIT License.
 local settings = require("game.settings")
 local controls = require("ui.controls")
 
@@ -9,6 +10,7 @@ O.TABS = {
   { id = "video", label = "Video" },
   { id = "audio", label = "Audio" },
   { id = "controls", label = "Controls" },
+  { id = "vr", label = "VR" },
 }
 O.EFFECTS = {
   { key = "dither", label = "Palette and dithering" },
@@ -16,6 +18,16 @@ O.EFFECTS = {
   { key = "affine", label = "Affine textures" },
   { key = "fog", label = "Distance fog" },
   { key = "crosshair", label = "Crosshair" },
+}
+
+O.XR_OPTIONS = {
+  { key = "vignette", label = "Comfort vignette while moving" },
+  { key = "seated", label = "Seated mode (standing eye height)" },
+}
+O.XR_EFFECTS = {
+  { key = "snap", label = "Vertex snapping in VR" },
+  { key = "dither", label = "Palette and dithering in VR" },
+  { key = "affine", label = "Affine textures in VR" },
 }
 
 function O.cancel_capture() return controls.cancel() end
@@ -38,6 +50,41 @@ function O.draw_video()
   if changed then settings.set_video("fov", fov, false) end
 end
 
+function O.draw_vr()
+  local x, xv = settings.xr(), settings.xr_video()
+  prts.ui.row({ 120, -1 })
+  prts.ui.label("Movement")
+  if prts.ui.button(x.locomotion == "teleport" and "Teleport" or "Smooth", "xr.locomotion") then
+    settings.set_xr("locomotion", x.locomotion == "teleport" and "smooth" or "teleport")
+  end
+  prts.ui.label("Turning")
+  if prts.ui.button(x.turn == "smooth" and "Smooth" or "Snap", "xr.turn") then
+    settings.set_xr("turn", x.turn == "smooth" and "snap" or "smooth")
+  end
+  if x.turn == "smooth" then
+    prts.ui.label("Turn speed")
+    local v, changed = prts.ui.slider("xr.turn_speed", x.turn_speed, 30, 360, 10)
+    if changed then settings.set_xr("turn_speed", v, false) end
+  else
+    prts.ui.label("Snap angle")
+    local v, changed = prts.ui.slider("xr.snap_angle", x.snap_angle, 15, 90, 15)
+    if changed then settings.set_xr("snap_angle", v, false) end
+  end
+  prts.ui.label("Resolution in VR")
+  if prts.ui.button(settings.PRESET_NAMES[xv.preset], "xr.preset") then
+    settings.set_xr("preset", settings.next_preset(xv.preset), true, true)
+  end
+  prts.ui.row({ -1 })
+  for _, o in ipairs(O.XR_OPTIONS) do
+    local value, changed = prts.ui.checkbox(o.label, x[o.key], "xr." .. o.key)
+    if changed then settings.set_xr(o.key, value) end
+  end
+  for _, fx in ipairs(O.XR_EFFECTS) do
+    local value, changed = prts.ui.checkbox(fx.label, xv[fx.key], "xr.video." .. fx.key)
+    if changed then settings.set_xr(fx.key, value, true, true) end
+  end
+end
+
 function O.draw_audio()
   prts.ui.row({ -1 })
   if not settings.audio_api() then prts.ui.label("No audio mixer in this build; volumes are kept for later.") end
@@ -53,7 +100,7 @@ end
 function O.draw(w, h, back)
   local ww, wh = math.min(440, w - 16), math.min(290, h - 16)
   prts.ui.window("Options", math.floor((w - ww) / 2), math.floor((h - wh) / 2), ww, wh, function()
-    prts.ui.row({ 80, 80, 80, -1 })
+    prts.ui.row({ 70, 70, 70, 70, -1 })
     for _, tab in ipairs(O.TABS) do
       if prts.ui.button(tab.id == O.tab and ("[" .. tab.label .. "]") or tab.label, "tab." .. tab.id) then
         O.tab = tab.id
@@ -69,6 +116,8 @@ function O.draw(w, h, back)
       O.draw_video()
     elseif O.tab == "audio" then
       O.draw_audio()
+    elseif O.tab == "vr" then
+      O.draw_vr()
     else
       controls.draw()
     end

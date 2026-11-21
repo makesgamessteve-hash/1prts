@@ -113,7 +113,9 @@ is, alert levels, a hysteresis timer), never on rendering. Tests can force any l
   script component tables, plus a list of mounted mods with their versions.
 - **Replay** = the starting snapshot plus a stream of **commands per tick** (player inputs that
   affect the simulation, such as movement, use and orders). Look direction is recorded too,
-  for playback from the commander's point of view.
+  for playback from the commander's point of view, and so is the XR body input (the tracked
+  head the body follows and the controller's pointer ray), which XR sessions turn into
+  per-tick input the same way.
 - **Replay check**: replaying must give the same state hashes. Automated game tests use this
   heavily ([quality-and-build.md](quality-and-build.md)).
 

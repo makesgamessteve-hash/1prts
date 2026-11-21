@@ -1,12 +1,14 @@
 /* 1stPRTS engine: XR session state and the packed per-frame data from the web glue. MIT License. */
 #include "prts/prts_xr.h"
 
+#include <math.h>
 #include <string.h>
 
 static prts_xr g_xr;
 
 #if defined(__EMSCRIPTEN__)
 void prts_xr_web_init(void); /* web/prts_xr.js */
+void prts_xr_web_exit(void); /* web/prts_xr.js: ends the browser's session */
 #endif
 
 prts_xr *prts_xr_get(void) { return &g_xr; }
@@ -132,4 +134,74 @@ int prts_xr_build_views(const prts_xr *xr, prts_dvec3 origin, float yaw, prts_vi
         v->h = xv->viewport[3];
     }
     return n;
+}
+
+prts_vec3 prts_xr_rotate(const prts_xr_pose *p, prts_vec3 v)
+{
+    const float *q = p->orientation;
+    float n = q[0] * q[0] + q[1] * q[1] + q[2] * q[2] + q[3] * q[3];
+    if (!(n > 1e-12f)) return v;
+    float s = 1.0f / sqrtf(n);
+    prts_vec3 u = prts_v3(q[0] * s, q[1] * s, q[2] * s);
+    float w = q[3] * s;
+    /* v + 2w (u x v) + 2 u x (u x v) */
+    prts_vec3 t = prts_v3_scale(prts_v3_cross(u, v), 2.0f);
+    return prts_v3_add(prts_v3_add(v, prts_v3_scale(t, w)), prts_v3_cross(u, t));
+}
+
+prts_vec3 prts_xr_forward(const prts_xr_pose *p) { return prts_xr_rotate(p, prts_v3(0.0f, 0.0f, -1.0f)); }
+
+void prts_xr_yaw_pitch(const prts_xr_pose *p, float *yaw, float *pitch)
+{
+    prts_vec3 f = prts_xr_forward(p);
+    float flat = sqrtf(f.x * f.x + f.z * f.z);
+    if (flat < 1e-4f) {
+        /* looking straight up or down: the yaw is where the top of the view points */
+        prts_vec3 up = prts_xr_rotate(p, prts_v3(0.0f, f.y > 0.0f ? -1.0f : 1.0f, 0.0f));
+        f.x = up.x;
+        f.z = up.z;
+    }
+    *yaw = atan2f(-f.x, -f.z);
+    *pitch = atan2f(f.y, flat);
+}
+
+const prts_xr_controller *prts_xr_hand_controller(const prts_xr *xr, prts_xr_hand hand)
+{
+    const prts_xr_controller *by_hand[3] = {NULL, NULL, NULL};
+    for (int i = PRTS_XR_MAX_CONTROLLERS - 1; i >= 0; i--) { /* the first one of each hand wins */
+        const prts_xr_controller *c = &xr->controllers[i];
+        if (c->connected) by_hand[c->hand] = c;
+    }
+    if (by_hand[hand] || hand == PRTS_XR_HAND_NONE) return by_hand[hand];
+    if (hand == PRTS_XR_HAND_RIGHT) return by_hand[PRTS_XR_HAND_NONE];
+    return by_hand[PRTS_XR_HAND_RIGHT] ? by_hand[PRTS_XR_HAND_NONE] : NULL;
+}
+
+void prts_xr_feed_input(const prts_xr *xr, prts_input_state *s)
+{
+    for (int h = 0; h < 2; h++) {
+        const prts_xr_controller *c = xr->active ? prts_xr_hand_controller(xr, h ? PRTS_XR_HAND_RIGHT : PRTS_XR_HAND_LEFT) : NULL;
+        s->xr_connected[h] = c != NULL;
+        memset(s->xr_buttons[h], 0, sizeof(s->xr_buttons[h]));
+        memset(s->xr_axes[h], 0, sizeof(s->xr_axes[h]));
+        if (!c) continue;
+        for (int b = 0; b < c->button_count && b < PRTS_INPUT_XR_BUTTONS; b++) {
+            float v = c->buttons[b] > 0.0f ? fminf(c->buttons[b], 1.0f) : 0.0f; /* also NaN */
+            s->xr_buttons[h][b] = c->pressed[b] ? 1.0f : 0.5f * v;
+        }
+        for (int a = 0; a < c->axis_count && a < PRTS_INPUT_XR_AXES; a++) {
+            float v = c->axes[a];
+            s->xr_axes[h][a] = v == v ? prts_clampf(v, -1.0f, 1.0f) : 0.0f;
+        }
+    }
+}
+
+void prts_xr_request_exit(prts_xr *xr)
+{
+    if (!xr->active) return;
+#if defined(__EMSCRIPTEN__)
+    prts_xr_web_exit();
+#else
+    prts_xr_end(xr);
+#endif
 }

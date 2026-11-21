@@ -107,9 +107,9 @@
 ## 13. Web platform and WebXR
 
 - [x] 13.1 Spike the WebXR frame-driver handoff: `web/prts_xr.js` starts a session, pauses SDL's loop, drives `prts_frame()` from the XR session and resumes SDL's loop on end; verify with the `navigator.xr` mock in Playwright (spec *Entering VR*, *Session ended by the headset*)
-- [ ] 13.2 Implement the XR interface in `xr/` (session state, eye views into the renderer's view list, controller poses and buttons into the action mapper, pointer rays); verify unit tests with recorded pose fixtures (spec *Pulling the lift lever*)
-- [ ] 13.3 Implement XR body handling: head offset within the play area, collision push-back for the head, seated mode; verify unit tests (spec *Leaning toward a wall*)
-- [ ] 13.4 Implement comfort options (smooth and teleport movement, snap and smooth turn, vignette) and XR effect defaults; verify unit tests and a Playwright XR-mock test (spec *Teleport movement*, *Comfort defaults*)
+- [x] 13.2 Implement the XR interface in `xr/` (session state, eye views into the renderer's view list, controller poses and buttons into the action mapper, pointer rays); verify unit tests with recorded pose fixtures (spec *Pulling the lift lever*)
+- [x] 13.3 Implement XR body handling: head offset within the play area, collision push-back for the head, seated mode; verify unit tests (spec *Leaning toward a wall*)
+- [x] 13.4 Implement comfort options (smooth and teleport movement, snap and smooth turn, vignette) and XR effect defaults; verify unit tests and a Playwright XR-mock test (spec *Teleport movement*, *Comfort defaults*)
 - [x] 13.5 Implement XR availability detection and the "Enter VR" control, hidden when unsupported; verify Playwright tests with and without the mock (spec *No XR support*)
 - [x] 13.6 Add the browser end-to-end suite (desktop boot and keyboard, mobile emulation, XR mock) to the `web` job with test hooks enabled only by `?test=1` in test builds; verify all tests pass in CI
 - [x] 13.7 Write `docs/testing/xr-checklist.md` and `docs/testing/mobile-checklist.md` (manual checks on real headsets and phones); verify the checklists cover every scenario in `xr-presentation` and the touch scenarios in `input-actions`
@@ -179,6 +179,9 @@ Not started: 3.4, 3.5, 5.9, 5.10, 6.3, 7.6–7.9, 8.3, 8.5, 10.5, 11.x (audio), 
 menus, console), 13.x (web and WebXR), 14.1, 14.3, 14.5.
 
 Deviations from `design.md` (recorded there too):
+- WebXR (13.2-13.4): head and hand poses reach the simulation as per-tick commander input
+  (head position, pointer ray) and are recorded in replays like the look direction (replay
+  format 2). Menus are drawn only on the flat page, so the menu button in VR leaves VR.
 - Browser audio unlock (11.5): no separate queue. Until the browser lets audio run, the mixer
   mixes nothing, so sounds and music requested before the first click wait at their first
   sample and start when audio unlocks.

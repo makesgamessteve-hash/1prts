@@ -35,8 +35,11 @@ async function newPage(context) {
   page.prtsErrors = [];
   page.prtsRequests = [];
   page.on('pageerror', (err) => page.prtsErrors.push(String(err)));
+  page.prtsConsole = [];
   page.on('console', (msg) => {
     if (msg.type() === 'error') page.prtsErrors.push(msg.text());
+    page.prtsConsole.push(`${msg.type()}: ${msg.text()}`);
+    if (page.prtsConsole.length > 40) page.prtsConsole.shift();
   });
   page.on('request', (req) => page.prtsRequests.push(new URL(req.url()).pathname));
   return page;
@@ -61,11 +64,25 @@ async function openGame(env, context, query = '?test=1&start=proving_ground') {
   return page;
 }
 
+/* Waits until fn(arg), evaluated in the page, is truthy. It polls from the test side with
+ * page.evaluate: polling inside the page (waitForFunction) sometimes missed a change for the
+ * whole timeout right after a WebXR session ended, while evaluations saw it at once. Errors
+ * thrown by fn count as "not yet"; the last one is reported on a timeout. */
 async function waitFor(page, fn, arg, what, timeout = 15000) {
-  try {
-    await page.waitForFunction(fn, arg, { timeout, polling: 50 });
-  } catch (e) {
-    throw new TestFailure(`timed out waiting for ${what}`);
+  const until = Date.now() + timeout;
+  let last = null;
+  for (;;) {
+    try {
+      if (await page.evaluate(fn, arg)) return;
+      last = null;
+    } catch (e) {
+      last = e;
+    }
+    if (Date.now() > until) {
+      const why = last && last.message ? ` (${last.message.split('\n')[0]})` : '';
+      throw new TestFailure(`timed out waiting for ${what}${why}`);
+    }
+    await page.waitForTimeout(50);
   }
 }
 

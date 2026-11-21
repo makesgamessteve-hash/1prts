@@ -193,21 +193,27 @@ are held and begin from their start at that moment, so scripts can start the men
 
 Actions are defined by scripts (`data/base/scripts/input/defaults.lua`); the engine maps devices to
 action values. Touch axes 0 and 1 are the movement stick, 2 and 3 the look drag; touch button 0 is
-a tap on the look side, 1 and up the context buttons of the touch layout. Players rebind actions
-per scheme (`kbm`, `gamepad`, `touch`); their overrides are kept in `prts.settings`.
+a tap on the look side, 1 and up the context buttons of the touch layout. XR controllers use the
+WebXR `xr-standard` order per hand, left hand first: `xr_buttons` 0-7 are the left controller's
+(0 trigger, 1 squeeze, 2 touchpad, 3 thumbstick press, 4 X, 5 Y) and 8-15 the right one's (12 A,
+13 B); `xr_axes` 0-3 are the left controller's (2, 3 thumbstick x and y, y is -1 pushed forward)
+and 4-7 the right one's. A button reads 1 while the browser reports it pressed (at most 0.5
+otherwise); axes have the gamepad's dead zone. In XR the head looks around, `look_x` turns (see
+`prts.xr`), and `use` aims with the controller's pointer ray instead of the view. Players rebind
+actions per scheme (`kbm`, `gamepad`, `touch`, `xr`); their overrides are kept in `prts.settings`.
 
 | Function | What it does |
 |---|---|
-| `prts.input.action{ id, label, keys, mouse_buttons, mouse_axes, pad_buttons, pad_axes, touch_axes, touch_buttons, always }` | Defines an action or replaces its default bindings. `keys` are key names (`"W"`, `"Left Shift"`); the other lists hold codes or `{ code = n, scale = s }`. `label` names it in the controls menu; `always = true` keeps it working while a menu or the console blocks game input. The player's saved override of a scheme replaces that scheme's defaults (an invalid one is ignored with a warning). |
+| `prts.input.action{ id, label, keys, mouse_buttons, mouse_axes, pad_buttons, pad_axes, touch_axes, touch_buttons, xr_buttons, xr_axes, always }` | Defines an action or replaces its default bindings. `keys` are key names (`"W"`, `"Left Shift"`); the other lists hold codes or `{ code = n, scale = s }`. `label` names it in the controls menu; `always = true` keeps it working while a menu or the console blocks game input. The player's saved override of a scheme replaces that scheme's defaults (an invalid one is ignored with a warning). |
 | `prts.input.value(action)` | The action's current value (buttons 0 or 1, axes signed). |
 | `prts.input.down(action)` | `true` while the action is held. |
 | `prts.input.went_down(action)` | `true` if the action went down in the latest input update, once per frame (for menus, which run per frame rather than per tick). `false` for an unknown action. |
 | `prts.input.scheme()` | The active input scheme: `"kbm"`, `"gamepad"`, `"touch"` or `"xr"`. |
 | `prts.input.actions()` | Array of `{ id, label }` for every action in definition order (`label` is the id when the definition has none). |
-| `prts.input.bindings(action)` | The action's current bindings by scheme: `{ kbm = { ... }, gamepad = { ... }, touch = { ... } }`, each a list of `{ kind, code, scale, name }`. `kind` is `"key"`, `"mouse_button"`, `"mouse_axis"`, `"pad_button"`, `"pad_axis"`, `"touch_axis"` or `"touch_button"`; `name` (keys only) is the key name. Errors on an unknown action. |
-| `prts.input.rebind(action, scheme, binding)` | Replaces the bindings of one scheme (`"kbm"`, `"gamepad"` or `"touch"`) with `binding`: a table of lists like the definition's (`{ keys = { "F" } }`, `{ pad_axes = { { code = 2, scale = -1 } } }`, `{}` for none) or, for `kbm`, a key name. Stores it as the player's override (settings key `bindings.<scheme>.<action>`, written by `prts.settings.save`) and returns `true`. Errors on an unknown action or scheme, on lists of another scheme and on an invalid binding (the old bindings stay). |
+| `prts.input.bindings(action)` | The action's current bindings by scheme: `{ kbm = { ... }, gamepad = { ... }, touch = { ... }, xr = { ... } }`, each a list of `{ kind, code, scale, name }`. `kind` is `"key"`, `"mouse_button"`, `"mouse_axis"`, `"pad_button"`, `"pad_axis"`, `"touch_axis"`, `"touch_button"`, `"xr_button"` or `"xr_axis"`; `name` (keys only) is the key name. Errors on an unknown action. |
+| `prts.input.rebind(action, scheme, binding)` | Replaces the bindings of one scheme (`"kbm"`, `"gamepad"`, `"touch"` or `"xr"`) with `binding`: a table of lists like the definition's (`{ keys = { "F" } }`, `{ pad_axes = { { code = 2, scale = -1 } } }`, `{}` for none) or, for `kbm`, a key name. Stores it as the player's override (settings key `bindings.<scheme>.<action>`, written by `prts.settings.save`) and returns `true`. Errors on an unknown action or scheme, on lists of another scheme and on an invalid binding (the old bindings stay). |
 | `prts.input.reset_bindings([scheme])` | Forgets the player's overrides of one scheme (or of all) and rebinds the defaults. |
-| `prts.input.capture(scheme)` | For a controls menu: the first key or mouse button (`"kbm"`), or gamepad button or axis pushed past 0.6 (`"gamepad"`), pressed since the last frame, as a binding table for `prts.input.rebind`; `nil` if none, and always for `"touch"`. |
+| `prts.input.capture(scheme)` | For a controls menu: the first key or mouse button (`"kbm"`), gamepad button or axis pushed past 0.6 (`"gamepad"`), or XR controller button or axis pushed past 0.6 (`"xr"`), pressed since the last frame, as a binding table for `prts.input.rebind`; `nil` if none, and always for `"touch"`. |
 | `prts.input.touch_layout{ split, stick_radius, look_speed, tap_distance, tap_seconds, buttons }` | Replaces the touch controls. A finger landing left of `split` (fraction of the width, default 0.5) drives the movement stick, fully deflected at `stick_radius` (fraction of the height, default 0.12); one on the right drags the look (`look_speed` look units per screen height, default 1000) or taps if it moves at most `tap_distance` (default 0.03 of the height) within `tap_seconds` (default 0.3). `buttons = { { id, x, y, radius }, ... }`: up to 15 round context buttons (position as fractions of the screen, radius of its height); button `i` drives touch button `i`, and all start hidden. Returns the number of buttons. |
 | `prts.input.touch_visible(id, on)` | Shows or hides a context button; hidden buttons ignore fingers. Errors on an unknown id. |
 | `prts.input.touch_state()` | For drawing the overlay (the engine draws none itself): `{ stick = { ox, oy, kx, ky }, buttons = { { id, x, y, radius, visible, held, touch_button }, ... } }`. `stick` (the stick's origin and knob, fractions of the screen) is there only while a finger holds it; `touch_button` is the code to bind with `touch_buttons`. |
@@ -219,7 +225,23 @@ per scheme (`kbm`, `gamepad`, `touch`); their overrides are kept in `prts.settin
 | `prts.commander.spawn{ marker \| pos, yaw, walk_speed, run_speed, sprint_speed, crouch_speed, jump_speed, eye_stand, eye_crouch, step_height, reach, look_sensitivity }` | Creates (or re-creates) the commander, the player's first-person body, at a marker or position. Returns its entity. |
 | `prts.commander.entity()` | The commander's entity, or nothing before it is spawned. |
 | `prts.commander.view()` | `yaw, pitch, eye_height, on_ground`. |
-| `prts.commander.target()` | `entity, name` of the usable entity in view within reach, or nothing (also before the commander is spawned). |
+| `prts.commander.target()` | `entity, name` of the usable entity in view within reach (in XR: on the pointer ray of the pointer hand), or nothing (also before the commander is spawned). |
+
+## `prts.xr`
+
+Immersive VR (WebXR in the web build). During a session the tracked head turns the view and the
+body follows the head across the play area; walls stop the body, and the view stops 12 cm short of
+any surface the head leans into. Each controller shows a pointer ray; the hand whose trigger was
+pulled last is the pointer hand, which `use` (and in-world surfaces such as the war table) aims
+with. Head and hand poses reach the simulation as per-tick input, recorded in replays like the
+look direction. `game/settings.lua` keeps the settings below under `xr.*` in `prts.settings` and
+applies them at boot; the options menu has a VR page.
+
+| Function | What it does |
+|---|---|
+| `prts.xr.settings([t])` | Changes the comfort options and video settings in VR given in `t` and returns all of them. Comfort: `locomotion` (`"smooth"`: the left stick walks where the head looks; `"teleport"`: pushing the stick forward aims with that hand's ray, letting go goes to the floor it points at, if there is room to stand and no wall in between), `turn` (`"snap"` or `"smooth"`: how `look_x` turns), `snap_angle` (degrees, 5-180, default 45), `turn_speed` (degrees per second, 10-720, default 120), `vignette` (the comfort vignette while walking or turning smoothly, default on), `vignette_strength` (0-1, default 0.6), `seated` (raises the view to standing eye height, measured from the head when turned on or when a session starts). Video in VR (the flat screen's own settings stay as they are; fog follows the flat screen): `preset`, `dither`, `snap`, `affine`, `crosshair`, defaults `"hd"` and all off (spec *Comfort defaults*). Errors on an unknown name or a value of the wrong type. |
+| `prts.xr.state()` | `{ supported, active, tracking, sessions, views, left, right, pointer, turn, seat, vignette, aiming, pushback, origin }`: whether the browser offers VR, a session runs and the head is tracked; sessions so far; eye views of the last frame; which controllers are there; the pointer hand (`"left"` or `"right"`); the play area's yaw (radians); the seated height added; the vignette's current strength; whether a teleport is being aimed; how far the last view was pushed out of a wall (meters); and `origin`, the world position `{ x, y, z }` of the play area's origin. |
+| `prts.xr.exit()` | Ends the session (the game's menu: menus are drawn on the flat page, so the menu button leaves VR). Returns whether one was running. |
 
 ## `prts.render`
 
@@ -377,11 +399,15 @@ a scenario into the commander-is-there smoke set, which also runs in the web bui
 | `t.console_lines()` | The developer console's lines (empty without a console). |
 | `t.observer()` | `true` while the observer camera is on. |
 | `t.camera()` | `x, y, z, yaw` of the view being rendered (the observer camera when it is on). |
+| `t.xr_begin([width, height])` | A simulated headset starts an XR session (framebuffer 2000 x 1000 by default). |
+| `t.xr_frame{ head, left, right, lost }` | The poses and controllers of the following XR frames, packed as the web glue packs them, until the next call. Poses are `{ pos = { x, y, z }, yaw, pitch }`, `{ pos, dir = { x, y, z } }` or `{ pos, quat = { x, y, z, w } }` in the play area (meters, y up, -z ahead; default head 1.6 m up, looking ahead). A hand is `{ aim = pose, grip = pose, trigger, squeeze, buttons = { b0, b1, ... }, stick = { x, y }, axes = { a0, a1, a2, a3 } }` (buttons count as pressed from 0.5); a missing hand is not connected. `lost = true`: tracking lost (no head, no views). Errors without a session. |
+| `t.xr_end()` | The headset ends the session. |
+| `t.xr_view()` | `x, y, z` of the head's view in the world as it is drawn (after the wall push-back), or nothing outside a session. |
 
-The UI and device helpers, `t.ui_has` to `t.camera`, also exist on `T` in Lua unit tests, where
+The UI and device helpers, `t.ui_has` to `t.xr_view`, also exist on `T` in Lua unit tests, where
 each step runs one UI frame at once instead of waiting a tick.
 
-A scenario that only uses actions and look direction after its first wait can be recorded with
+A scenario that only uses actions, look direction and the simulated headset after its first wait can be recorded with
 `--record <file>` and checked with `--replay <file>`; `tests/game/determinism/` holds such walks.
 
 ## Lua unit tests (`T`)

@@ -1,4 +1,5 @@
--- Player settings with their defaults: video (retro preset and effects) and audio volumes.
+-- Player settings with their defaults: video (retro preset and effects), audio volumes and VR
+-- (comfort options and the video settings used in a headset).
 -- Values live in config.lua in the user area (prts.settings); only changes are stored, and
 -- they are applied at boot and whenever the options menu changes them. MIT License.
 local M = {}
@@ -9,6 +10,10 @@ M.PRESET_NAMES = {
   authentic = "Authentic (180 lines)", retro = "Retro (270 lines)", crisp = "Crisp (360 lines)",
   hd = "HD (540 lines)", native = "Native resolution",
 }
+-- VR. Spec "Comfort defaults": in a headset vertex snapping, affine textures, dithering and the
+-- crosshair are off and the comfort vignette is on until the player changes them.
+M.XR = { locomotion = "smooth", turn = "snap", snap_angle = 45, turn_speed = 120, vignette = true, seated = false }
+M.XR_VIDEO = { preset = "hd", dither = false, snap = false, affine = false, crosshair = false }
 M.BUSES = { "master", "music", "effects", "voice" }
 M.BUS_NAMES = { master = "Master", music = "Music", effects = "Effects", voice = "Voices" }
 
@@ -33,6 +38,34 @@ end
 function M.set_video(key, value, save)
   prts.settings.set("video." .. key, value)
   M.apply_video()
+  if save ~= false then prts.settings.save() end
+end
+
+-- Saved values under prefix over the defaults (wrong types are ignored).
+local function read(prefix, defaults)
+  local v = {}
+  for key, default in pairs(defaults) do
+    local saved = prts.settings.get(prefix .. key)
+    v[key] = default
+    if type(saved) == type(default) then v[key] = saved end
+  end
+  return v
+end
+
+-- The VR settings: comfort options (xr.<key>) and video in the headset (xr.video.<key>).
+function M.xr() return read("xr.", M.XR) end
+function M.xr_video() return read("xr.video.", M.XR_VIDEO) end
+
+function M.apply_xr()
+  local v = M.xr()
+  for key, value in pairs(M.xr_video()) do v[key] = value end
+  return prts.xr.settings(v)
+end
+
+-- Changes one VR setting (video ones with video = true), applies it and (unless save is false) saves it.
+function M.set_xr(key, value, save, video)
+  prts.settings.set((video and "xr.video." or "xr.") .. key, value)
+  M.apply_xr()
   if save ~= false then prts.settings.save() end
 end
 
@@ -76,6 +109,7 @@ end
 function M.apply()
   M.apply_video()
   M.apply_audio()
+  M.apply_xr()
 end
 
 return M

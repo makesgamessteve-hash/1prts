@@ -156,6 +156,13 @@ paused while the session runs (`emscripten_pause_main_loop` / `resume`). *Altern
 third-party Emscripten WebXR binding. That works, but our needs are small and we want full
 control over the frame handoff.
 
+*As built (M1):* controllers map to actions through `xr_buttons` and `xr_axes` bindings (an
+`xr` input scheme); the aim ray of the hand that pulled its trigger last picks the `use`
+target and drives in-world UI. Head and hand poses enter the simulation as per-tick commander
+input and are recorded in replays (format 2). The head is kept out of walls at render time;
+comfort options (smooth or teleport movement, snap or smooth turn, vignette) and VR video
+defaults are player settings (`xr.*`).
+
 ### D14 · Web data and user storage
 `data/` is packed with Emscripten's file packager into `1stprts.data`, mounted at `/data` and
 loaded with a progress callback. The user area is `/user` on IDBFS and is synced after settings

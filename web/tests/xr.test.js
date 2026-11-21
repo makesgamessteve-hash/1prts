@@ -1,6 +1,6 @@
 /* 1stPRTS browser tests: WebXR with a mocked immersive-vr device. MIT License. */
 'use strict';
-const { expect, openGame, waitFor, distance } = require('./lib/harness');
+const { expect, openGame, waitFor, waitRunning, distance } = require('./lib/harness');
 const { installXRMock } = require('./lib/xr_mock');
 
 const sdlFrames = () => window.prts_test.frames() - window.prts_test.xr().frames;
@@ -12,6 +12,24 @@ async function clickEnterVR(page) {
   await waitFor(page, () => !document.pointerLockElement, null, 'the mouse to be released');
   await page.locator('#prts-enter-vr').click();
 }
+
+/* A unit quaternion [x, y, z, w] that turns -z (where a controller points) towards dir. */
+function aimQuat(dir) {
+  const yaw = Math.atan2(-dir[0], -dir[2]);
+  const pitch = Math.atan2(dir[1], Math.hypot(dir[0], dir[2]));
+  const cy = Math.cos(yaw / 2), sy = Math.sin(yaw / 2), cp = Math.cos(pitch / 2), sp = Math.sin(pitch / 2);
+  return [cy * sp, sy * cp, -sy * sp, cy * cp];
+}
+
+async function enterVR(page) {
+  await waitFor(page, () => document.body.dataset.prtsXr === 'supported', null, 'XR support to be detected');
+  await page.waitForTimeout(500); // the commander settles on the ground
+  await clickEnterVR(page);
+  await waitFor(page, () => window.prts_test.xr().active && window.prts_test.xr().frames > 5, null, 'the XR session');
+}
+
+const setHand = (page, hand, state) => page.evaluate(([h, s]) => window.__xrMock.setHand(h, s), [hand, state]);
+const commander = (page) => page.evaluate(() => window.prts_test.commander());
 
 module.exports = [
   {
@@ -78,6 +96,77 @@ module.exports = [
         await waitFor(page, () => !window.prts_test.xr().active, null, `session ${i} to end`);
       }
       await waitFor(page, () => document.body.dataset.prtsXr === 'supported', null, 'the control to come back');
+    },
+  },
+  {
+    // Spec "Comfort defaults" (task 13.4), and controller input driving the actions (13.2).
+    name: 'the first time in VR: no vertex snapping, the comfort vignette on; the sticks walk and snap-turn',
+    init: installXRMock,
+    async run(env, context) {
+      const page = await openGame(env, context); // a fresh profile: nothing saved yet
+      await enterVR(page);
+      let xr = await page.evaluate(() => window.prts_test.xr());
+      expect(!xr.snap, 'vertex snapping is on in VR');
+      expect(xr.vignetteOn, 'the comfort vignette is off');
+      expect(!xr.teleport, 'teleport movement is the default');
+      expect(await page.evaluate(() => window.prts_test.scheme()) === 'xr', 'the XR controls are not active');
+
+      // the left stick walks (smooth movement) and the vignette darkens the edges meanwhile
+      const before = await commander(page);
+      await setHand(page, 'left', { axes: [0, 0, 0, -1] });
+      await waitFor(page, (b) => {
+        const c = window.prts_test.commander();
+        return Math.hypot(c.x - b.x, c.z - b.z) > 0.5 && window.prts_test.xr().vignette > 0.3;
+      }, before, 'the commander to walk with the vignette on');
+      await setHand(page, 'left', { axes: [0, 0, 0, 0] });
+      await waitFor(page, () => window.prts_test.xr().vignette === 0, null, 'the vignette to fade');
+
+      // the right stick snap-turns by 45 degrees, once per push
+      const turn0 = (await page.evaluate(() => window.prts_test.xr())).turn;
+      await setHand(page, 'right', { axes: [0, 0, 1, 0] });
+      await waitFor(page, (t0) => Math.abs(window.prts_test.xr().turn - t0) > 0.1, turn0, 'a snap turn');
+      await page.waitForTimeout(300);
+      xr = await page.evaluate(() => window.prts_test.xr());
+      const d = Math.abs(Math.atan2(Math.sin(xr.turn - turn0), Math.cos(xr.turn - turn0)));
+      expect(Math.abs(d - Math.PI / 4) < 1e-3, `turned ${d} rad, expected one 45 degree step`);
+      await setHand(page, 'right', { axes: [0, 0, 0, 0] });
+      expect(page.prtsErrors.length === 0, `page errors: ${page.prtsErrors.join(' | ')}`);
+    },
+  },
+  {
+    // Spec "Teleport movement" (task 13.4): the setting is stored with prts.settings.
+    name: 'teleport movement: aim at the floor with the stick, let go, the commander is there',
+    init: installXRMock,
+    async run(env, context) {
+      const page = await openGame(env, context);
+      const syncs = (await page.evaluate(() => window.prts_test.userArea())).syncs;
+      const ok = await page.evaluate(() => window.prts_test.userWrite('config.lua', 'return { xr = { locomotion = "teleport" } }'));
+      expect(ok, 'could not write the settings');
+      await waitFor(page, (n) => window.prts_test.userArea().syncs > n && !window.prts_test.userArea().busy, syncs,
+        'the settings to reach IndexedDB');
+      await page.reload();
+      await waitRunning(page);
+      await enterVR(page);
+      expect((await page.evaluate(() => window.prts_test.xr())).teleport, 'the saved teleport setting is not used');
+
+      // the left hand points at the floor 3 m ahead and the stick is pushed: aiming, no walking
+      const hand = [-0.2, 1.2, -0.3];
+      const dir = [0 - hand[0], -hand[1], -3.3 - hand[2]];
+      const before = await commander(page);
+      await setHand(page, 'left', { pos: hand, quat: aimQuat(dir), axes: [0, 0, 0, -1] });
+      await page.waitForTimeout(600);
+      const aiming = await commander(page);
+      expect(distance(before, aiming) < 0.01, `the commander moved ${distance(before, aiming)} m while aiming`);
+      // letting go of the stick teleports
+      await setHand(page, 'left', { axes: [0, 0, 0, 0] });
+      await waitFor(page, (b) => {
+        const c = window.prts_test.commander();
+        return Math.hypot(c.x - b.x, c.z - b.z) > 2;
+      }, before, 'the teleport');
+      const after = await commander(page);
+      const moved = Math.hypot(after.x - before.x, after.z - before.z);
+      expect(Math.abs(moved - 3.3) < 0.3, `teleported ${moved} m, expected 3.3 m`);
+      expect(page.prtsErrors.length === 0, `page errors: ${page.prtsErrors.join(' | ')}`);
     },
   },
 ];

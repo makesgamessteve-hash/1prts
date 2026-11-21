@@ -519,6 +519,30 @@ int prts_cworld_raycast(const prts_cworld *cw, prts_vec3 origin, prts_vec3 dir, 
     return best;
 }
 
+bool prts_cworld_ground(const prts_cworld *cw, prts_vec3 p, float max_drop, float *height)
+{
+    float best = p.y - max_drop;
+    bool found = false;
+    const prts_array *ids = query(cw, prts_aabb_make(p, prts_v3(p.x, p.y - max_drop, p.z)));
+    for (size_t k = 0; k < ids->len; k++) {
+        const cbox *b = prts_array_at(&cw->boxes, (size_t)*(const int *)prts_array_at(ids, k));
+        float top = b->world.max.y;
+        if (top <= p.y + EPS && top >= best) {
+            best = top;
+            found = true;
+        }
+    }
+    if (cw->hf) {
+        float h = prts_heightfield_sample(cw->hf, p.x, p.z);
+        if (h <= p.y + EPS && h >= best && prts_heightfield_normal(cw->hf, p.x, p.z).y >= cw->slope_cos) {
+            best = h;
+            found = true;
+        }
+    }
+    if (found) *height = best;
+    return found;
+}
+
 bool prts_cworld_occluded(const prts_cworld *cw, prts_vec3 origin, prts_vec3 dir, float max_dist)
 {
     dir = prts_v3_normalize(dir);

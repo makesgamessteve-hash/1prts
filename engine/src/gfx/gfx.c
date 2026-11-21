@@ -18,6 +18,7 @@ void prts_render_settings_default(prts_render_settings *s)
     s->fog = true;
     s->crosshair = true;
     s->fov_y = (float)(70.0 * PRTS_PI / 180.0);
+    s->vignette = 0.0f;
 }
 
 int prts_res_preset_lines(prts_res_preset p)
@@ -225,6 +226,10 @@ void prts_gfx_destroy(prts_gfx *g)
         if (g->sprite_vao) {
             g->gl.glDeleteVertexArrays(1, &g->sprite_vao);
             g->gl.glDeleteBuffers(1, &g->sprite_vbo);
+        }
+        if (g->ray_vao) {
+            g->gl.glDeleteVertexArrays(1, &g->ray_vao);
+            g->gl.glDeleteBuffers(1, &g->ray_vbo);
         }
     }
     prts_array_free(&g->meshes);
@@ -646,6 +651,54 @@ static void draw_lines(prts_gfx *g, const frame_ctx *f, prts_mat4 view_proj, dou
     g->gl.glDisable(GL_BLEND);
 }
 
+void prts_gfx_set_rays(prts_gfx *g, const prts_gfx_ray *rays, int count)
+{
+    g->ray_count = PRTS_CLAMP(count, 0, PRTS_GFX_MAX_RAYS);
+    if (g->ray_count) memcpy(g->rays, rays, sizeof(*rays) * (size_t)g->ray_count);
+}
+
+int prts_gfx_rays_drawn(const prts_gfx *g) { return g->rays_drawn; }
+
+/* The rays as additive lines, eye-relative like the rest of the view. */
+static void draw_rays(prts_gfx *g, const frame_ctx *f, prts_mat4 view_proj, double time)
+{
+    if (f->skip_surface >= 0) return;
+    g->rays_drawn = g->ray_count;
+    if (g->ray_count == 0) return;
+    prts_vec3 pts[PRTS_GFX_MAX_RAYS * 2];
+    for (int i = 0; i < g->ray_count; i++) {
+        pts[i * 2] = prts_dv3_relative(g->rays[i].from, f->view->eye);
+        pts[i * 2 + 1] = prts_dv3_relative(g->rays[i].to, f->view->eye);
+    }
+    if (!g->ray_vao) {
+        g->gl.glGenVertexArrays(1, &g->ray_vao);
+        g->gl.glGenBuffers(1, &g->ray_vbo);
+        g->gl.glBindVertexArray(g->ray_vao);
+        g->gl.glBindBuffer(GL_ARRAY_BUFFER, g->ray_vbo);
+        g->gl.glEnableVertexAttribArray(0);
+        g->gl.glVertexAttribPointer(0, 3, GL_FLOAT, 0, (GLsizei)sizeof(prts_vec3), (const void *)0);
+    }
+    g->gl.glBindVertexArray(g->ray_vao);
+    g->gl.glBindBuffer(GL_ARRAY_BUFFER, g->ray_vbo);
+    g->gl.glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)(sizeof(prts_vec3) * 2 * (size_t)g->ray_count), pts, GL_DYNAMIC_DRAW);
+    GLuint p = g->prog_lines;
+    g->gl.glUseProgram(p);
+    prts_mat4 id = prts_mat4_identity();
+    g->gl.glUniformMatrix4fv(prts_gfx_uniform(g, p, "u_view_proj"), 1, 0, view_proj.m);
+    g->gl.glUniformMatrix4fv(prts_gfx_uniform(g, p, "u_model"), 1, 0, id.m);
+    g->gl.glUniform1f(prts_gfx_uniform(g, p, "u_time"), (float)fmod(time, 1000.0));
+    g->gl.glEnable(GL_BLEND);
+    g->gl.glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+    g->gl.glDepthMask(0);
+    for (int i = 0; i < g->ray_count; i++) {
+        set_vec3(g, p, "u_color", g->rays[i].color);
+        g->gl.glDrawArrays(GL_LINES, i * 2, 2);
+    }
+    g->gl.glDepthMask(1);
+    g->gl.glDisable(GL_BLEND);
+    g->gl.glBindVertexArray(0);
+}
+
 void prts_view_from_camera(prts_view *v, const prts_camera *cam, float fov_y, int out_w, int out_h)
 {
     float t = tanf(fov_y * 0.5f);
@@ -694,6 +747,7 @@ static void draw_view_scene(prts_gfx *g, frame_ctx *f, prts_render_target *t, do
         draw_sprites(g, f);
     }
     draw_lines(g, f, view_proj, time);
+    draw_rays(g, f, view_proj, time);
 }
 
 /* Scales a view's low-resolution image into its output rectangle. */
@@ -723,6 +777,10 @@ static void present_view(prts_gfx *g, const prts_view *v, const prts_render_targ
     g->gl.glUniform2f(prts_gfx_uniform(g, p, "u_size"), (float)t->w, (float)t->h);
     g->gl.glUniform1f(prts_gfx_uniform(g, p, "u_dither"), rs->dither ? 1.0f : 0.0f);
     g->gl.glUniform1f(prts_gfx_uniform(g, p, "u_crosshair"), rs->crosshair ? 1.0f : 0.0f);
+    /* the comfort vignette centres on the view's optical axis (off-centre for XR eyes) */
+    g->gl.glUniform1f(prts_gfx_uniform(g, p, "u_vignette"), prts_clampf(rs->vignette, 0.0f, 1.0f));
+    g->gl.glUniform2f(prts_gfx_uniform(g, p, "u_center"), -v->tan_left / (v->tan_right - v->tan_left),
+                      -v->tan_down / (v->tan_up - v->tan_down));
     g->gl.glBindVertexArray(g->empty_vao);
     g->gl.glDrawArrays(GL_TRIANGLES, 0, 3);
     g->gl.glBindVertexArray(0);

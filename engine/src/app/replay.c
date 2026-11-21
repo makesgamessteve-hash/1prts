@@ -4,11 +4,14 @@
  * Replay file (little-endian):
  *   "1PRTSRPL"  u32 format  u32 snapshot_size  snapshot bytes
  *   u32 actions { str name }  u32 ticks
- *   per tick: f32 yaw  f32 pitch  f32 value[actions]  u8 pressed[(actions + 7) / 8]  u64 state_hash
+ *   per tick: f32 yaw  f32 pitch  u8 xr [ f32 head[3]  f32 pointer_origin[3]  f32 pointer_dir[3] ]
+ *             f32 value[actions]  u8 pressed[(actions + 7) / 8]  u64 state_hash
  *   u64 FNV-1a checksum of everything before it
- * The start snapshot is taken at the start of the first recorded tick, so whatever a scenario
- * set up before its first wait is part of it. After that only inputs and look direction are
- * recorded: anything else that changes the simulation shows up as a hash mismatch. */
+ * xr holds the commander's XR input flags (1 active, 2 teleport locomotion, 4 pointer); the
+ * nine floats follow only when it is not zero. The start snapshot is taken at the start of the
+ * first recorded tick, so whatever a scenario set up before its first wait is part of it. After
+ * that only inputs, the look direction and XR body input are recorded: anything else that
+ * changes the simulation shows up as a hash mismatch. */
 #include <lauxlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -54,6 +57,22 @@ static prts_replay *replay_of(prts_engine *e)
 bool prts_engine_replaying(const prts_engine *e) { return e->replay && e->replay->playing; }
 
 static size_t pressed_bytes(uint32_t actions) { return (actions + 7u) / 8u; }
+
+#define XR_FLOATS 9u
+
+/* Walks over the tick records; true if exactly `count` of them fill the reader. */
+static bool records_fit(prts_reader r, uint32_t actions, uint32_t count)
+{
+    size_t fixed = 4u * (size_t)actions + pressed_bytes(actions) + 8u;
+    for (uint32_t i = 0; i < count; i++) {
+        if (r.len - r.pos < 9u) return false;
+        r.pos += 8u;
+        size_t rest = fixed + (prts_r_u8(&r) ? 4u * XR_FLOATS : 0u);
+        if (r.len - r.pos < rest) return false;
+        r.pos += rest;
+    }
+    return r.pos == r.len;
+}
 
 static bool playback_open(prts_engine *e, prts_replay *rp, char *err, size_t err_size)
 {
@@ -103,8 +122,7 @@ static bool playback_open(prts_engine *e, prts_replay *rp, char *err, size_t err
     }
     rp->actions = actions;
     rp->count = prts_r_u32(&r);
-    size_t record = 8u + 4u * (size_t)actions + pressed_bytes(actions) + 8u;
-    if (r.failed || (r.len - r.pos) / record != rp->count || (r.len - r.pos) % record != 0) {
+    if (r.failed || !records_fit(r, actions, rp->count)) {
         snprintf(err, err_size, "the replay %s is damaged", path);
         return false;
     }
@@ -140,8 +158,20 @@ static void record_inputs(prts_engine *e, prts_replay *rp)
 {
     if (!rp->started) record_start(e, rp);
     if (!rp->recording) return;
-    prts_w_f32(&rp->ticks, e->commander.yaw);
-    prts_w_f32(&rp->ticks, e->commander.pitch);
+    const prts_commander *c = &e->commander;
+    prts_w_f32(&rp->ticks, c->yaw);
+    prts_w_f32(&rp->ticks, c->pitch);
+    const prts_commander_xr *x = &c->xr;
+    uint8_t flags = (uint8_t)((x->active ? 1u : 0u) | (x->teleport ? 2u : 0u) | (x->has_pointer ? 4u : 0u));
+    prts_w_u8(&rp->ticks, flags);
+    if (flags) {
+        const prts_vec3 v[3] = {x->head, x->pointer_origin, x->pointer_dir};
+        for (int i = 0; i < 3; i++) {
+            prts_w_f32(&rp->ticks, v[i].x);
+            prts_w_f32(&rp->ticks, v[i].y);
+            prts_w_f32(&rp->ticks, v[i].z);
+        }
+    }
     unsigned char pressed[MAX_ACTIONS / 8u];
     memset(pressed, 0, sizeof(pressed));
     for (uint32_t i = 0; i < rp->actions; i++) {
@@ -159,6 +189,20 @@ static void play_inputs(prts_engine *e, prts_replay *rp)
     prts_reader *r = &rp->reader;
     e->commander.yaw = prts_r_f32(r);
     e->commander.pitch = prts_r_f32(r);
+    prts_commander_xr *x = &e->commander.xr;
+    uint8_t flags = prts_r_u8(r);
+    memset(x, 0, sizeof(*x));
+    x->active = (flags & 1u) != 0;
+    x->teleport = (flags & 2u) != 0;
+    x->has_pointer = (flags & 4u) != 0;
+    if (flags) {
+        prts_vec3 *v[3] = {&x->head, &x->pointer_origin, &x->pointer_dir};
+        for (int i = 0; i < 3; i++) {
+            v[i]->x = prts_r_f32(r);
+            v[i]->y = prts_r_f32(r);
+            v[i]->z = prts_r_f32(r);
+        }
+    }
     float values[MAX_ACTIONS];
     for (uint32_t i = 0; i < rp->actions; i++) values[i] = prts_r_f32(r);
     unsigned char pressed[MAX_ACTIONS / 8u];

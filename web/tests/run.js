@@ -38,6 +38,8 @@ async function main() {
       console.log(`FAIL  ${t.suite}: ${t.name}\n      ${String(e && e.message ? e.message : e).replace(/\n/g, '\n      ')}` +
         (where ? `\n      ${where.trim()}` : ''));
       for (const page of context.pages()) {
+        for (const line of (page.prtsErrors || []).slice(-5)) console.log(`      page error: ${line}`);
+        if (process.env.PRTS_WEB_VERBOSE) for (const line of page.prtsConsole || []) console.log(`      ${line}`);
         const shot = path.join(env.artifacts, `${t.suite}-${t.name.replace(/[^a-z0-9]+/gi, '_')}.png`);
         await page.screenshot({ path: shot }).catch(() => {});
       }

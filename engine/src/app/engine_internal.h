@@ -21,6 +21,35 @@
 #include "prts/prts_world.h"
 
 #define PRTS_TICK_HZ 30
+
+/* Playing in XR (engine_xr.c): comfort options, the video settings used in XR and the state
+ * of the play area. */
+typedef struct prts_engine_xr {
+    /* comfort options (prts.xr.settings) */
+    bool teleport;          /* teleport locomotion instead of smooth movement */
+    bool snap_turn;         /* turn in steps instead of smoothly */
+    float snap_angle;       /* radians per snap turn */
+    float turn_speed;       /* radians per second at full deflection (smooth turning) */
+    bool vignette;          /* the comfort vignette while moving or turning smoothly */
+    float vignette_strength;
+    bool seated;            /* seated mode: the view is raised to standing eye height */
+    /* video settings in XR; the others (fog) follow the flat screen's */
+    prts_res_preset preset;
+    bool dither, snap, affine, crosshair;
+    /* the session */
+    bool was_active;
+    bool align_pending;     /* line the play area up on the next tracked frame */
+    int flat_scheme;        /* input scheme before the session, restored after it */
+    float turn;             /* yaw of the play area (the reference space) in the world */
+    prts_vec3 room, room_prev; /* the play area's origin relative to the feet (world axes), this and last tick */
+    float seat;             /* height added in seated mode */
+    bool snap_ready;        /* the turn stick came back to the centre since the last snap */
+    bool aim_locked;        /* a teleport is aimed: the pointer hand stays */
+    int hand;               /* the pointer hand: 0 left, 1 right */
+    float prev_trigger[2];
+    float vignette_level;   /* current strength (eases in and out) */
+    prts_vec3 pushback;     /* the last view's head push-back */
+} prts_engine_xr;
 /* Registry key of the per-entity script data table (prts.entity.data). */
 #define PRTS_REG_EDATA "prts.edata"
 
@@ -40,6 +69,7 @@ struct prts_engine {
     prts_gfx *gfx;
     prts_audio *audio;
     prts_input_state dev;
+    prts_engine_xr xr;
     prts_clock clock;
     prts_render_settings render;
     bool quit;
@@ -126,6 +156,27 @@ void prts_engine_load_settings(prts_engine *e);
 void prts_engine_apply_bindings(lua_State *L, prts_engine *e, const char *id, int t);
 /* testing_ui.c: UI helpers for scenario tests (t) and Lua tests (T, synchronous frames) */
 void prts_engine_open_test_ui(prts_engine *e, int table, bool synchronous);
+
+/* engine_xr.c */
+void prts_engine_xr_init(prts_engine *e);
+/* Session start and end, and the controllers into the device state (before the input update). */
+void prts_engine_xr_before_input(prts_engine *e);
+/* In XR: turning, the head's view direction and the comfort vignette. Returns false outside
+ * XR (then the usual look applies). */
+bool prts_engine_xr_look(prts_engine *e, double dt);
+/* The commander's XR input for the coming tick, and the play area after it. */
+void prts_engine_xr_before_tick(prts_engine *e);
+void prts_engine_xr_after_tick(prts_engine *e);
+/* The eye views of the current XR frame (with the head push-back); 0 outside XR. */
+int prts_engine_xr_views(prts_engine *e, double alpha, prts_view *out, int max);
+/* World position of the tracked head as drawn (after the push-back); false outside XR. */
+bool prts_engine_xr_head(prts_engine *e, double alpha, prts_dvec3 *out);
+prts_render_settings prts_engine_xr_render_settings(const prts_engine *e);
+/* Draws the XR frame with pointer rays; false if there is nothing to draw in XR. */
+bool prts_engine_xr_render(prts_engine *e, double alpha);
+void prts_engine_open_xr_api(prts_engine *e);
+/* t.xr_begin, t.xr_frame, t.xr_end, t.xr_view on the test table at index `table`. */
+void prts_engine_open_test_xr(prts_engine *e, int table);
 
 /* testing.c */
 bool prts_engine_start_scenario(prts_engine *e, const char *real_path);

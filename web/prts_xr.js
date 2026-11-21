@@ -192,4 +192,10 @@ addToLibrary({
   prts_xr_web_init: function () {
     PrtsXR.init();
   },
+
+  // The game's menu leaves VR (prts.xr.exit); the session's 'end' event does the rest.
+  prts_xr_web_exit__deps: ['$PrtsXR'],
+  prts_xr_web_exit: function () {
+    PrtsXR.exit();
+  },
 });

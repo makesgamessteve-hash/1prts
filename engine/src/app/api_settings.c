@@ -288,6 +288,8 @@ static const struct {
     {"pad_axes", PRTS_BIND_PAD_AXIS, "pad_axis"},
     {"touch_axes", PRTS_BIND_TOUCH_AXIS, "touch_axis"},
     {"touch_buttons", PRTS_BIND_TOUCH_BUTTON, "touch_button"},
+    {"xr_buttons", PRTS_BIND_XR_BUTTON, "xr_button"},
+    {"xr_axes", PRTS_BIND_XR_AXIS, "xr_axis"},
 };
 
 /* Binds every list of table t that belongs to scheme (-1: all schemes). On a bad entry,
@@ -329,7 +331,7 @@ static bool bind_table(lua_State *L, prts_engine *e, const char *id, int t, int 
     return true;
 }
 
-static const prts_input_scheme REBINDABLE[] = {PRTS_SCHEME_KBM, PRTS_SCHEME_GAMEPAD, PRTS_SCHEME_TOUCH};
+static const prts_input_scheme REBINDABLE[] = {PRTS_SCHEME_KBM, PRTS_SCHEME_GAMEPAD, PRTS_SCHEME_TOUCH, PRTS_SCHEME_XR};
 
 /* Pushes settings.bindings[scheme][id] (or nil). */
 static void push_override(lua_State *L, const char *scheme, const char *id)
@@ -404,9 +406,7 @@ static prts_input_scheme check_scheme(lua_State *L, int idx)
 {
     prts_input_scheme s;
     const char *name = luaL_checkstring(L, idx);
-    if (!prts_input_scheme_parse(name, &s) || s == PRTS_SCHEME_XR) {
-        luaL_error(L, "unknown input scheme '%s' (kbm, gamepad or touch)", name);
-    }
+    if (!prts_input_scheme_parse(name, &s)) luaL_error(L, "unknown input scheme '%s' (kbm, gamepad, touch or xr)", name);
     return s;
 }
 
@@ -418,7 +418,8 @@ static const char *check_action(lua_State *L, prts_engine *e, int idx)
 }
 
 /* prts.input.rebind(action, scheme, binding): binding is a table like the defaults
- * ({ keys = { "F" } }, { pad_buttons = { 3 } }, { touch_buttons = { 2 } }, {} for none) or,
+ * ({ keys = { "F" } }, { pad_buttons = { 3 } }, { touch_buttons = { 2 } }, { xr_buttons = { 8 } },
+ * {} for none) or,
  * for kbm, a key name. Replaces that scheme's bindings and stores the override. */
 static int l_input_rebind(lua_State *L)
 {
@@ -514,7 +515,7 @@ static int l_input_bindings(lua_State *L)
 {
     prts_engine *e = prts_engine_from_lua(L);
     const char *id = check_action(L, e, 1);
-    lua_createtable(L, 0, 3);
+    lua_createtable(L, 0, 4);
     for (size_t s = 0; s < PRTS_ARRAY_COUNT(REBINDABLE); s++) {
         lua_newtable(L);
         lua_setfield(L, -2, prts_input_scheme_name(REBINDABLE[s]));
@@ -559,6 +560,18 @@ static void push_binding(lua_State *L, const char *field, int code, float scale,
     lua_setfield(L, -2, field);
 }
 
+/* The first of n axes pushed past 0.6 since the last UI frame (index, or -1); *sign its direction. */
+static int pushed_axis(const float *now, const float *before, int n, float *sign)
+{
+    for (int a = 0; a < n; a++) {
+        if (fabsf(now[a]) > 0.6f && fabsf(before[a]) <= 0.6f) {
+            *sign = now[a] > 0.0f ? 1.0f : -1.0f;
+            return a;
+        }
+    }
+    return -1;
+}
+
 /* prts.input.capture(scheme): the first key or button of that scheme pressed since the last
  * UI frame, as a binding table for prts.input.rebind; nil if none (controls menu). */
 static int l_input_capture(lua_State *L)
@@ -591,9 +604,24 @@ static int l_input_capture(lua_State *L)
                 return 1;
             }
         }
-        for (int a = 0; a < PRTS_INPUT_MAX_PAD_AXES; a++) {
-            if (fabsf(now->pad_axes[a]) > 0.6f && fabsf(before->pad_axes[a]) <= 0.6f) {
-                push_binding(L, "pad_axes", a, now->pad_axes[a] > 0.0f ? 1.0f : -1.0f, true);
+        float sign = 1.0f;
+        int a = pushed_axis(now->pad_axes, before->pad_axes, PRTS_INPUT_MAX_PAD_AXES, &sign);
+        if (a >= 0) {
+            push_binding(L, "pad_axes", a, sign, true);
+            return 1;
+        }
+    } else if (scheme == PRTS_SCHEME_XR) {
+        for (int h = 0; h < 2; h++) {
+            for (int b = 0; b < PRTS_INPUT_XR_BUTTONS; b++) {
+                if (now->xr_buttons[h][b] >= 1.0f && before->xr_buttons[h][b] < 1.0f) {
+                    push_binding(L, "xr_buttons", h * PRTS_INPUT_XR_BUTTONS + b, 1.0f, false);
+                    return 1;
+                }
+            }
+            float sign = 1.0f;
+            int a = pushed_axis(now->xr_axes[h], before->xr_axes[h], PRTS_INPUT_XR_AXES, &sign);
+            if (a >= 0) {
+                push_binding(L, "xr_axes", h * PRTS_INPUT_XR_AXES + a, sign, true);
                 return 1;
             }
         }

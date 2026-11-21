@@ -65,6 +65,8 @@ prts_vec3 prts_world_velocity(const prts_world *w, prts_entity e);
 
 /* Interpolation: begin_tick stores this tick's start pose for every entity. */
 void prts_world_begin_tick(prts_world *w);
+/* Makes e start this tick where it is now, so a jump (a teleport) is not interpolated. */
+void prts_world_skip_interp(prts_world *w, prts_entity e);
 prts_dvec3 prts_world_pos_interp(const prts_world *w, prts_entity e, double alpha);
 float prts_world_yaw_interp(const prts_world *w, prts_entity e, double alpha);
 

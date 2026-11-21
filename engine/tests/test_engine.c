@@ -443,6 +443,9 @@ UTEST(gfx, windowed_engine_renders_and_recovers_from_broken_content)
     prts_xr *xr = prts_xr_get();
     prts_xr_begin(xr, 0, 320, 180);
     xr->view_count = 2;
+    xr->has_pose = true;
+    xr->head.position[1] = 1.6f;
+    xr->head.orientation[3] = 1.0f;
     for (int i = 0; i < 2; i++) {
         prts_mat4 id = prts_mat4_identity(), proj = prts_mat4_frustum(-1.0f, 1.0f, -1.0f, 1.0f, 0.1f, 100.0f);
         memcpy(xr->views[i].view, id.m, sizeof(id.m));
@@ -454,6 +457,34 @@ UTEST(gfx, windowed_engine_renders_and_recovers_from_broken_content)
     }
     ASSERT_TRUE(prts_engine_frame(e, 1.0 / 30.0));
     ASSERT_EQ(2, prts_gfx_last_view_count(e->gfx));
+    ASSERT_EQ(0, prts_gfx_rays_drawn(e->gfx));
+    /* each controller's pointer ray, pointing 45 degrees down; then aiming a teleport with it
+     * (at the ground ahead, then up at nothing), and the comfort vignette */
+    for (int h = 0; h < 2; h++) {
+        prts_xr_controller *ctl = &xr->controllers[h];
+        ctl->connected = ctl->has_aim = true;
+        ctl->hand = h ? PRTS_XR_HAND_RIGHT : PRTS_XR_HAND_LEFT;
+        ctl->aim.position[0] = h ? 0.2f : -0.2f;
+        ctl->aim.position[1] = 1.2f;
+        ctl->aim.orientation[0] = -0.38f;
+        ctl->aim.orientation[3] = 0.92f;
+    }
+    ASSERT_TRUE(prts_engine_frame(e, 1.0 / 30.0));
+    ASSERT_EQ(2, prts_gfx_rays_drawn(e->gfx));
+    e->xr.teleport = true;
+    prts_input_override(e->input, "teleport", 1.0f, 10);
+    ASSERT_TRUE(prts_engine_frame(e, 1.0 / 30.0));
+    ASSERT_TRUE(e->commander.aiming);
+    ASSERT_EQ(2, prts_gfx_rays_drawn(e->gfx));
+    for (int h = 0; h < 2; h++) xr->controllers[h].aim.orientation[0] = 0.38f;
+    e->xr.vignette_level = 0.6f;
+    ASSERT_TRUE(prts_engine_frame(e, 1.0 / 30.0));
+    e->xr.teleport = false;
+    prts_input_override(e->input, "teleport", 0.0f, 0);
+    xr->has_pose = false; /* tracking lost: the flat view is drawn */
+    ASSERT_TRUE(prts_engine_frame(e, 1.0 / 30.0));
+    ASSERT_EQ(1, prts_gfx_last_view_count(e->gfx));
+    ASSERT_EQ(0, prts_gfx_rays_drawn(e->gfx));
     prts_xr_end(xr);
     ASSERT_TRUE(prts_engine_frame(e, 1.0 / 30.0));
     ASSERT_EQ(1, prts_gfx_last_view_count(e->gfx));

@@ -2,6 +2,10 @@
 #include "prts/prts_commander.h"
 
 #include <math.h>
+#include <string.h>
+
+#define FOLLOW_MAX 1.0f   /* meters per tick the body follows the head (a recentre jumps further) */
+#define HEAD_RADIUS 0.12f /* half size of the head's box: keeps the near plane out of walls */
 
 void prts_commander_params_default(prts_commander_params *p)
 {
@@ -33,6 +37,9 @@ void prts_commander_init(prts_commander *c, prts_entity e, const prts_commander_
     c->on_ground = c->crouched = c->hit_wall = false;
     c->eye = c->eye_prev = p->eye_stand;
     c->stamina = p->stamina_max;
+    memset(&c->xr, 0, sizeof(c->xr));
+    c->followed = prts_v3(0, 0, 0);
+    c->aiming = false;
 }
 
 void prts_commander_look(prts_commander *c, float dyaw, float dpitch)
@@ -52,9 +59,44 @@ prts_aabb prts_commander_box(const prts_commander *c, const prts_world *w)
     return b;
 }
 
+static prts_vec3 feet_of(const prts_aabb *box)
+{
+    return prts_v3((box->min.x + box->max.x) * 0.5f, box->min.y, (box->min.z + box->max.z) * 0.5f);
+}
+
+/* XR: the body steps under the tracked head, so walking in the play area walks the commander
+ * and walls stop the body. c->followed tells the engine how far, to move the play area back. */
+static void follow_head(prts_commander *c, prts_world *w, const prts_cworld *cw)
+{
+    c->followed = prts_v3(0, 0, 0);
+    prts_vec3 d = prts_v3(c->xr.head.x, 0.0f, c->xr.head.z);
+    float len = prts_v3_length(d);
+    if (!c->xr.active || !(len > 1e-3f)) return;
+    if (len > FOLLOW_MAX) d = prts_v3_scale(d, FOLLOW_MAX / len);
+    prts_aabb box = prts_commander_box(c, w);
+    prts_vec3 moved = prts_cworld_move(cw, &box, d, c->on_ground ? c->p.step_height : 0.0f, NULL);
+    c->followed = prts_v3(moved.x, 0.0f, moved.z);
+    prts_world_set_pos(w, c->entity, prts_dv3_from_v3(feet_of(&box)));
+}
+
+/* Teleport locomotion: aim while "teleport" is held, go when it is let go. */
+static void teleport(prts_commander *c, prts_world *w, const prts_cworld *cw, const prts_input *in)
+{
+    bool was = c->aiming;
+    c->aiming = c->xr.active && c->xr.teleport && prts_input_down(in, "teleport");
+    prts_dvec3 target;
+    if (!was || c->aiming || !prts_commander_teleport_target(c, w, cw, &target)) return;
+    prts_world_set_parent(w, c->entity, PRTS_ENTITY_NONE);
+    prts_world_set_pos(w, c->entity, target);
+    prts_world_skip_interp(w, c->entity); /* no slide: the view is there at once */
+    c->vertical_speed = 0.0f;
+}
+
 void prts_commander_tick(prts_commander *c, prts_world *w, const prts_cworld *cw, const prts_input *in, float dt)
 {
     c->eye_prev = c->eye;
+    follow_head(c, w, cw);
+    teleport(c, w, cw, in);
     /* crouch: stand up only if there is room */
     bool want_crouch = prts_input_down(in, "crouch");
     if (want_crouch) {
@@ -78,6 +120,7 @@ void prts_commander_tick(prts_commander *c, prts_world *w, const prts_cworld *cw
         fwd /= len;
         side /= len;
     }
+    if (c->xr.active && c->xr.teleport) fwd = side = len = 0.0f; /* the stick aims teleports */
     bool moving = len > 0.01f;
     float speed = c->p.walk_speed;
     if (c->crouched) {
@@ -109,7 +152,7 @@ void prts_commander_tick(prts_commander *c, prts_world *w, const prts_cworld *cw
         c->vertical_speed = 0.0f; /* bumped the head */
     }
 
-    prts_dvec3 feet = prts_dv3((box.min.x + box.max.x) * 0.5, box.min.y, (box.min.z + box.max.z) * 0.5);
+    prts_dvec3 feet = prts_dv3_from_v3(feet_of(&box));
     /* ride whatever we stand on: its frame becomes our parent */
     prts_entity ground = res.on_ground ? prts_cworld_owner(cw, res.ground_box) : PRTS_ENTITY_NONE;
     if (res.on_ground) prts_world_set_parent(w, c->entity, ground);
@@ -128,8 +171,63 @@ prts_entity prts_commander_target(const prts_commander *c, const prts_world *w, 
 {
     prts_dvec3 eye = prts_commander_eye(c, w, 1.0);
     prts_vec3 o = prts_v3((float)eye.x, (float)eye.y, (float)eye.z);
+    prts_vec3 dir = prts_view_forward(c->yaw, c->pitch);
+    if (c->xr.active && c->xr.has_pointer) {
+        prts_dvec3 f = prts_world_pos(w, c->entity);
+        prts_vec3 hand = prts_v3_add(prts_v3((float)f.x, (float)f.y, (float)f.z), c->xr.pointer_origin);
+        prts_vec3 arm = prts_v3_sub(hand, o);
+        float len = prts_v3_length(arm);
+        if (len > 1e-3f && prts_cworld_occluded(cw, o, arm, len)) return PRTS_ENTITY_NONE; /* hand in a wall */
+        o = hand;
+        dir = c->xr.pointer_dir;
+    }
     float dist = 0.0f;
-    int id = prts_cworld_raycast(cw, o, prts_view_forward(c->yaw, c->pitch), c->p.reach, &dist);
+    int id = prts_cworld_raycast(cw, o, dir, c->p.reach, &dist);
     prts_entity e = prts_cworld_owner(cw, id);
     return prts_world_usable(w, e) ? e : PRTS_ENTITY_NONE;
+}
+
+bool prts_commander_teleport_target(const prts_commander *c, const prts_world *w, const prts_cworld *cw,
+                                    prts_dvec3 *target)
+{
+    prts_vec3 d = prts_v3_normalize(c->xr.pointer_dir);
+    if (!c->xr.active || !c->xr.has_pointer || d.y > -0.02f) return false; /* aim down at the floor */
+    prts_dvec3 fd = prts_world_pos(w, c->entity);
+    prts_vec3 feet = prts_v3((float)fd.x, (float)fd.y, (float)fd.z);
+    prts_vec3 o = prts_v3_add(feet, c->xr.pointer_origin);
+    float dist = 0.0f;
+    if (prts_cworld_raycast(cw, o, d, PRTS_TELEPORT_RANGE, &dist) == -1) return false;
+    /* walkable floor: just above the hit (stepped back off a wall face) the ground is right
+     * below; for a wall face it is much further down */
+    prts_vec3 hit = prts_v3_add(o, prts_v3_scale(d, dist));
+    prts_vec3 back = prts_v3_normalize(prts_v3(d.x, 0.0f, d.z));
+    prts_vec3 probe = prts_v3(hit.x - back.x * 0.05f, hit.y + 0.3f, hit.z - back.z * 0.05f);
+    float ground = 0.0f;
+    if (!prts_cworld_ground(cw, probe, 0.6f, &ground) || probe.y - ground > 0.4f) return false;
+    prts_vec3 t = prts_v3(probe.x, ground, probe.z);
+    /* room to stand */
+    float hw = c->p.half_width;
+    prts_aabb stand = {prts_v3(t.x - hw, t.y + 0.05f, t.z - hw), prts_v3(t.x + hw, t.y + c->p.height_stand, t.z + hw)};
+    if (prts_cworld_overlaps(cw, stand)) return false;
+    /* no wall between: a level ray 1 m above the higher floor */
+    float y = fmaxf(feet.y, t.y) + 1.0f;
+    prts_vec3 across = prts_v3(t.x - feet.x, 0.0f, t.z - feet.z);
+    float len = prts_v3_length(across);
+    if (len > 0.01f && prts_cworld_occluded(cw, prts_v3(feet.x, y, feet.z), across, len)) return false;
+    *target = prts_dv3_from_v3(t);
+    return true;
+}
+
+prts_vec3 prts_commander_head_pushback(const prts_commander *c, const prts_cworld *cw, prts_dvec3 feet,
+                                       prts_vec3 head)
+{
+    float lo = 0.3f + HEAD_RADIUS, hi = height_of(c) - HEAD_RADIUS;
+    prts_vec3 f = prts_v3((float)feet.x, (float)feet.y, (float)feet.z);
+    prts_vec3 start = prts_v3(f.x, f.y + prts_clampf(head.y, lo, hi), f.z);
+    prts_vec3 want = prts_v3_add(f, head);
+    prts_vec3 r = prts_v3(HEAD_RADIUS, HEAD_RADIUS, HEAD_RADIUS);
+    prts_aabb box = {prts_v3_sub(start, r), prts_v3_add(start, r)};
+    prts_cworld_move(cw, &box, prts_v3_sub(want, start), 0.0f, NULL);
+    prts_vec3 got = prts_v3_scale(prts_v3_add(box.min, box.max), 0.5f);
+    return prts_v3_sub(got, want);
 }

@@ -240,6 +240,14 @@ void prts_world_begin_tick(prts_world *w)
     }
 }
 
+void prts_world_skip_interp(prts_world *w, prts_entity e)
+{
+    slot *s = get(w, e);
+    if (!s) return;
+    s->prev_pos = prts_world_pos(w, e);
+    s->prev_yaw = prts_world_yaw(w, e);
+}
+
 prts_dvec3 prts_world_pos_interp(const prts_world *w, prts_entity e, double alpha)
 {
     slot *s = get(w, e);

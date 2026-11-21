@@ -10,6 +10,7 @@
 #include "gfx/image.h"
 #include "prts/prts_fs.h"
 #include "prts/prts_log.h"
+#include "prts/prts_xr.h"
 #include "utest.h"
 
 #define FIX PRTS_TEST_FIXTURES
@@ -311,6 +312,30 @@ UTEST(surfaces, eye_ray_and_touch_drive_a_world_surface)
     quiet_frames(e, 1);
     e->dev.touches[0].down = false;
     quiet_frames(e, 1);
+    /* XR: the controller's pointer ray drives the board while the head looks away from it */
+    e->dev.last_device = PRTS_SCHEME_KBM;
+    quiet_frames(e, 3);
+    int clicks = atoi(eval(e, "clicks"));
+    prts_xr *xr = prts_xr_get();
+    prts_xr_begin(xr, 0, 100, 100);
+    xr->has_pose = true;
+    xr->head.position[1] = 1.6f;
+    xr->head.orientation[3] = 1.0f;
+    prts_xr_controller *ctl = &xr->controllers[0];
+    ctl->connected = ctl->has_aim = true;
+    ctl->hand = PRTS_XR_HAND_RIGHT;
+    ctl->aim.position[1] = 1.6f;
+    ctl->aim.orientation[3] = 1.0f; /* straight ahead, at the board */
+    quiet_frames(e, 2);
+    xr->head.orientation[1] = 0.7071f; /* the head turns 90 degrees to the left */
+    xr->head.orientation[3] = 0.7071f;
+    quiet_frames(e, 2);
+    prts_input_override(e->input, "use", 1.0f, 1);
+    quiet_frames(e, 3);
+    ASSERT_EQ(clicks + 1, atoi(eval(e, "clicks")));
+    prts_xr_end(xr);
+    quiet_frames(e, 1);
+    prts_xr_reset(xr);
     /* menus and the console take the pointer away from world surfaces */
     e->ui_modal = true;
     quiet_frames(e, 1);

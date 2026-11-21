@@ -71,6 +71,9 @@ struct prts_gfx {
     int sprites_drawn;
     int surfaces_drawn;
     GLuint empty_vao;
+    prts_gfx_ray rays[PRTS_GFX_MAX_RAYS];
+    int ray_count, rays_drawn;
+    GLuint ray_vao, ray_vbo;
 };
 
 /* Texture from the VFS (cached); "" is a 1x1 white texture; missing files get a placeholder. */
