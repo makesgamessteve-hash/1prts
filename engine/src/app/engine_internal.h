@@ -6,6 +6,7 @@
 
 #include "prts/prts_audio.h"
 #include "prts/prts_commander.h"
+#include "prts/prts_console.h"
 #include "prts/prts_engine.h"
 #include "prts/prts_gfx.h"
 #include "prts/prts_input.h"
@@ -14,6 +15,8 @@
 #include "prts/prts_model.h"
 #include "prts/prts_scene.h"
 #include "prts/prts_script.h"
+#include "prts/prts_touch.h"
+#include "prts/prts_ui.h"
 #include "prts/prts_vfs.h"
 #include "prts/prts_world.h"
 
@@ -60,6 +63,29 @@ struct prts_engine {
     struct prts_replay *replay;
     bool hot_reload;
     double reload_timer;
+    /* user interface, settings and developer tools (engine_ui.c, api_ui.c, api_app.c, api_settings.c) */
+    prts_ui *ui;
+    prts_gfx_ui *gfx_ui;
+    prts_touch *touch;
+    prts_console *console; /* developer builds only */
+    bool developer;        /* developer features: console, observer camera */
+    bool ui_modal;         /* a script menu has the pointer and blocks game input */
+    bool mouse_relative;
+    bool text_input;
+    bool prev_console_key;
+    prts_input_state prev_dev;         /* device state of the previous UI frame (key capture edges) */
+    char ui_text[PRTS_INPUT_TEXT_MAX]; /* typed text waiting for the next UI frame */
+    float ui_wheel, ui_mouse_dx, ui_mouse_dy;
+    int screen_w, screen_h;
+    bool test_pointer, test_down; /* scripted pointer for tests, in screen UI units */
+    float test_x, test_y;
+    struct {
+        bool active;
+        prts_dvec3 pos;
+        float yaw, pitch;
+    } observer;
+    uint32_t scene_ready; /* scene revision after the last post-load step */
+    bool scene_ever_ready;
 };
 
 void prts_engine_open_game_api(prts_engine *e);
@@ -72,6 +98,28 @@ void prts_engine_open_audio_api(prts_engine *e);
 /* Moves the listener to the commander's eye, moves sounds with their entities and feeds
  * the audio device. Called once per frame. */
 void prts_engine_audio_frame(prts_engine *e, double real_seconds, double alpha);
+/* engine_ui.c */
+void prts_engine_ui_create(prts_engine *e);
+void prts_engine_ui_destroy(prts_engine *e);
+void prts_engine_ui_before_input(prts_engine *e, double dt);
+void prts_engine_ui_frame(prts_engine *e, double dt);
+void prts_engine_ui_draw_surfaces(prts_engine *e);
+void prts_engine_ui_draw_overlay(prts_engine *e, int w, int h);
+bool prts_engine_camera_override(const prts_engine *e, prts_camera *cam);
+void prts_engine_ui_test_frame(prts_engine *e);
+void prts_engine_console_exec(const char *line, void *user);
+bool prts_engine_set_observer(prts_engine *e, bool on);
+/* Post-load step after a map was built: collision, terrain and baked lighting (once per change). */
+void prts_engine_finish_scene(prts_engine *e);
+/* api_ui.c, api_app.c, api_settings.c */
+void prts_engine_open_ui_api(prts_engine *e);
+void prts_engine_open_app_api(prts_engine *e);
+void prts_engine_open_settings_api(prts_engine *e);
+void prts_engine_load_settings(prts_engine *e);
+/* Binds an action from its default table at index t, then applies the player's overrides. */
+void prts_engine_apply_bindings(lua_State *L, prts_engine *e, const char *id, int t);
+/* testing_ui.c: UI helpers for scenario tests (t) and Lua tests (T, synchronous frames) */
+void prts_engine_open_test_ui(prts_engine *e, int table, bool synchronous);
 
 /* testing.c */
 bool prts_engine_start_scenario(prts_engine *e, const char *real_path);

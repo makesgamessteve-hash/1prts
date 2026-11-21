@@ -15,6 +15,7 @@ typedef struct action {
     prts_array bindings; /* binding */
     float value;
     bool down, was_down, pressed;
+    bool always; /* still works while input is blocked by a menu */
     float override_value;
     int override_ticks;
 } action;
@@ -24,6 +25,7 @@ struct prts_input {
     prts_key_resolver keys;
     prts_input_scheme scheme;
     bool scheme_changed;
+    bool blocked;
 };
 
 const char *prts_input_scheme_name(prts_input_scheme s)
@@ -33,6 +35,28 @@ const char *prts_input_scheme_name(prts_input_scheme s)
     case PRTS_SCHEME_GAMEPAD: return "gamepad";
     case PRTS_SCHEME_TOUCH: return "touch";
     default: return "xr";
+    }
+}
+
+bool prts_input_scheme_parse(const char *name, prts_input_scheme *out)
+{
+    for (int i = 0; i <= (int)PRTS_SCHEME_XR; i++) {
+        if (strcmp(name, prts_input_scheme_name((prts_input_scheme)i)) == 0) {
+            *out = (prts_input_scheme)i;
+            return true;
+        }
+    }
+    return false;
+}
+
+prts_input_scheme prts_binding_scheme(prts_binding_kind kind)
+{
+    switch (kind) {
+    case PRTS_BIND_PAD_BUTTON:
+    case PRTS_BIND_PAD_AXIS: return PRTS_SCHEME_GAMEPAD;
+    case PRTS_BIND_TOUCH_AXIS:
+    case PRTS_BIND_TOUCH_BUTTON: return PRTS_SCHEME_TOUCH;
+    default: return PRTS_SCHEME_KBM;
     }
 }
 
@@ -102,6 +126,8 @@ bool prts_input_bind(prts_input *in, const char *name, prts_binding_kind kind, c
               : kind == PRTS_BIND_MOUSE_AXIS   ? 3
               : kind == PRTS_BIND_PAD_BUTTON   ? PRTS_INPUT_MAX_PAD_BUTTONS
               : kind == PRTS_BIND_PAD_AXIS     ? PRTS_INPUT_MAX_PAD_AXES
+              : kind == PRTS_BIND_TOUCH_AXIS   ? PRTS_INPUT_TOUCH_AXES
+              : kind == PRTS_BIND_TOUCH_BUTTON ? PRTS_INPUT_TOUCH_BUTTONS
                                                : PRTS_INPUT_MAX_KEYS;
     if (code < 0 || code >= limit) return false;
     binding b = {kind, code, scale == 0.0f ? 1.0f : scale};
@@ -115,6 +141,45 @@ void prts_input_clear_bindings(prts_input *in, const char *name)
     if (a) prts_array_clear(&a->bindings);
 }
 
+void prts_input_clear_scheme(prts_input *in, const char *name, prts_input_scheme scheme)
+{
+    action *a = get(in, name);
+    if (!a) return;
+    size_t kept = 0;
+    for (size_t i = 0; i < a->bindings.len; i++) {
+        binding *b = prts_array_at(&a->bindings, i);
+        if (prts_binding_scheme(b->kind) != scheme) *(binding *)prts_array_at(&a->bindings, kept++) = *b;
+    }
+    a->bindings.len = kept;
+}
+
+size_t prts_input_binding_count(const prts_input *in, const char *name)
+{
+    action *a = get(in, name);
+    return a ? a->bindings.len : 0;
+}
+
+bool prts_input_binding(const prts_input *in, const char *name, size_t i, prts_binding_kind *kind, int *code,
+                        float *scale)
+{
+    action *a = get(in, name);
+    binding *b = a && i < a->bindings.len ? prts_array_at(&a->bindings, i) : NULL;
+    if (!b) return false;
+    *kind = b->kind;
+    *code = b->code;
+    *scale = b->scale;
+    return true;
+}
+
+void prts_input_set_blocked(prts_input *in, bool blocked) { in->blocked = blocked; }
+bool prts_input_blocked(const prts_input *in) { return in->blocked; }
+
+void prts_input_set_always(prts_input *in, const char *name, bool always)
+{
+    action *a = get(in, name);
+    if (a) a->always = always;
+}
+
 static float binding_value(const binding *b, const prts_input_state *s)
 {
     switch (b->kind) {
@@ -122,6 +187,8 @@ static float binding_value(const binding *b, const prts_input_state *s)
     case PRTS_BIND_MOUSE_BUTTON: return s->mouse[b->code] ? b->scale : 0.0f;
     case PRTS_BIND_MOUSE_AXIS: return (b->code == 0 ? s->mouse_dx : b->code == 1 ? s->mouse_dy : s->wheel) * b->scale;
     case PRTS_BIND_PAD_BUTTON: return s->pad_connected && s->pad_buttons[b->code] ? b->scale : 0.0f;
+    case PRTS_BIND_TOUCH_AXIS: return s->touch_axes[b->code] * b->scale;
+    case PRTS_BIND_TOUCH_BUTTON: return s->touch_buttons[b->code] ? b->scale : 0.0f;
     default: {
         float v = s->pad_connected ? s->pad_axes[b->code] : 0.0f;
         return fabsf(v) < 0.15f ? 0.0f : v * b->scale; /* dead zone */
@@ -134,7 +201,9 @@ void prts_input_update(prts_input *in, const prts_input_state *s)
     for (size_t i = 0; i < in->actions.len; i++) {
         action *a = prts_array_at(&in->actions, i);
         float v = 0.0f;
-        for (size_t j = 0; j < a->bindings.len; j++) v += binding_value(prts_array_at(&a->bindings, j), s);
+        if (!in->blocked || a->always) {
+            for (size_t j = 0; j < a->bindings.len; j++) v += binding_value(prts_array_at(&a->bindings, j), s);
+        }
         if (a->override_ticks > 0) v = a->override_value;
         a->value = v;
         a->was_down = a->down;
@@ -164,6 +233,12 @@ bool prts_input_pressed(const prts_input *in, const char *name)
 {
     action *a = get(in, name);
     return a && a->pressed;
+}
+
+bool prts_input_went_down(const prts_input *in, const char *name)
+{
+    action *a = get(in, name);
+    return a && a->down && !a->was_down;
 }
 
 void prts_input_end_tick(prts_input *in)

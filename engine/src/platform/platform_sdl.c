@@ -79,9 +79,32 @@ void prts_platform_drawable_size(const prts_platform *p, int *w, int *h)
 
 void prts_platform_set_relative_mouse(prts_platform *p, bool on) { SDL_SetWindowRelativeMouseMode(p->window, on); }
 
+void prts_platform_text_input(prts_platform *p, bool on)
+{
+    if (on) SDL_StartTextInput(p->window);
+    else SDL_StopTextInput(p->window);
+}
+
 void prts_platform_begin_frame(prts_input_state *s)
 {
     s->mouse_dx = s->mouse_dy = s->wheel = 0.0f;
+    s->text[0] = '\0';
+}
+
+/* Tracks one finger: its slot is found by id (or a free slot is taken). */
+static void apply_finger(prts_input_state *s, const SDL_TouchFingerEvent *f, bool down)
+{
+    int slot = -1, free_slot = -1;
+    for (int i = 0; i < PRTS_INPUT_MAX_TOUCHES; i++) {
+        if (s->touches[i].down && s->touches[i].id == (int64_t)f->fingerID) slot = i;
+        if (!s->touches[i].down && free_slot < 0) free_slot = i;
+    }
+    if (slot < 0) slot = free_slot;
+    if (slot < 0) return;
+    s->touches[slot].id = (int64_t)f->fingerID;
+    s->touches[slot].x = f->x;
+    s->touches[slot].y = f->y;
+    s->touches[slot].down = down;
 }
 
 static void open_gamepads(prts_input_state *s)
@@ -109,11 +132,15 @@ bool prts_platform_apply_event(prts_platform *p, const void *sdl_event, prts_inp
     case SDL_EVENT_MOUSE_MOTION:
         s->mouse_dx += e->motion.xrel;
         s->mouse_dy += e->motion.yrel;
+        s->mouse_x = e->motion.x;
+        s->mouse_y = e->motion.y;
         if (e->motion.which != SDL_TOUCH_MOUSEID) s->last_device = PRTS_SCHEME_KBM;
         break;
     case SDL_EVENT_MOUSE_BUTTON_DOWN:
     case SDL_EVENT_MOUSE_BUTTON_UP:
         if (e->button.button < PRTS_INPUT_MAX_BUTTONS) s->mouse[e->button.button] = e->button.down;
+        s->mouse_x = e->button.x;
+        s->mouse_y = e->button.y;
         s->last_device = PRTS_SCHEME_KBM;
         break;
     case SDL_EVENT_MOUSE_WHEEL: s->wheel += e->wheel.y; break;
@@ -131,10 +158,15 @@ bool prts_platform_apply_event(prts_platform *p, const void *sdl_event, prts_inp
     case SDL_EVENT_FINGER_DOWN:
         s->fingers++;
         s->last_device = PRTS_SCHEME_TOUCH;
+        apply_finger(s, &e->tfinger, true);
         break;
+    case SDL_EVENT_FINGER_MOTION: apply_finger(s, &e->tfinger, true); break;
     case SDL_EVENT_FINGER_UP:
+    case SDL_EVENT_FINGER_CANCELED:
         if (s->fingers > 0) s->fingers--;
+        apply_finger(s, &e->tfinger, false);
         break;
+    case SDL_EVENT_TEXT_INPUT: SDL_strlcat(s->text, e->text.text, sizeof(s->text)); break;
     default: break;
     }
     return false;
@@ -152,6 +184,11 @@ int prts_platform_key_from_name(const char *name)
 {
     SDL_Scancode sc = SDL_GetScancodeFromName(name);
     return sc == SDL_SCANCODE_UNKNOWN ? 0 : (int)sc;
+}
+
+const char *prts_platform_key_name(int code)
+{
+    return SDL_GetScancodeName((SDL_Scancode)code);
 }
 
 uint64_t prts_platform_ticks_ns(void) { return SDL_GetTicksNS(); }

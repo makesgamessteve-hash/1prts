@@ -604,30 +604,6 @@ static int l_entity_data(lua_State *L)
 
 /* --- prts.input ------------------------------------------------------------------- */
 
-static void bind_list(lua_State *L, prts_engine *e, const char *id, const char *field, prts_binding_kind kind)
-{
-    lua_getfield(L, 1, field);
-    if (lua_istable(L, -1)) {
-        int t = lua_gettop(L);
-        for (int i = 1; lua_rawgeti(L, t, i) != LUA_TNIL; i++) {
-            bool ok;
-            if (kind == PRTS_BIND_KEY) {
-                ok = prts_input_bind(e->input, id, kind, lua_tostring(L, -1), 0, 1.0f);
-            } else if (lua_istable(L, -1)) {
-                int b = lua_gettop(L);
-                ok = prts_input_bind(e->input, id, kind, NULL, (int)field_number(L, b, "code", 0),
-                                     field_number(L, b, "scale", 1.0f));
-            } else {
-                ok = prts_input_bind(e->input, id, kind, NULL, (int)lua_tointeger(L, -1), 1.0f);
-            }
-            if (!ok) luaL_error(L, "action '%s': invalid %s binding #%d", id, field, i);
-            lua_pop(L, 1);
-        }
-        lua_pop(L, 1);
-    }
-    lua_pop(L, 1);
-}
-
 static int l_input_action(lua_State *L)
 {
     prts_engine *e = prts_engine_from_lua(L);
@@ -635,12 +611,7 @@ static int l_input_action(lua_State *L)
     const char *id = field_string(L, 1, "id", NULL);
     if (!id) return luaL_error(L, "field 'id' is required");
     prts_input_define(e->input, id);
-    prts_input_clear_bindings(e->input, id);
-    bind_list(L, e, id, "keys", PRTS_BIND_KEY);
-    bind_list(L, e, id, "mouse_buttons", PRTS_BIND_MOUSE_BUTTON);
-    bind_list(L, e, id, "mouse_axes", PRTS_BIND_MOUSE_AXIS);
-    bind_list(L, e, id, "pad_buttons", PRTS_BIND_PAD_BUTTON);
-    bind_list(L, e, id, "pad_axes", PRTS_BIND_PAD_AXIS);
+    prts_engine_apply_bindings(L, e, id, 1); /* defaults, then the player's overrides (api_settings.c) */
     return 0;
 }
 
@@ -741,7 +712,16 @@ static int l_render_settings(lua_State *L)
         r->crosshair = field_bool(L, 1, "crosshair", r->crosshair);
         r->fov_y = field_number(L, 1, "fov", r->fov_y * 180.0f / (float)PRTS_PI) * (float)PRTS_PI / 180.0f;
     }
-    lua_createtable(L, 0, 6);
+    lua_createtable(L, 0, 10);
+    static const char *presets[] = {"authentic", "retro", "crisp", "hd", "native"};
+    lua_pushstring(L, presets[PRTS_CLAMP((int)e->render.preset, 0, 4)]);
+    lua_setfield(L, -2, "preset");
+    lua_pushboolean(L, e->render.affine);
+    lua_setfield(L, -2, "affine");
+    lua_pushboolean(L, e->render.crosshair);
+    lua_setfield(L, -2, "crosshair");
+    lua_pushnumber(L, (lua_Number)lroundf(e->render.fov_y * 180.0f / (float)PRTS_PI));
+    lua_setfield(L, -2, "fov");
     lua_pushinteger(L, prts_res_preset_lines(e->render.preset));
     lua_setfield(L, -2, "lines");
     lua_pushboolean(L, e->render.dither);

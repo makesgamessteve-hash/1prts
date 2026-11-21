@@ -27,6 +27,9 @@ const char *prts_args_usage(void)
            "  --test-lua            run the Lua unit tests in scripts/tests and exit\n"
            "  --scenario <file>     run an automated game test and exit\n"
            "  --out <dir>           where scenario screenshots are written\n"
+           "  --start <map>         start a map at once (skips the front-end menu)\n"
+           "  --front-end           show the front-end menu even in test runs\n"
+           "  --no-dev              turn developer features (console, observer camera) off\n"
            "  --lua-coverage <file> write Lua line coverage (lcov) on exit\n"
            "  --junit <file>        write a JUnit XML report (with --test-lua, --scenario, --replay)\n"
            "  --record <file>       record a replay of this run\n"
@@ -53,7 +56,8 @@ int prts_args_parse(int argc, char **argv, prts_engine_config *cfg, char *err, s
         bool takes = strcmp(a, "--data") == 0 || strcmp(a, "--user") == 0 || strcmp(a, "--mod") == 0 ||
                      strcmp(a, "--size") == 0 || strcmp(a, "--seed") == 0 || strcmp(a, "--ticks") == 0 ||
                      strcmp(a, "--scenario") == 0 || strcmp(a, "--out") == 0 || strcmp(a, "--lua-coverage") == 0 ||
-                     strcmp(a, "--junit") == 0 || strcmp(a, "--record") == 0 || strcmp(a, "--replay") == 0;
+                     strcmp(a, "--junit") == 0 || strcmp(a, "--record") == 0 || strcmp(a, "--replay") == 0 ||
+                     strcmp(a, "--start") == 0;
         if (takes && !v) {
             snprintf(err, err_size, "option %s needs a value", a);
             return 1;
@@ -70,6 +74,13 @@ int prts_args_parse(int argc, char **argv, prts_engine_config *cfg, char *err, s
             cfg->hidden = true;
         } else if (strcmp(a, "--test-lua") == 0) {
             cfg->test_lua = true;
+        } else if (strcmp(a, "--front-end") == 0) {
+            cfg->front_end = true;
+        } else if (strcmp(a, "--no-dev") == 0) {
+            cfg->no_dev = true;
+        } else if (strcmp(a, "--start") == 0) {
+            cfg->start_map = v;
+            i++;
         } else if (strcmp(a, "--data") == 0) {
             cfg->data_dir = v;
             i++;

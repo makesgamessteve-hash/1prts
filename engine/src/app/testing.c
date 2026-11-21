@@ -306,6 +306,7 @@ bool prts_engine_start_scenario(prts_engine *e, const char *real_path)
     lua_newtable(L);
     luaL_setfuncs(L, T_FUNCS, 0);
     int t = lua_gettop(L);
+    prts_engine_open_test_ui(e, t, false);
     luaL_loadbufferx(L, SCENARIO_PRELUDE, strlen(SCENARIO_PRELUDE), "=scenario_prelude", "t");
     lua_pushvalue(L, t);
     prts_script_call(e->script, 1, 0);
@@ -349,6 +350,7 @@ int prts_engine_run_lua_tests(prts_engine *e)
     lua_State *L = prts_script_lua(e->script);
     luaL_loadbufferx(L, TEST_PRELUDE, strlen(TEST_PRELUDE), "=test_prelude", "t");
     prts_script_call(e->script, 0, 1);
+    prts_engine_open_test_ui(e, -1, true);
     lua_setglobal(L, "T");
     test_files files;
     prts_array_init(&files.names, sizeof(char *));

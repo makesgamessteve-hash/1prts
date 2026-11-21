@@ -127,15 +127,13 @@ prts_engine *prts_engine_create(const prts_engine_config *cfg, char *err, size_t
     e->hot_reload = cfg->hot_reload || (!cfg->headless && !cfg->scenario && !cfg->test_lua && !cfg->replay);
     if (e->hot_reload) prts_script_enable_hot_reload(e->script);
 #endif
+    prts_engine_ui_create(e);
     if (!prts_script_run_file(e->script, "scripts/main.lua")) {
         snprintf(err, err_size, "The boot script scripts/main.lua failed: %s", prts_script_last_error(e->script));
         prts_engine_destroy(e);
         return NULL;
     }
-    prts_cworld_set_heightfield(e->cworld, e->scene->terrain);
-    prts_cworld_sync(e->cworld, e->world);
-    if (!cfg->headless) prts_scene_bake_sun(e->scene, e->cworld, e->world);
-    if (e->platform && !cfg->scenario) prts_platform_set_relative_mouse(e->platform, true);
+    prts_engine_finish_scene(e);
     if (cfg->junit) {
         e->report = prts_report_create(cfg->test_lua ? "lua_unit_tests" : cfg->replay ? "replays" : "scenarios");
     }
@@ -160,6 +158,7 @@ void prts_engine_destroy(prts_engine *e)
     if (e->script) prts_engine_replay_finish(e);
     prts_engine_finish_report(e);
     if (e->cfg.lua_coverage && e->script) prts_script_write_coverage(e->script, e->cfg.lua_coverage);
+    prts_engine_ui_destroy(e);
     prts_script_destroy(e->script);
     prts_gfx_destroy(e->gfx);
     prts_platform_set_gesture_handler(NULL, NULL);
@@ -175,6 +174,16 @@ void prts_engine_destroy(prts_engine *e)
     prts_free(e->data_dir);
     prts_free(e->user_dir);
     prts_free(e);
+}
+
+void prts_engine_finish_scene(prts_engine *e)
+{
+    prts_cworld_set_heightfield(e->cworld, e->scene->terrain);
+    prts_cworld_sync(e->cworld, e->world);
+    if (e->scene_ever_ready && e->scene_ready == e->scene->revision) return;
+    if (!e->cfg.headless) prts_scene_bake_sun(e->scene, e->cworld, e->world);
+    e->scene_ready = e->scene->revision;
+    e->scene_ever_ready = true;
 }
 
 static void on_move_done(prts_entity ent, void *user)
@@ -251,7 +260,10 @@ static void render_frame(prts_engine *e, double alpha)
         cam.yaw = e->commander.yaw;
         cam.pitch = e->commander.pitch;
     }
+    prts_engine_camera_override(e, &cam); /* developer observer camera */
+    prts_engine_ui_draw_surfaces(e);
     prts_gfx_render(e->gfx, e->scene, e->world, &cam, &e->render, w, h, alpha, e->time);
+    prts_engine_ui_draw_overlay(e, w, h);
     if (e->want_shot) {
         char path[512];
         const char *dir = e->cfg.out_dir ? e->cfg.out_dir : e->user_dir;
@@ -274,6 +286,7 @@ bool prts_engine_frame(prts_engine *e, double real_seconds)
     if (e->hot_reload && e->reload_timer >= 1.0) prts_script_check_reload(e->script);
     if (e->reload_timer >= 1.0) e->reload_timer = 0.0;
 #endif
+    prts_engine_ui_before_input(e, real_seconds);
     prts_input_update(e->input, &e->dev);
     apply_look(e);
     prts_platform_begin_frame(&e->dev);
@@ -281,6 +294,7 @@ bool prts_engine_frame(prts_engine *e, double real_seconds)
     int n = e->scenario_active || e->cfg.scenario ? 1 : prts_clock_advance(&e->clock, real_seconds);
     for (int i = 0; i < n && !e->quit; i++) prts_engine_tick(e);
     e->time = (double)e->clock.tick * e->clock.tick_seconds;
+    prts_engine_ui_frame(e, real_seconds);
     if (e->cfg.ticks > 0 && e->clock.tick >= (uint64_t)e->cfg.ticks) e->quit = true;
     double alpha = e->scenario_active ? 1.0 : prts_clock_alpha(&e->clock);
     render_frame(e, alpha);
@@ -292,7 +306,8 @@ void prts_engine_event(prts_engine *e, const void *sdl_event)
 {
     if (prts_platform_apply_event(e->platform, sdl_event, &e->dev)) e->quit = true;
 #if !defined(__EMSCRIPTEN__) /* a web page has nothing to quit to; there Escape releases the mouse */
-    if (e->dev.keys[41 /* Escape */]) e->quit = true;
+    /* Escape quits only when the scripts define no menu action to handle it */
+    if (e->dev.keys[41 /* Escape */] && prts_input_find(e->input, "menu") < 0) e->quit = true;
 #endif
 }
 

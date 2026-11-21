@@ -13,6 +13,7 @@ M.FLOORS = { 0.2, 4.7, 9.2 }  -- walking height of each storey
 M.SLAB = 0.3
 M.ROOF = 13.7
 M.LIFT = { x = -9.3, z = 0, gate = -7.4 }
+M.music = "music/proving_ground.ogg"
 
 local function materials()
   local m = prts.scene.material
