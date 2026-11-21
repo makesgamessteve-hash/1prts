@@ -180,6 +180,16 @@ UTEST(core, matrices)
     ASSERT_NEAR(-1.0f, p.z, 1e-4f);
 }
 
+UTEST(core, frustum_matches_perspective_when_symmetric)
+{
+    float t = tanf(0.6f), aspect = 1.5f;
+    prts_mat4 a = prts_mat4_perspective(1.2f, aspect, 0.1f, 100.0f);
+    prts_mat4 b = prts_mat4_frustum(-t * aspect, t * aspect, -t, t, 0.1f, 100.0f);
+    for (int i = 0; i < 16; i++) ASSERT_NEAR(a.m[i], b.m[i], 1e-5f);
+    prts_mat4 off = prts_mat4_frustum(-1.0f, 0.5f, -1.0f, 1.0f, 0.1f, 100.0f);
+    ASSERT_TRUE(off.m[8] < 0.0f); /* the centre is shifted left */
+}
+
 UTEST(core, rng_deterministic_and_ranges)
 {
     prts_rng a, b;

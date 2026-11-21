@@ -1,8 +1,9 @@
 // 1stPRTS sky: gradient dome, sun, the moons Ilen and Corvane, and stars. MIT License.
 in vec2 v_ndc;
 uniform vec3 u_forward;
-uniform vec3 u_right;   // already scaled by tan(fov/2) * aspect
-uniform vec3 u_up;      // already scaled by tan(fov/2)
+uniform vec3 u_right;
+uniform vec3 u_up;
+uniform vec4 u_tan;     // frustum tangents: left, right, down, up (off-centre for XR eyes)
 uniform vec3 u_horizon;
 uniform vec3 u_zenith;
 uniform vec3 u_sun_dir;
@@ -25,7 +26,8 @@ vec3 moon(vec3 dir, vec3 at, float size, vec3 color, vec3 sky) {
 }
 
 void main() {
-    vec3 dir = normalize(u_forward + v_ndc.x * u_right + v_ndc.y * u_up);
+    vec2 t = vec2(mix(u_tan.x, u_tan.y, v_ndc.x * 0.5 + 0.5), mix(u_tan.z, u_tan.w, v_ndc.y * 0.5 + 0.5));
+    vec3 dir = normalize(u_forward + t.x * u_right + t.y * u_up);
     float h = dir.y;
     vec3 sky = mix(u_horizon, u_zenith, pow(clamp(h, 0.0, 1.0), 0.55));
     if (h < 0.0) sky = mix(u_horizon, u_horizon * 0.55, clamp(-h * 4.0, 0.0, 1.0));

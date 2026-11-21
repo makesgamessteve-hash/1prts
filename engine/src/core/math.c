@@ -120,6 +120,20 @@ prts_mat4 prts_mat4_perspective(float fov_y, float aspect, float z_near, float z
     return r;
 }
 
+prts_mat4 prts_mat4_frustum(float tan_left, float tan_right, float tan_down, float tan_up, float z_near, float z_far)
+{
+    prts_mat4 r;
+    memset(&r, 0, sizeof(r));
+    r.m[0] = 2.0f / (tan_right - tan_left);
+    r.m[5] = 2.0f / (tan_up - tan_down);
+    r.m[8] = (tan_right + tan_left) / (tan_right - tan_left);
+    r.m[9] = (tan_up + tan_down) / (tan_up - tan_down);
+    r.m[10] = (z_far + z_near) / (z_near - z_far);
+    r.m[11] = -1.0f;
+    r.m[14] = (2.0f * z_far * z_near) / (z_near - z_far);
+    return r;
+}
+
 prts_mat4 prts_mat4_view_yaw_pitch(float yaw, float pitch)
 {
     /* Inverse of (rotate_y(yaw) * rotate_x(pitch)). */

@@ -369,6 +369,17 @@ UTEST(gfx, windowed_engine_renders_and_recovers_from_broken_content)
     e->want_shot = true;
     ASSERT_TRUE(prts_engine_frame(e, 1.0 / 30.0));
     ASSERT_TRUE(prts_gfx_screenshot(e->gfx, TMP "/shot.png", 320, 180));
+    /* Spec: Two views (stereo): both eyes drawn side by side in one frame */
+    prts_camera cam = {prts_dv3(0, 1.7, 40), 0.0f, 0.0f};
+    prts_view eyes[2];
+    prts_view_from_camera(&eyes[0], &cam, 1.6f, 160, 180);
+    eyes[1] = eyes[0];
+    eyes[0].tan_right *= 0.8f; /* asymmetric, like a real headset */
+    eyes[1].tan_left *= 0.8f;
+    eyes[1].eye.x += 0.064;
+    eyes[1].x = 160;
+    prts_gfx_render_views(e->gfx, e->scene, e->world, eyes, 2, &e->render, 1.0, 0.0);
+    ASSERT_EQ(2, prts_gfx_last_view_count(e->gfx));
     prts_gfx_reload_shaders(e->gfx);
     SDL_Event ev;
     memset(&ev, 0, sizeof(ev));
@@ -414,6 +425,10 @@ UTEST(gfx, settings_and_null_backend)
     ASSERT_FALSE(prts_gfx_screenshot(g, TMP "/null.png", 4, 4));
     prts_gfx_reload_shaders(g);
     ASSERT_EQ((size_t)0, prts_gfx_shader_errors(g));
+    prts_view many[8];
+    memset(many, 0, sizeof(many));
+    prts_gfx_render_views(g, NULL, NULL, many, 8, &s, 0.0, 0.0);
+    ASSERT_EQ(4, prts_gfx_last_view_count(g)); /* at most PRTS_GFX_MAX_VIEWS */
     prts_gfx_destroy(g);
     prts_gfx_destroy(NULL);
 }

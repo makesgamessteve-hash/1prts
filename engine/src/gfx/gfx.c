@@ -211,11 +211,7 @@ void prts_gfx_destroy(prts_gfx *g)
         for (size_t i = 0; i < g->textures.len; i++) {
             g->gl.glDeleteTextures(1, &((texture_entry *)prts_array_at(&g->textures, i))->tex);
         }
-        if (g->fbo) {
-            g->gl.glDeleteFramebuffers(1, &g->fbo);
-            g->gl.glDeleteTextures(1, &g->color_tex);
-            g->gl.glDeleteRenderbuffers(1, &g->depth_rb);
-        }
+        for (int i = 0; i < PRTS_GFX_MAX_VIEWS; i++) prts_gfx_target_free(g, &g->views[i]);
         delete_program(g, &g->prog_world);
         delete_program(g, &g->prog_sky);
         delete_program(g, &g->prog_lines);
@@ -339,33 +335,39 @@ static void upload_scene(prts_gfx *g, const prts_scene *s)
     g->uploaded_revision = s->revision;
 }
 
-static void ensure_target(prts_gfx *g, int w, int h)
+void prts_gfx_target_free(prts_gfx *g, prts_render_target *t)
 {
-    if (g->fbo && g->fbo_w == w && g->fbo_h == h) return;
-    if (g->fbo) {
-        g->gl.glDeleteFramebuffers(1, &g->fbo);
-        g->gl.glDeleteTextures(1, &g->color_tex);
-        g->gl.glDeleteRenderbuffers(1, &g->depth_rb);
-    }
-    g->gl.glGenTextures(1, &g->color_tex);
-    g->gl.glBindTexture(GL_TEXTURE_2D, g->color_tex);
+    if (!t->fbo) return;
+    g->gl.glDeleteFramebuffers(1, &t->fbo);
+    g->gl.glDeleteTextures(1, &t->color);
+    g->gl.glDeleteRenderbuffers(1, &t->depth);
+    t->fbo = t->color = t->depth = 0;
+    t->w = t->h = 0;
+}
+
+void prts_gfx_target_ensure(prts_gfx *g, prts_render_target *t, int w, int h)
+{
+    if (t->fbo && t->w == w && t->h == h) return;
+    prts_gfx_target_free(g, t);
+    g->gl.glGenTextures(1, &t->color);
+    g->gl.glBindTexture(GL_TEXTURE_2D, t->color);
     g->gl.glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
     g->gl.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     g->gl.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     g->gl.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     g->gl.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    g->gl.glGenRenderbuffers(1, &g->depth_rb);
-    g->gl.glBindRenderbuffer(GL_RENDERBUFFER, g->depth_rb);
+    g->gl.glGenRenderbuffers(1, &t->depth);
+    g->gl.glBindRenderbuffer(GL_RENDERBUFFER, t->depth);
     g->gl.glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, w, h);
-    g->gl.glGenFramebuffers(1, &g->fbo);
-    g->gl.glBindFramebuffer(GL_FRAMEBUFFER, g->fbo);
-    g->gl.glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, g->color_tex, 0);
-    g->gl.glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, g->depth_rb);
+    g->gl.glGenFramebuffers(1, &t->fbo);
+    g->gl.glBindFramebuffer(GL_FRAMEBUFFER, t->fbo);
+    g->gl.glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, t->color, 0);
+    g->gl.glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, t->depth);
     if (g->gl.glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
         prts_log_error("render target %dx%d is incomplete", w, h);
     }
-    g->fbo_w = w;
-    g->fbo_h = h;
+    t->w = w;
+    t->h = h;
 }
 
 /* --- drawing ---------------------------------------------------------------- */
@@ -380,7 +382,7 @@ static void set_vec3(prts_gfx *g, GLuint p, const char *name, prts_vec3 v)
 typedef struct frame_ctx {
     const prts_scene *scene;
     const prts_world *world;
-    const prts_camera *cam;
+    const prts_view *view;
     const prts_render_settings *rs;
     double alpha;
     int iw, ih;
@@ -388,24 +390,23 @@ typedef struct frame_ctx {
 
 static prts_mat4 owner_model(const frame_ctx *f, prts_entity owner)
 {
-    if (owner == PRTS_ENTITY_NONE) return prts_mat4_translate(prts_dv3_relative(prts_dv3(0, 0, 0), f->cam->eye));
+    if (owner == PRTS_ENTITY_NONE) return prts_mat4_translate(prts_dv3_relative(prts_dv3(0, 0, 0), f->view->eye));
     prts_dvec3 p = prts_world_pos_interp(f->world, owner, f->alpha);
     float yaw = prts_world_yaw_interp(f->world, owner, f->alpha);
-    return prts_mat4_mul(prts_mat4_translate(prts_dv3_relative(p, f->cam->eye)), prts_mat4_rotate_y(yaw));
+    return prts_mat4_mul(prts_mat4_translate(prts_dv3_relative(p, f->view->eye)), prts_mat4_rotate_y(yaw));
 }
 
 static void draw_sky(prts_gfx *g, const frame_ctx *f)
 {
     GLuint p = g->prog_sky;
     g->gl.glUseProgram(p);
-    float aspect = (float)f->iw / (float)f->ih;
-    prts_vec3 fwd = prts_view_forward(f->cam->yaw, f->cam->pitch);
-    prts_vec3 right = prts_v3_normalize(prts_v3_cross(fwd, prts_v3(0, 1, 0)));
-    prts_vec3 up = prts_v3_cross(right, fwd);
-    float t = tanf(f->rs->fov_y * 0.5f);
-    set_vec3(g, p, "u_forward", fwd);
-    set_vec3(g, p, "u_right", prts_v3_scale(right, t * aspect));
-    set_vec3(g, p, "u_up", prts_v3_scale(up, t));
+    const prts_mat4 *r = &f->view->rotation;
+    /* the rows of the world->view rotation are the camera's axes in world space */
+    set_vec3(g, p, "u_right", prts_v3(r->m[0], r->m[4], r->m[8]));
+    set_vec3(g, p, "u_up", prts_v3(r->m[1], r->m[5], r->m[9]));
+    set_vec3(g, p, "u_forward", prts_v3(-r->m[2], -r->m[6], -r->m[10]));
+    g->gl.glUniform4f(prts_gfx_uniform(g, p, "u_tan"), f->view->tan_left, f->view->tan_right, f->view->tan_down,
+                      f->view->tan_up);
     const prts_scene_env *env = &f->scene->env;
     set_vec3(g, p, "u_horizon", env->sky_horizon);
     set_vec3(g, p, "u_zenith", env->sky_zenith);
@@ -422,7 +423,7 @@ static int pick_lights(const frame_ctx *f, prts_light *out)
     int n = 0;
     const prts_array *lights = &f->scene->lights;
     float best_d[MAX_LIGHTS];
-    prts_vec3 eye = prts_v3((float)f->cam->eye.x, (float)f->cam->eye.y, (float)f->cam->eye.z);
+    prts_vec3 eye = prts_v3((float)f->view->eye.x, (float)f->view->eye.y, (float)f->view->eye.z);
     for (size_t i = 0; i < lights->len; i++) {
         const prts_light *l = prts_array_at(lights, i);
         float d = prts_v3_length(prts_v3_sub(l->pos, eye)) - l->radius;
@@ -456,7 +457,7 @@ static void draw_meshes(prts_gfx *g, const frame_ctx *f, prts_mat4 view_proj)
     int n = pick_lights(f, lights);
     float pos[MAX_LIGHTS * 3] = {0}, col[MAX_LIGHTS * 3] = {0}, rad[MAX_LIGHTS] = {0};
     for (int i = 0; i < n; i++) {
-        prts_vec3 rel = prts_dv3_relative(prts_dv3_from_v3(lights[i].pos), f->cam->eye);
+        prts_vec3 rel = prts_dv3_relative(prts_dv3_from_v3(lights[i].pos), f->view->eye);
         pos[i * 3] = rel.x;
         pos[i * 3 + 1] = rel.y;
         pos[i * 3 + 2] = rel.z;
@@ -508,62 +509,103 @@ static void draw_lines(prts_gfx *g, const frame_ctx *f, prts_mat4 view_proj, dou
     g->gl.glDisable(GL_BLEND);
 }
 
-void prts_gfx_render(prts_gfx *g, const prts_scene *scene, const prts_world *world, const prts_camera *cam,
-                     const prts_render_settings *rs, int out_w, int out_h, double alpha, double time)
+void prts_view_from_camera(prts_view *v, const prts_camera *cam, float fov_y, int out_w, int out_h)
 {
-    if (g->null) return;
-    if (g->uploaded_scene != scene || g->uploaded_revision != scene->revision) upload_scene(g, scene);
-    frame_ctx f = {scene, world, cam, rs, alpha, 0, 0};
-    prts_gfx_internal_size(rs->preset, out_w, out_h, &f.iw, &f.ih);
-    ensure_target(g, f.iw, f.ih);
+    float t = tanf(fov_y * 0.5f);
+    float aspect = (float)PRTS_MAX(1, out_w) / (float)PRTS_MAX(1, out_h);
+    v->eye = cam->eye;
+    v->rotation = prts_mat4_view_yaw_pitch(cam->yaw, cam->pitch);
+    v->tan_left = -t * aspect;
+    v->tan_right = t * aspect;
+    v->tan_down = -t;
+    v->tan_up = t;
+    v->framebuffer = 0;
+    v->x = v->y = 0;
+    v->w = out_w;
+    v->h = out_h;
+}
 
-    g->gl.glBindFramebuffer(GL_FRAMEBUFFER, g->fbo);
-    g->gl.glViewport(0, 0, f.iw, f.ih);
+int prts_gfx_last_view_count(const prts_gfx *g) { return g->last_views; }
+
+/* Draws the scene for one view into its low-resolution target. */
+static void draw_view_scene(prts_gfx *g, frame_ctx *f, prts_render_target *t, double time)
+{
+    g->gl.glBindFramebuffer(GL_FRAMEBUFFER, t->fbo);
+    g->gl.glViewport(0, 0, t->w, t->h);
     g->gl.glDisable(GL_DEPTH_TEST);
     g->gl.glDisable(GL_CULL_FACE);
-    draw_sky(g, &f);
-
+    draw_sky(g, f);
     g->gl.glEnable(GL_DEPTH_TEST);
     g->gl.glDepthFunc(GL_LEQUAL);
     g->gl.glEnable(GL_CULL_FACE);
     g->gl.glCullFace(GL_BACK);
-    float aspect = (float)f.iw / (float)f.ih;
-    prts_mat4 view = prts_mat4_view_yaw_pitch(cam->yaw, cam->pitch);
+    const prts_view *v = f->view;
     /* Two depth layers: far geometry first, then a fresh depth range for nearby geometry. */
     const float layers[2][2] = {{FAR_LAYER_NEAR, FAR_LAYER_FAR}, {NEAR_LAYER_NEAR, NEAR_LAYER_FAR}};
-    prts_mat4 view_proj = view;
+    prts_mat4 view_proj = v->rotation;
     for (int l = 0; l < 2; l++) {
         g->gl.glClear(GL_DEPTH_BUFFER_BIT);
-        view_proj = prts_mat4_mul(prts_mat4_perspective(rs->fov_y, aspect, layers[l][0], layers[l][1]), view);
-        draw_meshes(g, &f, view_proj);
+        prts_mat4 proj = prts_mat4_frustum(v->tan_left, v->tan_right, v->tan_down, v->tan_up, layers[l][0], layers[l][1]);
+        view_proj = prts_mat4_mul(proj, v->rotation);
+        draw_meshes(g, f, view_proj);
     }
-    draw_lines(g, &f, view_proj, time);
+    draw_lines(g, f, view_proj, time);
+}
 
-    /* upscale to the window with whole-number scaling where possible */
-    g->gl.glBindFramebuffer(GL_FRAMEBUFFER, 0);
+/* Scales a view's low-resolution image into its output rectangle. */
+static void present_view(prts_gfx *g, const prts_view *v, const prts_render_target *t, const prts_render_settings *rs)
+{
+    g->gl.glBindFramebuffer(GL_FRAMEBUFFER, v->framebuffer);
     g->gl.glDisable(GL_DEPTH_TEST);
     g->gl.glDisable(GL_CULL_FACE);
-    g->gl.glViewport(0, 0, out_w, out_h);
+    g->gl.glEnable(GL_SCISSOR_TEST);
+    g->gl.glScissor(v->x, v->y, v->w, v->h);
+    g->gl.glViewport(v->x, v->y, v->w, v->h);
     g->gl.glClearColor(0, 0, 0, 1);
     g->gl.glClear(GL_COLOR_BUFFER_BIT);
+    g->gl.glDisable(GL_SCISSOR_TEST);
     /* whole-number scaling keeps pixels even; fall back to a fractional fit when a whole
-     * number would leave more than 10% of the window empty */
-    float fit = fminf((float)out_w / (float)f.iw, (float)out_h / (float)f.ih);
+     * number would leave more than 10% of the output empty */
+    float fit = fminf((float)v->w / (float)t->w, (float)v->h / (float)t->h);
     float scale = floorf(fit);
     if (scale < 1.0f || scale / fit < 0.9f) scale = fit;
-    int vw = (int)((float)f.iw * scale), vh = (int)((float)f.ih * scale);
-    g->gl.glViewport((out_w - vw) / 2, (out_h - vh) / 2, vw, vh);
+    int vw = (int)((float)t->w * scale), vh = (int)((float)t->h * scale);
+    g->gl.glViewport(v->x + (v->w - vw) / 2, v->y + (v->h - vh) / 2, vw, vh);
     GLuint p = g->prog_post;
     g->gl.glUseProgram(p);
     g->gl.glActiveTexture(GL_TEXTURE0);
-    g->gl.glBindTexture(GL_TEXTURE_2D, g->color_tex);
+    g->gl.glBindTexture(GL_TEXTURE_2D, t->color);
     g->gl.glUniform1i(prts_gfx_uniform(g, p, "u_scene"), 0);
-    g->gl.glUniform2f(prts_gfx_uniform(g, p, "u_size"), (float)f.iw, (float)f.ih);
+    g->gl.glUniform2f(prts_gfx_uniform(g, p, "u_size"), (float)t->w, (float)t->h);
     g->gl.glUniform1f(prts_gfx_uniform(g, p, "u_dither"), rs->dither ? 1.0f : 0.0f);
     g->gl.glUniform1f(prts_gfx_uniform(g, p, "u_crosshair"), rs->crosshair ? 1.0f : 0.0f);
     g->gl.glBindVertexArray(g->empty_vao);
     g->gl.glDrawArrays(GL_TRIANGLES, 0, 3);
     g->gl.glBindVertexArray(0);
+}
+
+void prts_gfx_render_views(prts_gfx *g, const prts_scene *scene, const prts_world *world, const prts_view *views,
+                           int view_count, const prts_render_settings *rs, double alpha, double time)
+{
+    view_count = PRTS_CLAMP(view_count, 0, PRTS_GFX_MAX_VIEWS);
+    g->last_views = view_count;
+    if (g->null) return;
+    if (g->uploaded_scene != scene || g->uploaded_revision != scene->revision) upload_scene(g, scene);
+    for (int i = 0; i < view_count; i++) {
+        frame_ctx f = {scene, world, &views[i], rs, alpha, 0, 0};
+        prts_gfx_internal_size(rs->preset, views[i].w, views[i].h, &f.iw, &f.ih);
+        prts_gfx_target_ensure(g, &g->views[i], f.iw, f.ih);
+        draw_view_scene(g, &f, &g->views[i], time);
+        present_view(g, &views[i], &g->views[i], rs);
+    }
+}
+
+void prts_gfx_render(prts_gfx *g, const prts_scene *scene, const prts_world *world, const prts_camera *cam,
+                     const prts_render_settings *rs, int out_w, int out_h, double alpha, double time)
+{
+    prts_view v;
+    prts_view_from_camera(&v, cam, rs->fov_y, out_w, out_h);
+    prts_gfx_render_views(g, scene, world, &v, 1, rs, alpha, time);
 }
 
 bool prts_gfx_screenshot(prts_gfx *g, const char *real_path, int out_w, int out_h)

@@ -38,6 +38,18 @@ typedef struct prts_camera {
     float yaw, pitch;
 } prts_camera;
 
+/* One view of the scene: a flat screen has one, an XR headset has one per eye. */
+typedef struct prts_view {
+    prts_dvec3 eye;     /* world position of the eye */
+    prts_mat4 rotation; /* world -> view rotation (no translation: rendering is eye-relative) */
+    float tan_left, tan_right, tan_down, tan_up; /* frustum extents at distance 1 */
+    unsigned framebuffer; /* GL framebuffer to draw into; 0 is the window */
+    int x, y, w, h;       /* output rectangle in that framebuffer */
+} prts_view;
+
+/* Builds the view of a flat-screen camera covering the whole w x h output. */
+void prts_view_from_camera(prts_view *v, const prts_camera *cam, float fov_y, int out_w, int out_h);
+
 /* getproc NULL creates the null back end (headless and tests): nothing is drawn. */
 prts_gfx *prts_gfx_create(prts_gfx_getproc getproc, prts_vfs *vfs, bool gles);
 void prts_gfx_destroy(prts_gfx *g);
@@ -55,6 +67,12 @@ void prts_gfx_internal_size(prts_res_preset p, int out_w, int out_h, int *w, int
  * moving entities between ticks; time drives animated materials. */
 void prts_gfx_render(prts_gfx *g, const prts_scene *scene, const prts_world *world, const prts_camera *cam,
                      const prts_render_settings *settings, int out_w, int out_h, double alpha, double time);
+/* Draws several views (for example both eyes in XR) of the same frame. Each view renders at
+ * the preset's internal resolution and is scaled into its own output rectangle. */
+void prts_gfx_render_views(prts_gfx *g, const prts_scene *scene, const prts_world *world, const prts_view *views,
+                           int view_count, const prts_render_settings *settings, double alpha, double time);
+/* Number of views drawn by the last render call. */
+int prts_gfx_last_view_count(const prts_gfx *g);
 /* Saves the last rendered frame as PNG. */
 bool prts_gfx_screenshot(prts_gfx *g, const char *real_path, int out_w, int out_h);
 /* Number of mesh groups and textures currently on the GPU (for tests). */

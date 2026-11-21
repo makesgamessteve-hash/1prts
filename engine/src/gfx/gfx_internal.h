@@ -11,6 +11,17 @@
 #define NEAR_LAYER_NEAR 0.05f
 #define NEAR_LAYER_FAR 30.0f
 
+#define PRTS_GFX_MAX_VIEWS 4
+
+/* A low-resolution colour + depth target. */
+typedef struct prts_render_target {
+    GLuint fbo, color, depth;
+    int w, h;
+} prts_render_target;
+
+void prts_gfx_target_ensure(prts_gfx *g, prts_render_target *t, int w, int h);
+void prts_gfx_target_free(prts_gfx *g, prts_render_target *t);
+
 typedef struct gpu_mesh {
     GLuint vao, vbo, ibo;
     GLsizei count;
@@ -43,8 +54,8 @@ struct prts_gfx {
     prts_array textures; /* texture_entry */
     const prts_scene *uploaded_scene;
     uint32_t uploaded_revision;
-    GLuint fbo, color_tex, depth_rb;
-    int fbo_w, fbo_h;
+    prts_render_target views[PRTS_GFX_MAX_VIEWS];
+    int last_views;
     GLuint empty_vao;
 };
 

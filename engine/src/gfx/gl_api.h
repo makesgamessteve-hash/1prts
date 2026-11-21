@@ -34,6 +34,7 @@ typedef unsigned char GLubyte;
 #define GL_BACK 0x0405
 #define GL_CULL_FACE 0x0B44
 #define GL_DEPTH_TEST 0x0B71
+#define GL_SCISSOR_TEST 0x0C11
 #define GL_BLEND 0x0BE2
 #define GL_UNPACK_ALIGNMENT 0x0CF5
 #define GL_PACK_ALIGNMENT 0x0D05
@@ -74,6 +75,7 @@ typedef unsigned char GLubyte;
     X(const GLubyte *, glGetString, (GLenum name))                                                              \
     X(GLenum, glGetError, (void))                                                                               \
     X(void, glViewport, (GLint x, GLint y, GLsizei w, GLsizei h))                                               \
+    X(void, glScissor, (GLint x, GLint y, GLsizei w, GLsizei h))                                                \
     X(void, glClearColor, (GLfloat r, GLfloat g, GLfloat b, GLfloat a))                                         \
     X(void, glClear, (GLbitfield mask))                                                                         \
     X(void, glEnable, (GLenum cap))                                                                             \
@@ -111,6 +113,7 @@ typedef unsigned char GLubyte;
     X(void, glUniform2f, (GLint loc, GLfloat a, GLfloat b))                                                     \
     X(void, glUniform3f, (GLint loc, GLfloat a, GLfloat b, GLfloat c))                                          \
     X(void, glUniform3fv, (GLint loc, GLsizei count, const GLfloat *v))                                         \
+    X(void, glUniform4f, (GLint loc, GLfloat a, GLfloat b, GLfloat c, GLfloat d))                               \
     X(void, glUniform1fv, (GLint loc, GLsizei count, const GLfloat *v))                                         \
     X(void, glUniformMatrix4fv, (GLint loc, GLsizei count, GLboolean transpose, const GLfloat *v))              \
     X(void, glGenTextures, (GLsizei n, GLuint * t))                                                             \

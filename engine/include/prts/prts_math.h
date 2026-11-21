@@ -41,6 +41,9 @@ prts_mat4 prts_mat4_translate(prts_vec3 t);
 prts_mat4 prts_mat4_rotate_x(float angle);
 prts_mat4 prts_mat4_rotate_y(float angle);
 prts_mat4 prts_mat4_perspective(float fov_y, float aspect, float z_near, float z_far);
+/* Off-centre perspective from frustum tangents at distance 1 (left and down are negative),
+ * as XR runtimes report per eye. */
+prts_mat4 prts_mat4_frustum(float tan_left, float tan_right, float tan_down, float tan_up, float z_near, float z_far);
 /* View matrix for an eye at the origin looking along yaw/pitch (camera-relative). */
 prts_mat4 prts_mat4_view_yaw_pitch(float yaw, float pitch);
 prts_vec3 prts_mat4_mul_point(prts_mat4 m, prts_vec3 p);
