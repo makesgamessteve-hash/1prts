@@ -59,6 +59,8 @@ struct prts_gfx {
     prts_render_target views[PRTS_GFX_MAX_VIEWS];
     int last_views;
     prts_cell_mask last_visible; /* cells visible in the last view drawn */
+    prts_array surface_targets;  /* prts_render_target, one per scene surface */
+    int surfaces_drawn;
     GLuint empty_vao;
 };
 

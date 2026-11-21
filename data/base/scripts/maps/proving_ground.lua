@@ -32,6 +32,7 @@ local function materials()
   m{ id = "pine", texture = "textures/pine.png", uv_scale = 2 }
   m{ id = "flame", texture = "textures/flame.png", uv_scale = 0.3, emissive = true }
   m{ id = "rock", texture = "textures/rock.png", uv_scale = 2 }
+  m{ id = "war_table_view", surface = "war_table", magic = true, emissive = true }
 end
 
 M.INSIDE = { "keep.hall", "keep.forge", "keep.stairs", "keep.lift", "keep.floor2", "keep.floor3" }
@@ -215,8 +216,11 @@ local function war_room()
   for _, c in ipairs({ { -2.0, 1.4 }, { 1.8, 1.4 }, { -2.0, 3.4 }, { 1.8, 3.4 } }) do
     B.box("oak", c[1], y, c[2], c[1] + 0.2, y + 0.85, c[2] + 0.2)
   end
+  -- a live picture of the valley from high above, conjured onto the table top
+  prts.scene.surface{ name = "war_table", pos = { 0, 260, 15 }, yaw = 0, pitch = -math.pi / 2, fov = 60, size = { 160, 91 } }
+  B.box("war_table_view", -2.1, y + 1.0, 1.3, 2.1, y + 1.012, 3.7, { solid = false, fit = true })
   prts.scene.illusion{ center = { 0, y + 1.04, 2.5 }, size_x = 4.2, size_z = 2.4, relief = 0.42, levels = 9,
-                       area = { x0 = -448, z0 = -256, x1 = 448, z1 = 256 }, color = { 1.0, 0.78, 0.32 } }
+                       area = { x0 = -262, z0 = -135, x1 = 262, z1 = 165 }, color = { 1.0, 0.78, 0.32 } }
   B.box("flame", -0.06, y + 1.0, 2.44, 0.06, y + 1.12, 2.56, { solid = false })  -- the keep's own sigil
   for i, x in ipairs({ -6.5, 4.5 }) do                               -- clerks' desks
     B.box("oak", x, y, -7.5, x + 2, y + 0.8, -6.6)

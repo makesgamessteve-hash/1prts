@@ -359,6 +359,9 @@ UTEST(gfx, windowed_engine_renders_and_recovers_from_broken_content)
     ASSERT_TRUE(prts_gfx_shader_errors(e->gfx) >= 2);
     ASSERT_TRUE(prts_engine_frame(e, 1.0 / 30.0));
     ASSERT_TRUE(prts_gfx_mesh_count(e->gfx) > 10);
+    /* Spec: Live war table (the map's war table surface is drawn every frame) */
+    ASSERT_EQ(1, prts_gfx_surfaces_drawn(e->gfx));
+    ASSERT_TRUE(prts_gfx_last_visible_cells(e->gfx) & PRTS_CELL_BIT(0));
     ASSERT_TRUE(prts_gfx_texture_count(e->gfx) > 5);
     e->render.preset = PRTS_RES_NATIVE;
     e->render.dither = e->render.snap = e->render.fog = false;

@@ -167,6 +167,7 @@ prts_gfx *prts_gfx_create(prts_gfx_getproc getproc, prts_vfs *vfs, bool gles)
     prts_array_init(&g->meshes, sizeof(gpu_mesh));
     prts_array_init(&g->lines, sizeof(gpu_lines));
     prts_array_init(&g->textures, sizeof(texture_entry));
+    prts_array_init(&g->surface_targets, sizeof(prts_render_target));
     if (!getproc) {
         g->null = true;
         strcpy(g->info, "null");
@@ -212,6 +213,7 @@ void prts_gfx_destroy(prts_gfx *g)
             g->gl.glDeleteTextures(1, &((texture_entry *)prts_array_at(&g->textures, i))->tex);
         }
         for (int i = 0; i < PRTS_GFX_MAX_VIEWS; i++) prts_gfx_target_free(g, &g->views[i]);
+        for (size_t i = 0; i < g->surface_targets.len; i++) prts_gfx_target_free(g, prts_array_at(&g->surface_targets, i));
         delete_program(g, &g->prog_world);
         delete_program(g, &g->prog_sky);
         delete_program(g, &g->prog_lines);
@@ -222,6 +224,7 @@ void prts_gfx_destroy(prts_gfx *g)
     prts_array_free(&g->meshes);
     prts_array_free(&g->lines);
     prts_array_free(&g->textures);
+    prts_array_free(&g->surface_targets);
     prts_free(g);
 }
 
@@ -387,6 +390,8 @@ typedef struct frame_ctx {
     double alpha;
     int iw, ih;
     prts_cell_mask visible;
+    double time;
+    int skip_surface; /* surface being drawn (its own display is skipped), or -1 */
 } frame_ctx;
 
 static prts_mat4 owner_model(const frame_ctx *f, prts_entity owner)
@@ -474,13 +479,20 @@ static void draw_meshes(prts_gfx *g, const frame_ctx *f, prts_mat4 view_proj)
     g->gl.glUniform1i(prts_gfx_uniform(g, p, "u_tex"), 0);
     g->gl.glActiveTexture(GL_TEXTURE0);
     GLint model_loc = prts_gfx_uniform(g, p, "u_model"), emissive_loc = prts_gfx_uniform(g, p, "u_emissive");
+    GLint magic_loc = prts_gfx_uniform(g, p, "u_magic"), flip_loc = prts_gfx_uniform(g, p, "u_flip_v");
+    g->gl.glUniform1f(prts_gfx_uniform(g, p, "u_time"), (float)fmod(f->time, 1000.0));
     for (size_t i = 0; i < g->meshes.len; i++) {
         gpu_mesh *m = prts_array_at(&g->meshes, i);
         if (!(m->cells & f->visible)) continue;
         if (m->owner != PRTS_ENTITY_NONE && !prts_world_alive(f->world, m->owner)) continue;
         const prts_material *mat = prts_array_at(&f->scene->materials, (size_t)m->material);
-        g->gl.glBindTexture(GL_TEXTURE_2D, prts_gfx_texture(g, mat ? mat->texture : ""));
+        int surface = mat && mat->surface[0] ? prts_scene_find_surface(f->scene, mat->surface) : -1;
+        if (surface >= 0 && surface == f->skip_surface) continue; /* no display inside its own picture */
+        prts_render_target *rt = surface >= 0 ? prts_array_at(&g->surface_targets, (size_t)surface) : NULL;
+        g->gl.glBindTexture(GL_TEXTURE_2D, rt && rt->fbo ? rt->color : prts_gfx_texture(g, mat ? mat->texture : ""));
         g->gl.glUniform1f(emissive_loc, mat && mat->emissive ? 1.0f : 0.0f);
+        g->gl.glUniform1f(magic_loc, mat && mat->magic ? 1.0f : 0.0f);
+        g->gl.glUniform1f(flip_loc, rt && rt->fbo ? 1.0f : 0.0f);
         prts_mat4 model = owner_model(f, m->owner);
         g->gl.glUniformMatrix4fv(model_loc, 1, 0, model.m);
         g->gl.glBindVertexArray(m->vao);
@@ -593,6 +605,29 @@ static void present_view(prts_gfx *g, const prts_view *v, const prts_render_targ
     g->gl.glBindVertexArray(0);
 }
 
+int prts_gfx_surfaces_drawn(const prts_gfx *g) { return g->surfaces_drawn; }
+
+/* Renders every surface camera into its texture (in-world displays, before the views). */
+static void draw_surfaces(prts_gfx *g, const prts_scene *scene, const prts_world *world,
+                          const prts_render_settings *rs, double alpha, double time)
+{
+    while (g->surface_targets.len < scene->surfaces.len) prts_array_push(&g->surface_targets, NULL);
+    g->surfaces_drawn = 0;
+    for (size_t i = 0; i < scene->surfaces.len; i++) {
+        const prts_surface *sf = prts_array_at(&scene->surfaces, i);
+        prts_camera cam = {sf->pos, sf->yaw, sf->pitch};
+        prts_view v;
+        prts_view_from_camera(&v, &cam, sf->fov_y, sf->w, sf->h);
+        prts_render_target *rt = prts_array_at(&g->surface_targets, i);
+        prts_gfx_target_ensure(g, rt, sf->w, sf->h);
+        prts_render_settings srs = *rs;
+        srs.fog = sf->fog;
+        frame_ctx f = {scene, world, &v, &srs, alpha, sf->w, sf->h, PRTS_CELLS_ALL, time, (int)i};
+        draw_view_scene(g, &f, rt, time);
+        g->surfaces_drawn++;
+    }
+}
+
 void prts_gfx_render_views(prts_gfx *g, const prts_scene *scene, const prts_world *world, const prts_view *views,
                            int view_count, const prts_render_settings *rs, double alpha, double time)
 {
@@ -600,8 +635,9 @@ void prts_gfx_render_views(prts_gfx *g, const prts_scene *scene, const prts_worl
     g->last_views = view_count;
     if (g->null) return;
     if (g->uploaded_scene != scene || g->uploaded_revision != scene->revision) upload_scene(g, scene);
+    draw_surfaces(g, scene, world, rs, alpha, time);
     for (int i = 0; i < view_count; i++) {
-        frame_ctx f = {scene, world, &views[i], rs, alpha, 0, 0, PRTS_CELLS_ALL};
+        frame_ctx f = {scene, world, &views[i], rs, alpha, 0, 0, PRTS_CELLS_ALL, time, -1};
         prts_gfx_internal_size(rs->preset, views[i].w, views[i].h, &f.iw, &f.ih);
         prts_gfx_target_ensure(g, &g->views[i], f.iw, f.ih);
         draw_view_scene(g, &f, &g->views[i], time);

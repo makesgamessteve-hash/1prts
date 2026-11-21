@@ -26,6 +26,11 @@ T.case("the keep's rooms are cells", function()
   T.fails(function() prts.scene.portal{ min = { 0, 0, 0 }, max = { 1, 1, 1 } } end)
 end)
 
+T.case("the war table has a live surface", function()
+  T.fails(function() prts.scene.surface{ pos = { 0, 0, 0 } } end)
+  T.is_true(prts.scene.surface{ name = "test_view", pos = { 0, 10, 0 }, fov = 45, size = { 4, 2000 }, fog = true } >= 1)
+end)
+
 T.case("doors toggle open and closed", function()
   local d = prts.entity.find("keep.forge.door")
   T.eq(prts.entity.data(d).open, false)

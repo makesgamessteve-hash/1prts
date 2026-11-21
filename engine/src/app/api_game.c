@@ -104,6 +104,8 @@ static int l_scene_material(lua_State *L)
     read_vec3(L, 1, "tint", &m.tint);
     m.uv_scale = field_number(L, 1, "uv_scale", 2.0f);
     m.emissive = field_bool(L, 1, "emissive", false);
+    m.magic = field_bool(L, 1, "magic", false);
+    strncpy(m.surface, field_string(L, 1, "surface", ""), sizeof(m.surface) - 1);
     lua_pushinteger(L, prts_scene_material(e->scene, &m));
     return 1;
 }
@@ -115,7 +117,10 @@ static int l_scene_box(lua_State *L)
     prts_aabb b = prts_aabb_make(check_vec3(L, 1, "min"), check_vec3(L, 1, "max"));
     int m = material_index(L, e, 1);
     prts_entity owner = opt_entity(L, 1, "entity");
-    if (field_bool(L, 1, "visible", true)) prts_scene_add_box(e->scene, b, m, owner, field_number(L, 1, "tile", 2.0f));
+    if (field_bool(L, 1, "visible", true)) {
+        if (field_bool(L, 1, "fit", false)) prts_scene_add_box_fitted(e->scene, b, m, owner);
+        else prts_scene_add_box(e->scene, b, m, owner, field_number(L, 1, "tile", 2.0f));
+    }
     int id = -1;
     if (field_bool(L, 1, "solid", true)) id = prts_cworld_add_box(e->cworld, b, owner);
     lua_pushinteger(L, id);
@@ -257,6 +262,29 @@ static int l_scene_illusion(lua_State *L)
                             field_number(L, 1, "size_z", 2.0f), field_number(L, 1, "relief", 0.3f), x0, z0, x1, z1,
                             (int)field_number(L, 1, "levels", 8), color);
     return 0;
+}
+
+/* prts.scene.surface{ name=, pos=, yaw=, pitch=, fov= (degrees), size = { w, h }, fog = false } */
+static int l_scene_surface(lua_State *L)
+{
+    prts_engine *e = prts_engine_from_lua(L);
+    luaL_checktype(L, 1, LUA_TTABLE);
+    prts_surface sf;
+    memset(&sf, 0, sizeof(sf));
+    const char *name = field_string(L, 1, "name", NULL);
+    if (!name) return luaL_error(L, "field 'name' is required");
+    strncpy(sf.name, name, sizeof(sf.name) - 1);
+    sf.pos = prts_dv3_from_v3(check_vec3(L, 1, "pos"));
+    sf.yaw = field_number(L, 1, "yaw", 0.0f);
+    sf.pitch = field_number(L, 1, "pitch", 0.0f);
+    sf.fov_y = field_number(L, 1, "fov", 60.0f) * (float)PRTS_PI / 180.0f;
+    prts_vec3 size = prts_v3(128, 72, 0);
+    read_vec3(L, 1, "size", &size);
+    sf.fog = field_bool(L, 1, "fog", false);
+    sf.w = PRTS_CLAMP((int)size.x, 8, 1024);
+    sf.h = PRTS_CLAMP((int)size.y, 8, 1024);
+    lua_pushinteger(L, prts_scene_add_surface(e->scene, &sf));
+    return 1;
 }
 
 /* --- cells and portals ------------------------------------------------------------- */
@@ -622,7 +650,8 @@ void prts_engine_open_game_api(prts_engine *e)
         {"marker", l_scene_marker},     {"marker_pos", l_scene_marker_pos}, {"zone", l_scene_zone},
         {"env", l_scene_env},           {"illusion", l_scene_illusion}, {"cell", l_scene_cell},
         {"portal", l_scene_portal},     {"set_portal", l_scene_set_portal}, {"portal_open", l_scene_portal_open},
-        {"cells", l_scene_cells},       {"cell_at", l_scene_cell_at},   {NULL, NULL}};
+        {"cells", l_scene_cells},       {"cell_at", l_scene_cell_at},   {"surface", l_scene_surface},
+        {NULL, NULL}};
     static const prts_script_fn entity[] = {
         {"spawn", l_entity_spawn},   {"pos", l_entity_pos},         {"local_pos", l_entity_local_pos},
         {"yaw", l_entity_yaw},       {"move_to", l_entity_move_to}, {"rotate_to", l_entity_rotate_to},

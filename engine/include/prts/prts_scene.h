@@ -36,6 +36,8 @@ typedef struct prts_material {
     prts_vec3 tint;
     float uv_scale; /* meters per texture repeat */
     bool emissive;  /* ignores lighting and fog (torch flames, glowing runes) */
+    bool magic;     /* shimmering illusion surface (war table, scrying pools) */
+    char surface[PRTS_SCENE_NAME_MAX]; /* live view texture from a surface camera, if set */
 } prts_material;
 
 /* Interior cells: bit 0 is "outside"; a geometry group is drawn when any of its cells is
@@ -69,6 +71,15 @@ typedef struct prts_light {
     prts_vec3 color;
     float radius;
 } prts_light;
+
+/* A camera that renders the scene into a texture every frame (in-world displays). */
+typedef struct prts_surface {
+    char name[PRTS_SCENE_NAME_MAX];
+    prts_dvec3 pos;
+    float yaw, pitch, fov_y;
+    int w, h;
+    bool fog; /* scrying views usually see through the haze */
+} prts_surface;
 
 typedef struct prts_marker {
     char name[PRTS_SCENE_NAME_MAX];
@@ -118,6 +129,7 @@ typedef struct prts_scene {
     prts_array markers;   /* prts_marker */
     prts_array zones;     /* prts_zone */
     prts_array lines;     /* prts_line_set */
+    prts_array surfaces; /* prts_surface */
     prts_array cells;   /* prts_cell; index 0 is outside */
     prts_array portals; /* prts_portal */
     prts_cell_mask current_cells; /* cells given to geometry added from now on */
@@ -136,6 +148,10 @@ int prts_scene_find_material(const prts_scene *s, const char *id);
 /* Mesh group for (material, owner), created on first use. */
 prts_mesh_group *prts_scene_group(prts_scene *s, int material, prts_entity owner);
 void prts_scene_add_box(prts_scene *s, prts_aabb box, int material, prts_entity owner, float tile);
+/* Like add_box, but each face maps the whole texture once (for display surfaces). */
+void prts_scene_add_box_fitted(prts_scene *s, prts_aabb box, int material, prts_entity owner);
+int prts_scene_add_surface(prts_scene *s, const prts_surface *surface);
+int prts_scene_find_surface(const prts_scene *s, const char *name);
 /* Vertical prism (cylinder or cone): sides >= 3, top_radius 0 makes a cone. */
 void prts_scene_add_prism(prts_scene *s, prts_vec3 base, float radius, float top_radius, float height, int sides,
                           int material, prts_entity owner);

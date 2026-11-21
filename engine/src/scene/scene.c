@@ -26,8 +26,17 @@ static void push_vertex(prts_mesh_cpu *m, prts_vec3 p, prts_vec3 n, float u, flo
 
 static void push_index(prts_mesh_cpu *m, uint32_t i) { prts_array_push(&m->indices, &i); }
 
+static void add_quad(prts_mesh_cpu *m, prts_vec3 a, prts_vec3 b, prts_vec3 c, prts_vec3 d, prts_vec3 color,
+                     float uv_scale, float tile, bool fitted);
+
 void prts_mesh_add_quad(prts_mesh_cpu *m, prts_vec3 a, prts_vec3 b, prts_vec3 c, prts_vec3 d, prts_vec3 color,
                         float uv_scale, float tile)
+{
+    add_quad(m, a, b, c, d, color, uv_scale, tile, false);
+}
+
+static void add_quad(prts_mesh_cpu *m, prts_vec3 a, prts_vec3 b, prts_vec3 c, prts_vec3 d, prts_vec3 color,
+                     float uv_scale, float tile, bool fitted)
 {
     prts_vec3 eu = prts_v3_sub(b, a), ev = prts_v3_sub(d, a);
     prts_vec3 n = prts_v3_normalize(prts_v3_cross(eu, ev));
@@ -42,7 +51,10 @@ void prts_mesh_add_quad(prts_mesh_cpu *m, prts_vec3 a, prts_vec3 b, prts_vec3 c,
             prts_vec3 bottom = prts_v3_lerp(a, b, fu), top = prts_v3_lerp(d, c, fu);
             prts_vec3 p = prts_v3_lerp(bottom, top, fv);
             float u, v;
-            if (ay >= ax && ay >= az) {
+            if (fitted) {
+                u = fu * uv_scale;
+                v = (1.0f - fv) * uv_scale;
+            } else if (ay >= ax && ay >= az) {
                 u = p.x;
                 v = p.z;
             } else if (ax >= az) {
@@ -52,7 +64,8 @@ void prts_mesh_add_quad(prts_mesh_cpu *m, prts_vec3 a, prts_vec3 b, prts_vec3 c,
                 u = p.x;
                 v = p.y;
             }
-            push_vertex(m, p, n, u / uv_scale, -v / uv_scale, color);
+            if (fitted) push_vertex(m, p, n, u / uv_scale, v / uv_scale, color);
+            else push_vertex(m, p, n, u / uv_scale, -v / uv_scale, color);
         }
     }
     for (int j = 0; j < nv; j++) {
@@ -94,6 +107,7 @@ prts_scene *prts_scene_create(void)
     prts_array_init(&s->zones, sizeof(prts_zone));
     prts_array_init(&s->lines, sizeof(prts_line_set));
     prts_array_init(&s->cells, sizeof(prts_cell));
+    prts_array_init(&s->surfaces, sizeof(prts_surface));
     prts_array_init(&s->portals, sizeof(prts_portal));
     prts_scene_clear(s);
     return s;
@@ -110,6 +124,7 @@ void prts_scene_clear(prts_scene *s)
     prts_array_clear(&s->zones);
     prts_array_clear(&s->lines);
     prts_array_clear(&s->cells);
+    prts_array_clear(&s->surfaces);
     prts_array_clear(&s->portals);
     prts_cell outside;
     memset(&outside, 0, sizeof(outside));
@@ -133,6 +148,7 @@ void prts_scene_destroy(prts_scene *s)
     prts_array_free(&s->zones);
     prts_array_free(&s->lines);
     prts_array_free(&s->cells);
+    prts_array_free(&s->surfaces);
     prts_array_free(&s->portals);
     prts_free(s);
 }
@@ -176,27 +192,39 @@ prts_mesh_group *prts_scene_group(prts_scene *s, int material, prts_entity owner
 
 static prts_material *material_at(prts_scene *s, int material)
 {
-    static prts_material fallback = {"", "", {1, 1, 1}, 2.0f, false};
+    static prts_material fallback = {"", "", {1, 1, 1}, 2.0f, false, false, ""};
     prts_material *m = material >= 0 ? prts_array_at(&s->materials, (size_t)material) : NULL;
     return m ? m : &fallback;
 }
 
+static void box_faces(prts_scene *s, prts_aabb b, int material, prts_entity owner, float tile, bool fitted);
+
 void prts_scene_add_box(prts_scene *s, prts_aabb b, int material, prts_entity owner, float tile)
+{
+    box_faces(s, b, material, owner, tile, false);
+}
+
+void prts_scene_add_box_fitted(prts_scene *s, prts_aabb b, int material, prts_entity owner)
+{
+    box_faces(s, b, material, owner, 1e6f, true);
+}
+
+static void box_faces(prts_scene *s, prts_aabb b, int material, prts_entity owner, float tile, bool fitted)
 {
     prts_mesh_group *g = prts_scene_group(s, material, owner);
     prts_material *m = material_at(s, material);
     prts_vec3 c = m->tint;
-    float uv = m->uv_scale;
+    float uv = fitted ? 1.0f : m->uv_scale;
     prts_vec3 lo = b.min, hi = b.max;
     prts_vec3 p000 = lo, p100 = prts_v3(hi.x, lo.y, lo.z), p010 = prts_v3(lo.x, hi.y, lo.z);
     prts_vec3 p110 = prts_v3(hi.x, hi.y, lo.z), p001 = prts_v3(lo.x, lo.y, hi.z), p101 = prts_v3(hi.x, lo.y, hi.z);
     prts_vec3 p011 = prts_v3(lo.x, hi.y, hi.z), p111 = hi;
-    prts_mesh_add_quad(&g->mesh, p001, p101, p111, p011, c, uv, tile); /* +z */
-    prts_mesh_add_quad(&g->mesh, p100, p000, p010, p110, c, uv, tile); /* -z */
-    prts_mesh_add_quad(&g->mesh, p101, p100, p110, p111, c, uv, tile); /* +x */
-    prts_mesh_add_quad(&g->mesh, p000, p001, p011, p010, c, uv, tile); /* -x */
-    prts_mesh_add_quad(&g->mesh, p011, p111, p110, p010, c, uv, tile); /* +y */
-    prts_mesh_add_quad(&g->mesh, p000, p100, p101, p001, c, uv, tile); /* -y */
+    add_quad(&g->mesh, p001, p101, p111, p011, c, uv, tile, fitted); /* +z */
+    add_quad(&g->mesh, p100, p000, p010, p110, c, uv, tile, fitted); /* -z */
+    add_quad(&g->mesh, p101, p100, p110, p111, c, uv, tile, fitted); /* +x */
+    add_quad(&g->mesh, p000, p001, p011, p010, c, uv, tile, fitted); /* -x */
+    add_quad(&g->mesh, p011, p111, p110, p010, c, uv, tile, fitted); /* +y */
+    add_quad(&g->mesh, p000, p100, p101, p001, c, uv, tile, fitted); /* -y */
     s->revision++;
 }
 
@@ -451,4 +479,25 @@ void prts_scene_bake_sun(prts_scene *s, const prts_cworld *cw, const prts_world 
         }
     }
     s->revision++;
+}
+
+int prts_scene_add_surface(prts_scene *s, const prts_surface *surface)
+{
+    int found = prts_scene_find_surface(s, surface->name);
+    if (found >= 0) {
+        *(prts_surface *)prts_array_at(&s->surfaces, (size_t)found) = *surface;
+    } else {
+        prts_array_push(&s->surfaces, surface);
+        found = (int)s->surfaces.len - 1;
+    }
+    s->revision++;
+    return found;
+}
+
+int prts_scene_find_surface(const prts_scene *s, const char *name)
+{
+    for (size_t i = 0; i < s->surfaces.len; i++) {
+        if (strcmp(((prts_surface *)prts_array_at(&s->surfaces, i))->name, name) == 0) return (int)i;
+    }
+    return -1;
 }
