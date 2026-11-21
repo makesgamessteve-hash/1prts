@@ -36,6 +36,14 @@ foreach(scenario ${PRTS_SCENARIOS})
   add_test(NAME scenario_${name}
     COMMAND 1stprts --headless --scenario ${scenario} --user ${CMAKE_BINARY_DIR}/test-user/${name} ${extra} ${cov}
             --junit ${PRTS_JUNIT_DIR}/scenario_${name}.xml)
+  # "-- ctest-labels: smoke" puts a scenario into the commander-is-there smoke set (walk, stairs,
+  # door, lift, war table; `ctest -L smoke`), which web/tests/smoke.test.js also runs in the browser.
+  file(STRINGS ${scenario} labels REGEX "^-- ctest-labels: " LIMIT_COUNT 1)
+  if(labels)
+    string(REPLACE "-- ctest-labels: " "" labels "${labels}")
+    separate_arguments(labels)
+    set_tests_properties(scenario_${name} PROPERTIES LABELS "${labels}")
+  endif()
 endforeach()
 
 # Determinism checks (tests/game/determinism): record each walk, replay it (every tick's state

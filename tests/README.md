@@ -10,17 +10,24 @@ are described in [`docs/architecture/quality-and-build.md`](../docs/architecture
 | `tests/game/scenarios/` | Automated game tests: headless play sessions driven through the action layer | CTest `scenario_<name>` (`1stprts --headless --scenario <file>`) |
 | `tests/game/determinism/` | Walks that are recorded, replayed (every tick's state hash must match) and recorded again (byte-identical) | CTest `determinism_<name>_record`, `_replay`, `_rerun`, `_identical` |
 | `tests/golden/` | Render golden images: fixed views compared with `tests/golden/ref/` (8 levels, at most 0.5% of pixels); refresh with `xvfb-run -a tools/golden/update` | CTest `render_golden`, `render_golden_catches_fog_change` (need a display) |
+| `web/tests/` | Browser end-to-end tests of the web build (Playwright + Chromium): boot, keyboard, audio unlock, mobile emulation with touch, IndexedDB, XR mock, and the scenario smoke set run in the page | `node web/tests/run.js` (CI `web` job; needs a web-release build with `-DPRTS_WEB_TEST_HOOKS=ON`) |
 | `tools/tests/` | Self-tests of the repository checks (asset validator, API documentation and spec coverage checks) | `python3 -I tools/tests/test_validate_assets.py` and `test_check_scripts.py` in the CI `checks` job |
 
 ```sh
 cmake --preset dev && cmake --build --preset dev
 ctest --preset dev                      # render_tour needs a display (CI uses xvfb-run)
 build/dev/bin/prts_tests --filter='replay.*'
+ctest --preset dev -L smoke            # the commander-is-there smoke set (walk, stairs, door, lift, war table)
 build/dev/bin/1stprts --headless --scenario tests/game/determinism/keep_walk.lua --record walk.rpl
 build/dev/bin/1stprts --headless --replay walk.rpl --junit replay.xml
 ```
 
 Every Lua test, scenario and replay run writes a JUnit XML report to `build/<preset>/junit/`.
+
+Scenarios with a `-- ctest-labels: smoke` line form the commander-is-there smoke set. Each names the
+cell the commander must end in (`final_cell`); the runner reports every result with the final cell and
+the state hash, and `web/tests/smoke.test.js` runs the same files in the browser
+(`1stprts.html?test=1&scenario=<name>`), where they must pass with the same final cell.
 
 ## Spec scenarios and their tests
 
@@ -47,16 +54,16 @@ is missing. References are C unit tests (`suite.case`), test files and scripts (
 | audio-playback | Cross-fade | `audio.cross_fade_between_streams` |
 | audio-playback | Muting music | `audio.muting_music`, `tests/game/scenarios/audio_keep.lua` |
 | audio-playback | Door closes on a noisy room | `audio.muffling_takes_high_frequencies_away`, `tests/game/scenarios/audio_keep.lua` (the forge door opens and closes) |
-| audio-playback | First click starts music | pending (task 11.5) |
+| audio-playback | First click starts music | `web/tests/boot.test.js` (before the first click the browser's audio is suspended, nothing is mixed and the menu music waits at its start; after the click it plays), `audio.start_requests_wait_until_the_device_runs` |
 | automated-testing | Headless on a server | `engine.headless_ticks_and_determinism`, `tests/game/scenarios/walk_speed.lua` |
-| automated-testing | Failing scenario | `engine.scenario_outcomes`, `engine/tests/fixtures/scenarios/fails.lua` |
+| automated-testing | Failing scenario | `engine.scenario_outcomes`, `engine/tests/fixtures/scenarios/fails.lua`, `engine.scenario_result_with_final_cell_and_hash` (a scenario's `final_cell`: failed with the expected and actual cell), `engine/tests/fixtures/scenarios/wrong_cell.lua` |
 | automated-testing | Report for CI | `report.runners_write_junit`, `report.junit_xml_escaping_and_cases` |
 | automated-testing | Running base game tests | `engine.lua_test_runner_reports_failures`, `data/base/scripts/tests/test_props.lua` |
 | automated-testing | Coverage drops | `.github/workflows/ci.yml` (gcovr `--fail-under-line 95`), `tools/coverage/lua_gate.py` |
 | automated-testing | Lua coverage report | `script.lua_line_coverage`, `tools/coverage/lua_gate.py` |
 | automated-testing | Non-deterministic code is caught | `replay.nondeterministic_script_is_caught_at_the_first_differing_tick` |
 | automated-testing | Visual regression | `tests/golden/golden.lua` (CTest `render_golden`), `tests/golden/fog_changed.lua` (CTest `render_golden_catches_fog_change`) |
-| automated-testing | Emulated phone | pending (task 13.6) |
+| automated-testing | Emulated phone | `web/tests/mobile.test.js` (Pixel 7 profile: the touch controls are drawn and a right-half drag turns the view) |
 | automated-testing | Windows-only failure | `.github/workflows/ci.yml` (windows job); pending (task 1.5) |
 | commander-locomotion | Release build | pending (task 9.6) |
 | commander-locomotion | Developer observer camera | pending (task 9.6) |
@@ -67,13 +74,13 @@ is missing. References are C unit tests (`suite.case`), test files and scripts (
 | commander-locomotion | Opening a door | `tests/game/scenarios/keep_door.lua` |
 | commander-locomotion | Riding the keep's hoist lift | `tests/game/scenarios/keep_lift.lua`, `commander.rides_a_moving_platform_and_uses_things` |
 | commander-locomotion | Walking during movement | `commander.rides_a_moving_platform_and_uses_things` |
-| commander-locomotion | Reaching the war room | `tests/game/scenarios/keep_lift.lua`, `tests/game/determinism/keep_walk.lua` |
+| commander-locomotion | Reaching the war room | `tests/game/scenarios/keep_lift.lua`, `tests/game/scenarios/war_table.lua`, `tests/game/determinism/keep_walk.lua` |
 | input-actions | Mod adds an action | `engine.game_api_from_scripts`, `data/base/scripts/tests/test_input.lua` |
 | input-actions | Rebinding use | pending (task 8.3) |
 | input-actions | Gamepad hot-plug | `platform.events_become_device_state` |
-| input-actions | Phone browser | pending (task 8.5) |
-| input-actions | Tablet with a keyboard | pending (task 8.4) |
-| input-actions | Touch movement and look | pending (task 8.5) |
+| input-actions | Phone browser | `web/tests/mobile.test.js` (an emulated phone starts in the touch scheme with the overlay drawn), `engine.status_for_test_hooks_and_scheme_hint` |
+| input-actions | Tablet with a keyboard | `tests/game/scenarios/touch_controls.lua`, `web/tests/mobile.test.js` (a key switches an emulated phone to keyboard and mouse) |
+| input-actions | Touch movement and look | `touch.move_and_look_at_the_same_time`, `tests/game/scenarios/touch_controls.lua`, `web/tests/mobile.test.js` (browser touch events on both halves at once) |
 | input-actions | Prompt update | `input.schemes_and_overrides`; scheme events to scripts are pending (task 8.4) |
 | lua-scripting | Replacing the boot script | `engine.mods_are_checked_and_mounted` |
 | lua-scripting | Stale entity handle | `data/base/scripts/tests/test_input.lua` |
@@ -88,7 +95,7 @@ is missing. References are C unit tests (`suite.case`), test files and scripts (
 | platform-targets | OpenGL context unavailable | `platform.impossible_gl_version_is_reported` |
 | platform-targets | Web bundle runs in a browser | `web/tests/boot.test.js` |
 | platform-targets | Browser without WebGL 2 | `web/tests/no_webgl2.test.js` |
-| platform-targets | Same scenario result on desktop and web | pending (task 10.5) |
+| platform-targets | Same scenario result on desktop and web | `web/tests/smoke.test.js` (the smoke set, `tests/game/scenarios/keep_lift.lua` among it, run in the browser must pass with the `final_cell` the desktop CTest run ends in: CTest `scenario_keep_lift`, label `smoke`), `engine.scenario_result_with_final_cell_and_hash` |
 | platform-targets | Extract and run | pending (task 14.1) |
 | platform-targets | Licenses included | pending (task 14.1) |
 | retro-rendering | Changing the preset | `gfx.windowed_engine_renders_and_recovers_from_broken_content`, `tests/golden/golden.lua` (approach_authentic, approach_retro, approach_crisp) |

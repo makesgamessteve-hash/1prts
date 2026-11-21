@@ -166,19 +166,21 @@ static int l_voice(lua_State *L)
     return 1;
 }
 
-/* prts.audio.info() -> { device = "sdl" | "null", rate, voices, left, right, music } */
+/* prts.audio.info() -> { device = "sdl" | "null", rate, voices, left, right, held, mixed, music } */
 static int l_info(lua_State *L)
 {
     prts_audio *a = A(L);
     float l = 0.0f, r = 0.0f;
     prts_audio_levels(a, &l, &r);
-    lua_createtable(L, 0, 6);
+    lua_createtable(L, 0, 8);
     lua_pushstring(L, prts_audio_has_device(a) ? "sdl" : "null");
     lua_setfield(L, -2, "device");
     set_num(L, "rate", prts_mixer_rate(prts_audio_mixer(a)));
     set_num(L, "voices", prts_mixer_voice_count(prts_audio_mixer(a)));
     set_num(L, "left", l);
     set_num(L, "right", r);
+    set_bool(L, "held", prts_audio_held(a));
+    set_num(L, "mixed", (double)prts_audio_frames_mixed(a) / PRTS_AUDIO_RATE);
     push_handle(L, prts_audio_music_voice(a));
     lua_setfield(L, -2, "music");
     return 1;

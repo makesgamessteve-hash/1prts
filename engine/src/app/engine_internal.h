@@ -55,6 +55,12 @@ struct prts_engine {
     bool want_shot;
     uint64_t scenario_ticks;
     uint64_t scenario_max_ticks;
+    char scenario_final_cell[64]; /* the cell the scenario expects the commander to end in ("": any) */
+    /* the result once it has ended (spec: Same scenario result on desktop and web) */
+    int scenario_state;     /* prts_scenario_state */
+    char scenario_cell[64]; /* the commander's cell at the end */
+    char *scenario_message; /* why it failed, or NULL */
+    uint64_t scenario_hash; /* the state hash at the end */
     prts_array move_done; /* prts_entity: movers that finished this tick */
     char *mod_versions[PRTS_MAX_MODS + 1]; /* per VFS mount (base first), from mod.lua */
     /* infrastructure: jobs, test reports (report.c), saves and replays (replay.c), hot reload */

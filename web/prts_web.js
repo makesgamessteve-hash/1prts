@@ -9,4 +9,10 @@ addToLibrary({
     console.error(t + ': ' + m);
     if (Module['prtsShowError']) Module['prtsShowError'](t, m);
   },
+  // Browsers keep audio suspended until the first click, tap or key press; the engine mixes
+  // nothing until then, so sounds and music asked for earlier start when it unlocks.
+  prts_web_audio_running: function () {
+    var sdl = Module['SDL3'];
+    return sdl && sdl.audioContext && sdl.audioContext.state === 'running' ? 1 : 0;
+  },
 });

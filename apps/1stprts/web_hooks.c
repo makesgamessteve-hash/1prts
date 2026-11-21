@@ -3,9 +3,12 @@
  * none. MIT License. */
 #include <emscripten.h>
 #include <math.h>
+#include <stdio.h>
 #include <string.h>
 
+#include "prts/prts_audio.h"
 #include "prts/prts_platform.h"
+#include "prts/prts_ui.h"
 #include "prts/prts_vfs.h"
 #include "prts/prts_xr.h"
 #include "web_hooks.h"
@@ -18,6 +21,10 @@ int prts_test_gestures(void);
 double prts_test_xr(int field);
 int prts_test_user_write(const char *path, const char *text);
 const char *prts_test_user_read(const char *path);
+double prts_test_scenario(int field);
+const char *prts_test_scenario_text(int field);
+double prts_test_audio(int field);
+int prts_test_ui_has(const char *text);
 
 static prts_engine *g_engine;
 static bool g_stopped;
@@ -105,4 +112,60 @@ EMSCRIPTEN_KEEPALIVE const char *prts_test_user_read(const char *path)
     size_t size = 0;
     if (prts_vfs_user_read(prts_engine_vfs(g_engine), path, &g_read, &size) != PRTS_VFS_OK) return NULL;
     return g_read;
+}
+
+/* Scenario runs (?scenario=<name>): 0 prts_scenario_state, 1 ticks run. */
+EMSCRIPTEN_KEEPALIVE double prts_test_scenario(int field)
+{
+    prts_engine_status s;
+    if (!status(&s)) return NAN;
+    return field == 0 ? (double)s.scenario : field == 1 ? (double)s.scenario_ticks : NAN;
+}
+
+/* 0 the commander's final cell, 1 the state hash (16 hex digits), 2 why it failed. */
+EMSCRIPTEN_KEEPALIVE const char *prts_test_scenario_text(int field)
+{
+    static char hash[24];
+    prts_engine_status s;
+    if (!status(&s)) return "";
+    if (field == 0) return s.scenario_cell;
+    if (field == 2) return s.scenario_message;
+    if (s.scenario < PRTS_SCENARIO_PASSED) return "";
+    snprintf(hash, sizeof(hash), "%016llx", (unsigned long long)s.scenario_hash);
+    return hash;
+}
+
+/* 0 held (nothing mixed: the browser has not unlocked audio), 1 seconds mixed, 2 and 3 the
+ * left and right level, 4 voices, 5 1 if music plays, 6 the music's fade-in (0..1). */
+EMSCRIPTEN_KEEPALIVE double prts_test_audio(int field)
+{
+    if (!g_engine) return NAN;
+    prts_audio *a = prts_engine_audio(g_engine);
+    prts_mixer *m = prts_audio_mixer(a);
+    float l = 0.0f, r = 0.0f;
+    prts_audio_levels(a, &l, &r);
+    prts_voice_info info;
+    bool music = prts_mixer_voice_info(m, prts_audio_music_voice(a), &info);
+    switch (field) {
+    case 0: return prts_audio_held(a) ? 1.0 : 0.0;
+    case 1: return (double)prts_audio_frames_mixed(a) / PRTS_AUDIO_RATE;
+    case 2: return l;
+    case 3: return r;
+    case 4: return prts_mixer_voice_count(m);
+    case 5: return music ? 1.0 : 0.0;
+    case 6: return music ? info.fade : NAN;
+    default: return NAN;
+    }
+}
+
+/* 1 if a text drawn on the screen in the last frame contains `text` (like t.ui_has). */
+EMSCRIPTEN_KEEPALIVE int prts_test_ui_has(const char *text)
+{
+    if (!g_engine) return 0;
+    prts_ui *ui = prts_engine_ui(g_engine);
+    size_t n = prts_ui_text_count(ui, PRTS_UI_SCREEN);
+    for (size_t i = 0; i < n; i++) {
+        if (strstr(prts_ui_text_at(ui, PRTS_UI_SCREEN, i), text)) return 1;
+    }
+    return 0;
 }

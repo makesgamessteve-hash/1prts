@@ -12,6 +12,9 @@
 /* Implemented in web/prts_web.js (called from C). */
 /* Shows a readable error on the page instead of a blocking alert(). */
 void prts_web_show_error(const char *title, const char *message);
+/* 1 if the browser plays audio: SDL's AudioContext is "running" (it is "suspended" until the
+ * first user gesture). */
+int prts_web_audio_running(void);
 
 /* Implemented in engine/src/platform/web_platform.c (called from web/prts_pre.js). */
 /* matchMedia('(pointer: coarse)') and navigator.maxTouchPoints say this is a touch-first

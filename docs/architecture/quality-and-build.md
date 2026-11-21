@@ -66,6 +66,12 @@ return prts.test.scenario {
 - **Fast**: headless ticks run as fast as possible. A 60-second scenario takes well under a second.
 - **Recording**: in developer builds, any manual play session can be recorded as a replay
   and turned into a regression test.
+- **Result**: every run reports passed or failed with the commander's final cell and the state
+  hash. A scenario that names its `final_cell` fails when the commander ends anywhere else.
+- **Smoke set**: the scenarios marked `-- ctest-labels: smoke` (walk, stairs, door, lift, war
+  table) check that the commander can get everywhere in the Proving Ground. Desktop CI runs them
+  with every other scenario (`ctest -L smoke` alone); the web job runs the same files in the
+  browser, where they must pass with the same final cells.
 
 ## 4. Render golden tests
 
@@ -84,6 +90,12 @@ return prts.test.scenario {
 - **Mobile emulation** (touch device profile): touch controls appear on their own, a drag
   on the left half moves, a drag on the right half turns the view, and using a mouse switches
   back.
+- **Audio unlock**: before the first click the browser's audio is suspended and the engine holds
+  the menu music at its start; the click starts it. (Playwright's `page.evaluate` counts as a user
+  gesture, so this test reads the page's state from console messages until it clicks.)
+- **Scenario smoke set**: the test build packs `tests/game/scenarios/` into its data package, and
+  `1stprts.html?test=1&scenario=<name>` runs one headless in the page, a slice per frame; the test
+  hooks report the result, final cell and state hash.
 - **WebXR (mocked)**: a mock `navigator.xr` device is injected, the "Enter VR" control starts
   an immersive session, the engine reports XR active with two views, and the session ends
   cleanly. Real-headset checks are a manual checklist for each milestone

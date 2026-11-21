@@ -25,6 +25,8 @@ struct prts_audio {
     char *music_path;
     double null_carry; /* fractional frames of the null device */
     float level_l, level_r;
+    bool held;      /* the device was not running at the last update (browser audio unlock) */
+    uint64_t mixed; /* frames mixed so far */
     float scratch[CHUNK * 2];
 };
 
@@ -156,6 +158,17 @@ void prts_audio_update(prts_audio *a, double real_seconds)
 {
     const int rate = PRTS_AUDIO_RATE;
     int frames;
+    if (a->device && !prts_audio_device_running(a->device)) {
+        /* Spec: Browser audio unlock. Nothing can be heard yet, so nothing is mixed: voices
+         * keep their place (a fade-in has not begun, music is at its first sample) and start
+         * when the device runs, instead of playing into a device that throws them away. */
+        if (!a->held) prts_log_info("audio: waiting for the device (browsers: the first click, tap or key)");
+        a->held = true;
+        a->level_l = a->level_r = 0.0f;
+        return;
+    }
+    if (a->held) prts_log_info("audio: the device runs; %d held sounds start now", prts_mixer_voice_count(a->mixer));
+    a->held = false;
     if (a->device) {
         /* the main thread mixes just enough to keep AHEAD_MS queued; SDL plays it on its own
          * thread. (design.md D11 planned the mixer on the audio thread behind a lock-free
@@ -179,6 +192,7 @@ void prts_audio_update(prts_audio *a, double real_seconds)
         if (a->device) prts_audio_device_write(a->device, a->scratch, n);
         done += n;
     }
+    a->mixed += (uint64_t)frames;
     if (frames > 0) {
         a->level_l = (float)sqrt(sum_l / frames);
         a->level_r = (float)sqrt(sum_r / frames);
@@ -189,6 +203,14 @@ void prts_audio_resume(prts_audio *a)
 {
     if (a->device) prts_audio_device_resume(a->device);
 }
+
+void prts_audio_pause(prts_audio *a)
+{
+    if (a->device) prts_audio_device_pause(a->device);
+}
+
+bool prts_audio_held(const prts_audio *a) { return a->held; }
+uint64_t prts_audio_frames_mixed(const prts_audio *a) { return a->mixed; }
 
 void prts_audio_levels(const prts_audio *a, float *left, float *right)
 {

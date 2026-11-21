@@ -1,6 +1,8 @@
 -- Spec (commander-locomotion): Walking speed. 10 s of walking on flat ground covers 14 m.
+-- ctest-labels: smoke
 return {
   name = "commander walks 14 m in 10 s",
+  final_cell = "outside",
   run = function(t)
     local c = t.commander()
     t.place("start")

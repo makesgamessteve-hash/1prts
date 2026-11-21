@@ -18,7 +18,8 @@ function(prts_web_executable target)
     target_sources(${target} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/web_hooks.c)
     target_compile_definitions(${target} PRIVATE PRTS_WEB_TEST_HOOKS=1)
     list(APPEND exports _prts_test_state _prts_test_frames _prts_test_commander _prts_test_scheme
-         _prts_test_gestures _prts_test_xr _prts_test_user_write _prts_test_user_read)
+         _prts_test_gestures _prts_test_xr _prts_test_user_write _prts_test_user_read
+         _prts_test_scenario _prts_test_scenario_text _prts_test_audio _prts_test_ui_has)
     set(runtime ccall UTF8ToString)
     list(APPEND pre_js ${web}/prts_test_hooks.js)
   endif()
@@ -51,11 +52,19 @@ function(prts_web_executable target)
   set(out ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
   find_package(Python3 REQUIRED COMPONENTS Interpreter)
   file(GLOB_RECURSE data_files CONFIGURE_DEPENDS ${CMAKE_SOURCE_DIR}/data/*)
+  set(packs --preload ${CMAKE_SOURCE_DIR}/data@/data)
+  if(PRTS_WEB_TEST_HOOKS)
+    # Test builds also carry the automated game tests, so the browser tests can run them
+    # (?test=1&scenario=<name>, task 10.5). Shipped builds have only data/.
+    file(GLOB scenario_files CONFIGURE_DEPENDS ${CMAKE_SOURCE_DIR}/tests/game/scenarios/*.lua)
+    list(APPEND data_files ${scenario_files})
+    list(APPEND packs --preload ${CMAKE_SOURCE_DIR}/tests/game/scenarios@/tests/scenarios)
+  endif()
   file(MAKE_DIRECTORY ${out})
   add_custom_command(
     OUTPUT ${out}/1stprts.data ${out}/1stprts.data.js
     COMMAND ${Python3_EXECUTABLE} ${EMSCRIPTEN_ROOT_PATH}/tools/file_packager.py 1stprts.data
-            --preload ${CMAKE_SOURCE_DIR}/data@/data --js-output=1stprts.data.js --no-node --quiet
+            ${packs} --js-output=1stprts.data.js --no-node --quiet
     WORKING_DIRECTORY ${out}
     DEPENDS ${data_files}
     COMMENT "Packing data/ into 1stprts.data"

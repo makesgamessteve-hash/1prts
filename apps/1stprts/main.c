@@ -10,6 +10,7 @@
 typedef struct app {
     prts_engine *engine;
     uint64_t last_ns;
+    int batch_steps; /* web batch runs (a scenario): run steps per browser frame, 0 otherwise */
 } app;
 
 #if defined(__EMSCRIPTEN__)
@@ -49,7 +50,15 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[])
         if (!cfg.headless && !cfg.hidden && !cfg.scenario && !cfg.test_lua) prts_platform_error_box("1stPRTS", msg);
         return SDL_APP_FAILURE;
     }
-    if (prts_engine_is_batch(e) || cfg.scenario) {
+    bool batch = prts_engine_is_batch(e) || cfg.scenario;
+#if defined(__EMSCRIPTEN__)
+    /* Web: a scenario runs in the browser's frame loop a slice at a time instead of blocking
+     * the page, and the engine stays up when it ends, so the test hooks can read the result.
+     * Headless runs take many steps per frame; windowed ones draw every step. */
+    int batch_steps = batch && !cfg.test_lua ? (cfg.headless ? 240 : 1) : 0;
+    if (batch_steps) batch = false;
+#endif
+    if (batch) {
         int code = prts_engine_run(e);
         prts_engine_destroy(e);
         return code == 0 ? SDL_APP_SUCCESS : SDL_APP_FAILURE;
@@ -57,6 +66,9 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[])
     app *a = SDL_calloc(1, sizeof(*a));
     a->engine = e;
     a->last_ns = prts_platform_ticks_ns();
+#if defined(__EMSCRIPTEN__)
+    a->batch_steps = batch_steps;
+#endif
     *appstate = a;
 #if defined(__EMSCRIPTEN__)
     g_web_app = a;
@@ -68,6 +80,10 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[])
 SDL_AppResult SDL_AppIterate(void *appstate)
 {
     app *a = appstate;
+    if (a->batch_steps) {
+        for (int i = 0; i < a->batch_steps && prts_engine_run_step(a->engine); i++) {}
+        return SDL_APP_CONTINUE; /* a finished run stays readable (web test hooks) */
+    }
     uint64_t now = prts_platform_ticks_ns();
     double dt = (double)(now - a->last_ns) / 1e9;
     a->last_ns = now;

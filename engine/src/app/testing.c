@@ -168,14 +168,20 @@ static int t_in_zone(lua_State *L)
     return 1;
 }
 
+/* The cell an entity is in: the smallest cell containing the point 1 m above its feet. */
+static const char *cell_of(prts_engine *e, prts_entity ent)
+{
+    prts_dvec3 p = prts_world_pos(e->world, ent);
+    return prts_scene_cell_name(e->scene, prts_scene_cell_at(e->scene, prts_v3((float)p.x, (float)p.y + 1.0f, (float)p.z)));
+}
+
 static int t_in_cell(lua_State *L)
 {
     prts_engine *e = E(L);
-    prts_dvec3 p = prts_world_pos(e->world, prts_engine_check_entity(L, 1));
+    prts_entity ent = prts_engine_check_entity(L, 1);
     const char *want = luaL_checkstring(L, 2);
     if (prts_scene_find_cell(e->scene, want) < 0) return luaL_error(L, "unknown cell '%s'", want);
-    const char *at = prts_scene_cell_name(e->scene, prts_scene_cell_at(e->scene, prts_v3((float)p.x, (float)p.y + 1.0f, (float)p.z)));
-    lua_pushboolean(L, strcmp(at, want) == 0);
+    lua_pushboolean(L, strcmp(cell_of(e, ent), want) == 0);
     return 1;
 }
 
@@ -234,8 +240,28 @@ static void finish(prts_engine *e, bool passed, const char *message)
 {
     prts_script *s = e->script;
     lua_State *L = prts_script_lua(s);
-    if (passed) prts_log_info("scenario PASSED (%llu ticks)", (unsigned long long)e->scenario_ticks);
-    else prts_log_error("scenario FAILED: %s", message);
+    /* The result every platform reports the same way (spec: Same scenario result on desktop
+     * and web): passed or failed, the commander's final cell and the state hash. A scenario
+     * that names its final_cell fails when the commander ends anywhere else. */
+    snprintf(e->scenario_cell, sizeof(e->scenario_cell), "%s", e->has_commander ? cell_of(e, e->commander.entity) : "");
+    char wrong_cell[200];
+    if (passed && e->scenario_final_cell[0] && strcmp(e->scenario_cell, e->scenario_final_cell) != 0) {
+        snprintf(wrong_cell, sizeof(wrong_cell), "expected the commander to end in cell '%s', but they are in '%s'",
+                 e->scenario_final_cell, e->scenario_cell);
+        passed = false;
+        message = wrong_cell;
+    }
+    e->scenario_hash = prts_engine_hash(e);
+    e->scenario_state = passed ? PRTS_SCENARIO_PASSED : PRTS_SCENARIO_FAILED;
+    prts_free(e->scenario_message);
+    e->scenario_message = passed ? NULL : prts_strdup(message);
+    if (passed) {
+        prts_log_info("scenario PASSED (%llu ticks, final cell '%s', state hash %016llx)", (unsigned long long)e->scenario_ticks,
+                      e->scenario_cell, (unsigned long long)e->scenario_hash);
+    } else {
+        prts_log_error("scenario FAILED: %s (final cell '%s', state hash %016llx)", message, e->scenario_cell,
+                       (unsigned long long)e->scenario_hash);
+    }
     if (e->report) prts_report_end(e->report, (double)e->scenario_ticks / PRTS_TICK_HZ, passed ? NULL : message);
     e->exit_code = passed ? 0 : 1;
     e->scenario_active = false;
@@ -296,6 +322,9 @@ bool prts_engine_start_scenario(prts_engine *e, const char *real_path)
     lua_getfield(L, -1, "max_seconds");
     e->scenario_max_ticks = (uint64_t)((lua_isnumber(L, -1) ? lua_tonumber(L, -1) : 120.0) * PRTS_TICK_HZ);
     lua_pop(L, 1);
+    lua_getfield(L, -1, "final_cell");
+    snprintf(e->scenario_final_cell, sizeof(e->scenario_final_cell), "%s", lua_isstring(L, -1) ? lua_tostring(L, -1) : "");
+    lua_pop(L, 1);
     lua_getfield(L, -1, "run");
     if (!lua_isfunction(L, -1)) {
         lua_pop(L, 2);
@@ -318,6 +347,7 @@ bool prts_engine_start_scenario(prts_engine *e, const char *real_path)
     lua_xmove(L, e->co, 2);
     lua_pop(L, 3);
     e->scenario_active = true;
+    e->scenario_state = PRTS_SCENARIO_RUNNING;
     e->wait_ticks = 0;
     resume(e);
     return true;
