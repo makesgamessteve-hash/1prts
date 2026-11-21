@@ -1,0 +1,9 @@
+# Keep text files byte-identical on every platform (tests compare exact contents).
+* text=auto eol=lf
+*.png binary
+*.ogg binary
+*.wav binary
+*.vox binary
+*.glb binary
+*.data binary
+*.wasm binary
