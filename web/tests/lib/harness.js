@@ -54,7 +54,7 @@ async function waitRunning(page) {
 }
 
 /* Opens the game with the test hooks and waits until it runs. */
-async function openGame(env, context, query = '?test=1') {
+async function openGame(env, context, query = '?test=1&start=proving_ground') {
   const page = await newPage(context);
   await page.goto(env.server.url + '1stprts.html' + query);
   await waitRunning(page);
