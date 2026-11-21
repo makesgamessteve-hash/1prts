@@ -50,7 +50,8 @@ SDL_AppResult SDL_AppIterate(void *appstate)
     uint64_t now = prts_platform_ticks_ns();
     double dt = (double)(now - a->last_ns) / 1e9;
     a->last_ns = now;
-    return prts_engine_frame(a->engine, dt) ? SDL_APP_CONTINUE : SDL_APP_SUCCESS;
+    if (prts_engine_frame(a->engine, dt)) return SDL_APP_CONTINUE;
+    return prts_engine_exit_code(a->engine) == 0 ? SDL_APP_SUCCESS : SDL_APP_FAILURE; /* e.g. a replay diverged */
 }
 
 SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event)

@@ -15,6 +15,8 @@ bool prts_fs_read_file(const char *path, char **out_data, size_t *out_size);
 bool prts_fs_write_file(const char *path, const void *data, size_t size);
 bool prts_fs_mkdirs(const char *path);
 bool prts_fs_remove_tree(const char *path);
+/* Last modification time (nanoseconds, platform epoch) and size of a file or directory. */
+bool prts_fs_stat(const char *path, int64_t *mtime_ns, uint64_t *size);
 /* Directory of the executable (with trailing separator removed). Caller frees. */
 char *prts_fs_base_dir(void);
 /* Per-user writable directory for 1stPRTS. Caller frees. NULL if unavailable. */

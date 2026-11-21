@@ -6,6 +6,9 @@
 
 #include "prts/prts_script.h"
 
+#define PRTS_REG_LOADED "prts.loaded"
+#define PRTS_REG_ENVS "prts.envs"
+
 struct prts_script {
     lua_State *L;
     prts_vfs *vfs;
@@ -19,9 +22,15 @@ struct prts_script {
     double tick_seconds;
     bool coverage;
     prts_array cov_files; /* prts_cov_file */
+    struct prts_reload *reload; /* hot reload (reload.c), NULL when off */
 };
 
 void prts_script_open_core_api(prts_script *s);
+void prts_script_open_def_api(prts_script *s);
+/* Loads a VFS file as a function in its mod's environment and pushes it (or an error message). */
+bool prts_script_load_chunk(prts_script *s, const char *vpath);
+void prts_reload_track(prts_script *s, const char *module, const char *vpath);
+void prts_reload_free(prts_script *s);
 
 void prts_coverage_register_chunk(prts_script *s, lua_State *L, const char *vpath, const char *mount_dir);
 void prts_coverage_hit(prts_script *s, lua_State *L, lua_Debug *ar);

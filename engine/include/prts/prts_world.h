@@ -82,4 +82,11 @@ bool prts_world_usable(const prts_world *w, prts_entity e);
 /* 64-bit hash over all simulation state held by the world. */
 uint64_t prts_world_hash(const prts_world *w);
 
+/* Saves: writes every entity slot (including free slots and generations) bit for bit, and
+ * reads it back, replacing the world's contents. A failed read leaves the world unchanged. */
+struct prts_writer;
+struct prts_reader;
+void prts_world_write(const prts_world *w, struct prts_writer *out);
+bool prts_world_read(prts_world *w, struct prts_reader *in);
+
 #endif

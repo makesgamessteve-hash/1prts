@@ -5,7 +5,7 @@
 
 #include "app/engine_internal.h"
 
-static const char *REG_EDATA = "prts.edata";
+static const char *REG_EDATA = PRTS_REG_EDATA;
 
 /* --- argument helpers ---------------------------------------------------------- */
 

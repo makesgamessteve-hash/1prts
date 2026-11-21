@@ -20,6 +20,10 @@ typedef struct prts_engine_config {
     uint64_t seed;
     int ticks;                /* stop after this many ticks (0: run until quit) */
     int width, height;
+    const char *junit;        /* write a JUnit XML report of Lua tests, scenarios or a replay check */
+    const char *record;       /* record a replay of this run to this file */
+    const char *replay;       /* play back this replay and check every tick's state hash */
+    bool hot_reload;          /* developer builds: reload changed Lua modules (default for interactive runs) */
 } prts_engine_config;
 
 void prts_engine_config_default(prts_engine_config *cfg);

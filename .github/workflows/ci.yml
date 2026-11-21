@@ -36,6 +36,11 @@ jobs:
         with:
           name: screenshots-linux
           path: build/coverage/screenshots/
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: junit-linux
+          path: build/coverage/junit/
 
   linux-sanitize:
     runs-on: ubuntu-24.04
@@ -84,5 +89,13 @@ jobs:
         run: npx openspec validate --all --strict
       - name: Engine layering rules
         run: python3 -I tools/check_layering.py
-      - name: Asset credits and references
+      - name: Asset credits, references, formats and manifests
         run: python3 -I tools/validate_assets.py
+      - name: Scripting API documentation (every prts.* function in docs/modding/api-m1.md)
+        run: python3 -I tools/check_api_docs.py
+      - name: Spec scenarios linked to tests (tests/README.md)
+        run: python3 -I tools/check_spec_coverage.py
+      - name: Self-tests of the checks
+        run: |
+          python3 -I tools/tests/test_validate_assets.py
+          python3 -I tools/tests/test_check_scripts.py

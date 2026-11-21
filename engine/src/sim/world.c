@@ -5,6 +5,7 @@
 #include <string.h>
 
 #include "prts/prts_rng.h"
+#include "prts/prts_serial.h"
 
 void prts_clock_init(prts_clock *c, int ticks_per_second, int max_catchup)
 {
@@ -349,4 +350,88 @@ uint64_t prts_world_hash(const prts_world *w)
         }
     }
     return h.h;
+}
+
+/* --- saves: every slot, bit for bit ----------------------------------------------------- */
+
+#define WORLD_MAX_SLOTS 1000000u
+#define WORLD_MAX_NAME 1024u
+
+static void write_dv3(prts_writer *out, prts_dvec3 v)
+{
+    prts_w_f64(out, v.x);
+    prts_w_f64(out, v.y);
+    prts_w_f64(out, v.z);
+}
+
+static prts_dvec3 read_dv3(prts_reader *in)
+{
+    double x = prts_r_f64(in), y = prts_r_f64(in);
+    return prts_dv3(x, y, prts_r_f64(in));
+}
+
+void prts_world_write(const prts_world *w, prts_writer *out)
+{
+    prts_w_u32(out, (uint32_t)w->slots.len);
+    for (uint32_t i = 0; i < w->slots.len; i++) {
+        const slot *s = prts_array_at(&w->slots, i);
+        prts_w_u32(out, s->gen);
+        uint8_t flags = (uint8_t)((s->alive ? 1u : 0u) | (s->usable ? 2u : 0u) | (s->moving_pos ? 4u : 0u) |
+                                  (s->moving_yaw ? 8u : 0u) | (s->name ? 16u : 0u));
+        prts_w_u8(out, flags);
+        if (!s->alive) continue;
+        if (s->name) prts_w_str(out, s->name);
+        prts_w_u64(out, s->parent);
+        write_dv3(out, s->local);
+        prts_w_f32(out, s->yaw);
+        prts_w_f32(out, s->vel.x);
+        prts_w_f32(out, s->vel.y);
+        prts_w_f32(out, s->vel.z);
+        write_dv3(out, s->prev_pos);
+        prts_w_f32(out, s->prev_yaw);
+        write_dv3(out, s->target);
+        prts_w_f32(out, s->speed);
+        prts_w_f32(out, s->yaw_target);
+        prts_w_f32(out, s->yaw_speed);
+    }
+}
+
+bool prts_world_read(prts_world *w, prts_reader *in)
+{
+    uint32_t n = prts_r_u32(in);
+    if (in->failed || n > WORLD_MAX_SLOTS) return false;
+    prts_world *tmp = prts_world_create();
+    for (uint32_t i = 0; i < n && !in->failed; i++) {
+        slot *s = prts_array_push(&tmp->slots, NULL);
+        s->gen = prts_r_u32(in);
+        uint8_t flags = prts_r_u8(in);
+        s->alive = (flags & 1u) != 0;
+        if (!s->alive) continue;
+        tmp->alive++;
+        s->usable = (flags & 2u) != 0;
+        s->moving_pos = (flags & 4u) != 0;
+        s->moving_yaw = (flags & 8u) != 0;
+        if (flags & 16u) s->name = prts_r_str(in, WORLD_MAX_NAME);
+        s->parent = prts_r_u64(in);
+        s->local = read_dv3(in);
+        s->yaw = prts_r_f32(in);
+        float vx = prts_r_f32(in), vy = prts_r_f32(in);
+        s->vel = prts_v3(vx, vy, prts_r_f32(in));
+        s->prev_pos = read_dv3(in);
+        s->prev_yaw = prts_r_f32(in);
+        s->target = read_dv3(in);
+        s->speed = prts_r_f32(in);
+        s->yaw_target = prts_r_f32(in);
+        s->yaw_speed = prts_r_f32(in);
+    }
+    if (in->failed) {
+        prts_world_destroy(tmp);
+        return false;
+    }
+    /* swap contents so the world pointer stays valid for everyone holding it */
+    prts_world old = *w;
+    *w = *tmp;
+    *tmp = old;
+    prts_world_destroy(tmp);
+    return true;
 }
