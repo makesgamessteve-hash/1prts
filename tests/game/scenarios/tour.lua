@@ -6,6 +6,10 @@ return {
   max_seconds = 90,
   run = function(t)
     local c = t.commander()
+    -- the plain views: no title cards or orders reported (the tour moves by placing the
+    -- commander, sometimes only a few metres); the last two views show them
+    local progress = require("story.progress")
+    progress.setup({}, {})
     t.place("start", 0.05)
     t.ticks(3)
     t.screenshot("01_approach_at_dusk")
@@ -75,5 +79,24 @@ return {
     t.place(-6, 0, 135, math.atan(6, 135 - 106), 0.14)
     t.ticks(3)
     t.screenshot("22_kings_gate")
+    -- walking out of the Lion Gate's passage into the Inner Ward for the first time: its card
+    local map = require("maps.proving_ground")
+    local subtitles = require("ui.subtitles")
+    require("story.harrowmark").on_map_started("proving_ground")
+    t.place(0, 0, map.INNER.z1 + 1.5, 0, 0.1)
+    t.ticks(2)
+    t.input.hold("move_forward", 1.6)
+    t.wait_until(function() return t.ui_has("The Inner Ward") end, 3)
+    t.ticks(12)
+    t.screenshot("26_inner_ward_card")
+    -- one of the castellan's orders done: the arrows counted in the barracks
+    t.place("arrow_store")
+    t.ticks(1)
+    t.face("harrowmark.arrow_store", 0, 0.9, 0)
+    t.ticks(2)
+    subtitles.clear()
+    t.input.press("use")
+    t.ticks(20)
+    t.screenshot("27_order_done")
   end,
 }

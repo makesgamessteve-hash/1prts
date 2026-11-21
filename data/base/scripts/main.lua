@@ -6,6 +6,7 @@ input.apply()
 require("game.settings").apply()
 require("ui.touch").apply()
 require("ui.hud")
+require("game.feel").apply_settings() -- footsteps, landings and the view's own motion
 require("ui.subtitles")
 require("story.harrowmark") -- the prologue, when a map is started from the menu
 local menu = require("ui.menu")

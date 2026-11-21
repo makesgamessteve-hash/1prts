@@ -87,6 +87,14 @@ VR is a natural fit for a physical commander.
   sound it.
 - Retro vertex wobble and screen effects are **off** in VR for comfort.
 
+### Forgiving timing and a body with weight
+
+The controls forgive human timing. A jump pressed up to 120 ms before landing is kept and
+happens on landing; one pressed up to 100 ms after walking off an edge still counts. The body
+takes a few ticks to get up to speed and to stop. Gravity eases at the top of a jump. Footsteps
+sound on every footfall, in time with a slight head bob, and a landing thuds and dips the view
+(harder falls more). The fun audit measures all of this: `tools/fun/README.md`.
+
 ## 3. Accessibility
 
 - Full remapping of keyboard, mouse, gamepad and touch.
@@ -94,7 +102,9 @@ VR is a natural fit for a physical commander.
 - Colorblind-safe sigils (shape and color together) and selectable palettes.
 - Any retro effect can be turned off. A brightness boost for tunnels, caverns and deep water.
   FOV slider. Head bob, mount sway and camera shake can be
-  turned off.
+  turned off. (M1: the "Camera motion" slider under Options → Game scales the head bob, landing
+  dips and shakes from full to off. In VR the view never moves on its own, and walking starts
+  and stops at once.)
 - Hold-to-press actions can be changed to toggles.
 - Scalable UI on the field map and war table, plus a high-contrast table mode.
 - Game speed options (single player) and a command pause rule.

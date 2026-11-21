@@ -8,9 +8,15 @@ local H = { scheme = prts.input.scheme(), visible = true }
 -- What using an object does, by the kind its script stores in its entity data.
 H.PROMPTS = {
   door = function(data) return data.open and "Close door" or "Open door" end,
-  lift_lever = "Pull the lever",
+  lift_lever = function(data)
+    local lift = prts.entity.data(data.lift)
+    return lift.current == #lift.floors and "Pull the lever: down" or "Pull the lever: up"
+  end,
   lift_call = "Call the lift",
   npc = function(data) return "Talk to " .. data.person end,
+  portcullis_winch = function(data)
+    return prts.entity.data(data.grille).open and "Lower the portcullis" or "Raise the portcullis"
+  end,
 }
 
 function H.prompt_text(entity)

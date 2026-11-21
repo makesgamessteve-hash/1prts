@@ -193,7 +193,13 @@ T.case("game options: the prologue can be turned off", function()
   T.eq(prts.settings.get("game.prologue"), false, "saved")
   T.ui_click("game.prologue")
   T.eq(settings.game().prologue, true, "on again")
+  -- camera motion: a slider from off to full, applied at once
+  T.is_true(T.ui_has("Camera motion (bob, dips, shake)"), "the camera option")
+  T.ui_click("game.camera_motion") -- the middle of the slider
+  T.eq(settings.game().camera_motion, 0.5, "half")
+  T.eq(prts.commander.feel().motion, 0.5, "applied")
   T.ui_click("options.back")
+  prts.commander.set_feel{ motion = 1 }
   prts.settings.set("game", nil)
   prts.settings.save()
   menu.open(nil)

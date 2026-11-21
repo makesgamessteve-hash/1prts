@@ -24,8 +24,19 @@ return {
     t.input.press("use")
     t.ticks(2)
     t.expect(subtitles.current().text, "the next line").equals(story.PEOPLE.door_guard.lines[2])
+    -- the guard has turned to face the Marshal while they talk, and turns back afterwards
+    local guard = prts.entity.find("npc.door_guard")
+    t.ticks(20)
+    local gx, _, gz = prts.entity.pos(guard)
+    local cx, _, cz = t.pos(t.commander())
+    local want = math.atan(-(cx - gx), -(cz - gz))
+    local d = (prts.entity.yaw(guard) - want + math.pi) % (2 * math.pi) - math.pi
+    t.expect(math.abs(d) < 0.05, "facing the Marshal").is_true()
     t.expect(t.ui_has("Pell Durran: "), "by name").is_true()
     t.wait_until(function() return subtitles.current() == nil end, 10)
+    t.wait_until(function() return not prts.entity.moving(guard) end, 2)
+    local back = (prts.entity.yaw(guard) - math.pi + math.pi) % (2 * math.pi) - math.pi
+    t.expect(math.abs(back) < 1e-3, "back to the post").is_true()
     t.ticks(1) -- the next frame draws no line
     t.expect(t.ui_has("Tam"), "the line is gone").equals(false)
 

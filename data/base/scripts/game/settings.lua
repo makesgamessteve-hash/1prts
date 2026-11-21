@@ -57,8 +57,9 @@ function M.xr() return read("xr.", M.XR) end
 function M.xr_video() return read("xr.video.", M.XR_VIDEO) end
 
 -- Game settings (game.<key>): whether a map started from the front-end menu opens with its
--- prologue (a few spoken lines as the Marshal arrives).
-M.GAME = { prologue = true }
+-- prologue (a few spoken lines as the Marshal arrives), and how much the view moves on its own
+-- (camera_motion: head bob, landing dips and shakes; 0 off .. 1 full; never in VR).
+M.GAME = { prologue = true, camera_motion = 1.0 }
 function M.game() return read("game.", M.GAME) end
 
 -- Changes one game setting and (unless save is false) saves it; it is read when it matters.

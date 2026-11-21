@@ -64,6 +64,7 @@ prts_engine *prts_engine_create(const prts_engine_config *cfg, char *err, size_t
     prts_engine *e = prts_calloc(1, sizeof(*e));
     e->cfg = *cfg;
     e->data_dir = data_dir;
+    e->feel_motion = 1.0f;
     e->user_dir = cfg->user_dir ? prts_strdup(cfg->user_dir) : prts_fs_user_dir();
     if (!e->user_dir) e->user_dir = prts_path_join(data_dir, "../user");
     prts_array_init(&e->move_done, sizeof(prts_entity));
@@ -210,6 +211,7 @@ void prts_engine_tick(prts_engine *e)
     prts_world_tick_movers(e->world, dt, on_move_done, e);
     prts_cworld_sync(e->cworld, e->world);
     if (e->has_commander) {
+        e->commander.feel.motion = e->feel_motion; /* the camera motion setting */
         prts_commander_tick(&e->commander, e->world, e->cworld, e->input, dt);
         prts_engine_xr_after_tick(e);
         if (prts_input_pressed(e->input, "use")) {
@@ -251,7 +253,9 @@ static void render_frame(prts_engine *e, double alpha)
     if (e->has_commander) {
         cam.eye = prts_commander_eye(&e->commander, e->world, alpha);
         cam.yaw = e->commander.yaw;
-        cam.pitch = e->commander.pitch;
+        float kick = 0.0f; /* the view's feedback motion: dips, bob and shake (never in XR) */
+        cam.eye.y += prts_commander_view_offset(&e->commander, alpha, &kick);
+        cam.pitch = e->commander.pitch + kick;
     }
     prts_engine_camera_override(e, &cam); /* developer observer camera */
     prts_gfx_render(e->gfx, e->scene, e->world, &cam, &e->render, w, h, alpha, e->time);
@@ -372,7 +376,11 @@ uint64_t prts_engine_hash(const prts_engine *e)
         prts_hasher_f64(&h, c->vertical_speed);
         prts_hasher_f64(&h, c->eye);
         prts_hasher_f64(&h, c->stamina);
-        prts_hasher_u64(&h, (uint64_t)c->on_ground | ((uint64_t)c->crouched << 1) | ((uint64_t)c->aiming << 2));
+        prts_hasher_f64(&h, c->vel.x);
+        prts_hasher_f64(&h, c->vel.z);
+        prts_hasher_u64(&h, (uint64_t)c->on_ground | ((uint64_t)c->crouched << 1) | ((uint64_t)c->aiming << 2) |
+                                ((uint64_t)c->jump_buffer << 8) | ((uint64_t)c->coyote << 16) |
+                                ((uint64_t)c->jumping << 24));
     }
     prts_engine_hash_script_data(e, &h);
     return h.h;

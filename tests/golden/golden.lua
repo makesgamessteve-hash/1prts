@@ -17,6 +17,10 @@ return {
   name = "render golden images",
   max_seconds = 60,
   run = function(t)
+    -- title cards depend on where the view before was (a short move counts as walking in);
+    -- these images test rendering, so they are hidden
+    require("ui.banner").visible = false
+    prts.commander.set_feel{ motion = 0 } -- and the view's own motion (a settling dip) is off
     local function shot(name, over)
       settings(over)
       t.ticks(2)

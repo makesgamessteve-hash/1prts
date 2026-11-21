@@ -7,6 +7,19 @@
 #define FOLLOW_MAX 1.0f   /* meters per tick the body follows the head (a recentre jumps further) */
 #define HEAD_RADIUS 0.12f /* half size of the head's box: keeps the near plane out of walls */
 
+/* view feel */
+#define LAND_MIN 2.0f        /* m/s: softer landings do not dip the view */
+#define DIP_PER_SPEED 0.55f  /* dip kick (m/s) per m/s of impact: 4 cm for a jump, 9 for a fall */
+#define DIP_MAX_IMPACT 10.0f /* m/s */
+#define JUMP_DIP 0.25f       /* m/s */
+#define DIP_K 160.0f         /* spring stiffness (1/s^2) */
+#define DIP_DAMP 17.7f       /* spring damping (1/s), a little under critical */
+#define BOB_AMP 0.028f       /* m at running speed */
+#define STEP_LENGTH 0.75f    /* m per step at walking pace; longer when faster */
+#define TRAUMA_DECAY 1.4f    /* per second */
+#define SHAKE_Y 0.02f        /* m at full trauma */
+#define SHAKE_PITCH 0.03f    /* rad at full trauma: 2.5 % of a 70 degree view */
+
 void prts_commander_params_default(prts_commander_params *p)
 {
     p->walk_speed = 1.4f;
@@ -40,6 +53,57 @@ void prts_commander_init(prts_commander *c, prts_entity e, const prts_commander_
     memset(&c->xr, 0, sizeof(c->xr));
     c->followed = prts_v3(0, 0, 0);
     c->aiming = false;
+    c->vel = prts_v3(0, 0, 0);
+    c->jump_buffer = c->coyote = 0;
+    c->jumping = false;
+    memset(&c->feel, 0, sizeof(c->feel));
+    c->feel.motion = 1.0f;
+}
+
+void prts_commander_impulse(prts_commander *c, float dip, float shake)
+{
+    c->feel.dip_vel -= dip;
+    c->feel.trauma = prts_clampf(c->feel.trauma + shake, 0.0f, 1.0f);
+}
+
+float prts_commander_view_offset(const prts_commander *c, double alpha, float *pitch)
+{
+    const prts_commander_feel *f = &c->feel;
+    if (pitch) *pitch = (float)(f->pitch_prev + (f->pitch - f->pitch_prev) * alpha);
+    return (float)(f->offset_prev + (f->offset - f->offset_prev) * alpha);
+}
+
+/* The view's feedback motion for this tick: the dip spring, head bob with a footfall every
+ * step, and the shake. Presentation only (see prts_commander_feel). */
+static void feel_tick(prts_commander *c, float impact, float speed, float dt)
+{
+    prts_commander_feel *f = &c->feel;
+    f->offset_prev = f->offset;
+    f->pitch_prev = f->pitch;
+    f->clock++;
+    f->landed = impact;
+    if (impact > LAND_MIN) f->dip_vel -= fminf(impact, DIP_MAX_IMPACT) * DIP_PER_SPEED;
+    if (f->jumped) f->dip_vel -= JUMP_DIP;
+    f->dip_vel += (-DIP_K * f->dip - DIP_DAMP * f->dip_vel) * dt;
+    f->dip += f->dip_vel * dt;
+    float want = c->on_ground ? BOB_AMP * prts_clampf(speed / 3.5f, 0.0f, 1.2f) : 0.0f;
+    f->bob_amp += (want - f->bob_amp) * fminf(1.0f, 10.0f * dt);
+    if (c->on_ground && speed > 0.3f) {
+        /* the head is lowest when a foot comes down: at phase pi/2 + k pi */
+        float step = STEP_LENGTH + 0.12f * speed;
+        float before = floorf((f->bob_phase + (float)PRTS_PI * 0.5f) / (float)PRTS_PI);
+        f->bob_phase += speed * dt * (float)PRTS_PI / step;
+        if (floorf((f->bob_phase + (float)PRTS_PI * 0.5f) / (float)PRTS_PI) != before) f->steps++;
+        if (f->bob_phase > 2.0f * (float)PRTS_PI) f->bob_phase -= 2.0f * (float)PRTS_PI;
+    }
+    f->trauma = fmaxf(0.0f, f->trauma - TRAUMA_DECAY * dt);
+    float shake = f->trauma * f->trauma;
+    float t = (float)f->clock;
+    float n1 = 0.6f * sinf(t * 2.1f) + 0.4f * sinf(t * 3.7f + 1.0f);
+    float n2 = 0.6f * sinf(t * 1.7f + 2.0f) + 0.4f * sinf(t * 4.3f);
+    float scale = c->xr.active ? 0.0f : prts_clampf(f->motion, 0.0f, 1.0f);
+    f->offset = scale * (f->dip - f->bob_amp * fabsf(sinf(f->bob_phase)) + SHAKE_Y * shake * n1);
+    f->pitch = scale * SHAKE_PITCH * shake * n2;
 }
 
 void prts_commander_look(prts_commander *c, float dyaw, float dpitch)
@@ -137,15 +201,51 @@ void prts_commander_tick(prts_commander *c, prts_world *w, const prts_cworld *cw
     float sy = sinf(world_yaw), cy = cosf(world_yaw);
     prts_vec3 dir = prts_v3(-sy * fwd + cy * side, 0.0f, -cy * fwd - sy * side);
 
-    if (c->on_ground && prts_input_pressed(in, "jump") && !c->crouched) c->vertical_speed = c->p.jump_speed;
-    c->vertical_speed -= c->p.gravity * dt;
+    /* jump: a press is kept a few ticks until there is ground (input buffer), and walking off
+     * an edge leaves a few ticks to jump (coyote time) */
+    c->feel.jumped = false;
+    if (prts_input_pressed(in, "jump")) c->jump_buffer = PRTS_COMMANDER_JUMP_BUFFER;
+    if (c->jump_buffer > 0 && (c->on_ground || c->coyote > 0) && !c->crouched) {
+        c->vertical_speed = c->p.jump_speed;
+        c->jump_buffer = c->coyote = 0;
+        c->feel.jumped = true;
+        c->jumping = true;
+    } else if (c->jump_buffer > 0) {
+        c->jump_buffer--;
+    }
+    float gravity = c->p.gravity;
+    /* hang time at the top of a jump (only a jump: falling off an edge keeps full gravity) */
+    if (c->jumping && !c->on_ground && fabsf(c->vertical_speed) < PRTS_COMMANDER_APEX_SPEED) {
+        gravity *= PRTS_COMMANDER_APEX_GRAVITY;
+    }
+    c->vertical_speed -= gravity * dt;
     if (c->on_ground && c->vertical_speed < -1.0f) c->vertical_speed = -1.0f;
 
-    prts_vec3 delta = prts_v3(dir.x * speed * dt, c->vertical_speed * dt, dir.z * speed * dt);
+    /* horizontal velocity eases towards the wanted one (at once in XR: comfort) */
+    prts_vec3 want = prts_v3(dir.x * speed, 0.0f, dir.z * speed);
+    bool eased = !c->xr.active;
+    if (eased) {
+        float rate = (c->on_ground ? (moving ? PRTS_COMMANDER_ACCEL : PRTS_COMMANDER_DECEL) : PRTS_COMMANDER_AIR_ACCEL) * dt;
+        prts_vec3 d = prts_v3_sub(want, c->vel);
+        float gap = prts_v3_length(d);
+        c->vel = gap <= rate ? want : prts_v3_add(c->vel, prts_v3_scale(d, rate / gap));
+    } else {
+        c->vel = want;
+    }
+
+    bool was_on_ground = c->on_ground;
+    float falling = c->vertical_speed;
+    prts_vec3 delta = prts_v3(c->vel.x * dt, c->vertical_speed * dt, c->vel.z * dt);
     prts_aabb box = prts_commander_box(c, w);
     prts_move_result res;
-    prts_cworld_move(cw, &box, delta, c->on_ground ? c->p.step_height : 0.0f, &res);
+    prts_vec3 moved = prts_cworld_move(cw, &box, delta, c->on_ground ? c->p.step_height : 0.0f, &res);
     c->on_ground = res.on_ground;
+    /* a wall takes the speed into it away (sliding along it keeps the rest) */
+    if (eased && res.hit_wall) c->vel = prts_v3(moved.x / dt, 0.0f, moved.z / dt);
+    if (res.on_ground && !c->feel.jumped) c->jumping = false;
+    if (res.on_ground) c->coyote = PRTS_COMMANDER_COYOTE;
+    else if (c->coyote > 0 && !c->feel.jumped) c->coyote--;
+    else c->coyote = 0;
     c->hit_wall = res.hit_wall;
     if (res.on_ground && c->vertical_speed < 0.0f) c->vertical_speed = 0.0f;
     if (!res.on_ground && delta.y > 0.0f && box.min.y - prts_commander_box(c, w).min.y < delta.y - 1e-4f) {
@@ -157,7 +257,9 @@ void prts_commander_tick(prts_commander *c, prts_world *w, const prts_cworld *cw
     prts_entity ground = res.on_ground ? prts_cworld_owner(cw, res.ground_box) : PRTS_ENTITY_NONE;
     if (res.on_ground) prts_world_set_parent(w, c->entity, ground);
     prts_world_set_pos(w, c->entity, feet);
-    prts_world_set_velocity(w, c->entity, prts_v3(dir.x * speed, c->vertical_speed, dir.z * speed));
+    prts_world_set_velocity(w, c->entity, prts_v3(c->vel.x, c->vertical_speed, c->vel.z));
+    float impact = !was_on_ground && res.on_ground && falling < 0.0f ? -falling : 0.0f;
+    feel_tick(c, impact, sqrtf(c->vel.x * c->vel.x + c->vel.z * c->vel.z), dt);
 }
 
 prts_dvec3 prts_commander_eye(const prts_commander *c, const prts_world *w, double alpha)

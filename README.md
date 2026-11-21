@@ -28,6 +28,7 @@ of them. The look is retro 3D: low-poly models, sprites and voxels.
 | ![Harrowmark from the road](docs/screenshots/02_harrowmark_from_afar.png) | ![The King's Gate](docs/screenshots/22_kings_gate.png) | ![The Outer Ward and the Lion Gate](docs/screenshots/18_outer_ward.png) |
 | ![On the wall-walk](docs/screenshots/19_wall_walk.png) | ![From the Raven Tower](docs/screenshots/20_raven_tower_view.png) | ![The Inner Ward and the Great Keep](docs/screenshots/21_inner_ward.png) |
 | ![The prologue](docs/screenshots/23_prologue.png) | ![The castellan](docs/screenshots/25_the_castellan.png) | ![The war table](docs/screenshots/08_war_table_illusion.png) |
+| ![A title card: the Inner Ward](docs/screenshots/26_inner_ward_card.png) | ![One of the castellan's orders done](docs/screenshots/27_order_done.png) | ![The guard at the keep door](docs/screenshots/10_door_guard.png) |
 | ![Great hall](docs/screenshots/12_hall_benches_braziers.png) | ![Forge](docs/screenshots/05_forge.png) | ![Front-end menu](docs/screenshots/13_front_end_menu.png) |
 
 ## Read this first
@@ -36,7 +37,8 @@ of them. The look is retro 3D: low-poly models, sprites and voxels.
 |---|---|
 | 🎯 **Concept** | [`docs/concept/`](docs/concept/README.md): pitch, pillars, the commander, command and control, scale, units, economy, setting, art, controls, modding, roadmap, open questions, story |
 | 🏗️ **Architecture** | [`docs/architecture/`](docs/architecture/README.md): engine and script split, simulation, rendering, data and Lua API, quality and build |
-| 📐 **Specs** | [`openspec/`](openspec/): spec-driven development with [OpenSpec](https://github.com/Fission-AI/OpenSpec). Changes: [`add-engine-foundation`](openspec/changes/add-engine-foundation/proposal.md) (M1) and [`add-harrowmark-and-story`](openspec/changes/add-harrowmark-and-story/proposal.md) (the castle, the story and the title) |
+| 📐 **Specs** | [`openspec/`](openspec/): spec-driven development with [OpenSpec](https://github.com/Fission-AI/OpenSpec). Changes: [`add-engine-foundation`](openspec/changes/add-engine-foundation/proposal.md) (M1), [`add-harrowmark-and-story`](openspec/changes/add-harrowmark-and-story/proposal.md) (the castle, the story and the title) and [`improve-feel-and-goals`](openspec/changes/improve-feel-and-goals/proposal.md) (what the fun audit found: movement feel, feedback, goals, a blocked stair, load time) |
+| 🎲 **Fun audit** | [`tools/fun/`](tools/fun/README.md): bots with human limits play Harrowmark and the six pillars of the game-fun-evaluator skill are scored. [Results](docs/fun-audit/README.md): 51.5 → 80.5 / 100 after the fixes it led to |
 | ❓ **Open questions** | [`docs/concept/13-open-questions.md`](docs/concept/13-open-questions.md) |
 
 ## Key facts

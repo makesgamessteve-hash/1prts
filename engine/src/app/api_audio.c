@@ -56,8 +56,8 @@ static void push_handle(lua_State *L, prts_voice_id v)
 /* Handles of finished sounds are harmless: functions taking one just return false. */
 static prts_voice_id opt_handle(lua_State *L, int idx) { return (prts_voice_id)luaL_optinteger(L, idx, 0); }
 
-/* prts.audio.play{ sound =, at = {x, y, z} | entity =, bus = "effects", volume = 1, loop = false,
- * range = 40 } -> handle (nil if every voice is busy) */
+/* prts.audio.play{ sound =, at = {x, y, z} | entity =, bus = "effects", volume = 1, pitch = 1,
+ * loop = false, range = 40 } -> handle (nil if every voice is busy) */
 static int l_play(lua_State *L)
 {
     prts_engine *e = prts_engine_from_lua(L);
@@ -71,6 +71,8 @@ static int l_play(lua_State *L)
     if (!lua_isnil(L, -1)) p.bus = to_bus(L, lua_tostring(L, -1));
     lua_pop(L, 1);
     p.volume = opt_field(L, "volume", 1.0f);
+    p.pitch = opt_field(L, "pitch", 1.0f);
+    if (!(p.pitch >= 0.5f && p.pitch <= 2.0f)) return luaL_error(L, "pitch must be between 0.5 and 2");
     p.max_distance = opt_field(L, "range", 0.0f);
     lua_getfield(L, 1, "loop");
     p.loop = lua_toboolean(L, -1);

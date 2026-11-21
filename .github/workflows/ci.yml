@@ -142,6 +142,7 @@ jobs:
         run: |
           python3 -I tools/tests/test_validate_assets.py
           python3 -I tools/tests/test_check_scripts.py
+          python3 -I tools/tests/test_fun_metrics.py
 
   # Release archives (task 14.1): the executable with data/ and every license, extracted and run
   # headless on each desktop platform (spec: Extract and run, Licenses included).

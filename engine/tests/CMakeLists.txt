@@ -46,6 +46,15 @@ foreach(scenario ${PRTS_SCENARIOS})
   endif()
 endforeach()
 
+# The fun audit's survey (tests/fun/survey.lua, spec: Ways through a map stay open): its oracle
+# walks every way of Harrowmark's route graph there and back with the audit's mod (tests/fun/mods,
+# never shipped). The full audit is tools/fun/audit.py (tools/fun/README.md).
+file(COPY ${CMAKE_SOURCE_DIR}/tests/fun/mods DESTINATION ${CMAKE_BINARY_DIR}/test-user/fun_survey)
+add_test(NAME fun_survey
+  COMMAND 1stprts --headless --scenario ${CMAKE_SOURCE_DIR}/tests/fun/survey.lua --user ${CMAKE_BINARY_DIR}/test-user/fun_survey
+          --mod fun_eval --junit ${PRTS_JUNIT_DIR}/fun_survey.xml)
+set_tests_properties(fun_survey PROPERTIES LABELS "fun")
+
 # Determinism checks (tests/game/determinism): record each walk, replay it (every tick's state
 # hash must match the recording), record it again and require byte-identical recordings.
 file(GLOB PRTS_DETERMINISM CONFIGURE_DEPENDS ${CMAKE_SOURCE_DIR}/tests/game/determinism/*.lua)

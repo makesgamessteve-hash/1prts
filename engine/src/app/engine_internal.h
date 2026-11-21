@@ -65,6 +65,7 @@ struct prts_engine {
     prts_input *input;
     prts_commander commander;
     bool has_commander;
+    float feel_motion; /* camera motion setting (0..1), given to the commander every tick */
     prts_platform *platform;
     prts_gfx *gfx;
     prts_audio *audio;

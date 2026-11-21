@@ -12,6 +12,7 @@
 | **Render golden tests** | Fixed camera views rendered with the real GL backend, compared with reference images | `tests/game/golden/` | Linux (Mesa llvmpipe) |
 | **Web end-to-end tests** | The real web build in a browser: boot, controls, touch switching, XR session (mocked device) | `web/tests/` | Linux + Playwright (Chromium) |
 | **Performance benchmarks** | Frame and tick times with N entities, headless and rendered | `tests/perf/` | Linux; reported, not a gate (for now) |
+| **Fun audit** | Bots with human limits play the map. Probes time the commander's answers. A windowed pass times the load and measures overlay contrast. Reports the six pillars of the game-fun-evaluator skill and a composite score. Its survey (the oracle walks every way of the route graph there and back) is a gate. | `tests/fun/`, `tools/fun/` ([README](../../tools/fun/README.md), results in [`docs/fun-audit/`](../fun-audit/README.md)) | Survey: every CI platform (CTest `fun_survey`). Full audit: on demand (`python3 tools/fun/audit.py`) |
 
 ## 2. Coverage gate: at least 95%
 

@@ -754,6 +754,57 @@ static int l_commander_view(lua_State *L)
     return 4;
 }
 
+/* The view's feedback state (prts_commander_feel), for scripts that play footsteps and landing
+ * sounds, and for tests. */
+static int l_commander_feel(lua_State *L)
+{
+    prts_engine *e = prts_engine_from_lua(L);
+    const prts_commander_feel *f = &e->commander.feel;
+    lua_createtable(L, 0, 9);
+    lua_pushnumber(L, f->offset);
+    lua_setfield(L, -2, "offset");
+    lua_pushnumber(L, f->pitch);
+    lua_setfield(L, -2, "pitch");
+    lua_pushnumber(L, f->trauma);
+    lua_setfield(L, -2, "trauma");
+    lua_pushinteger(L, (lua_Integer)f->steps);
+    lua_setfield(L, -2, "steps");
+    lua_pushnumber(L, f->landed);
+    lua_setfield(L, -2, "landed");
+    lua_pushboolean(L, f->jumped);
+    lua_setfield(L, -2, "jumped");
+    lua_pushnumber(L, sqrtf(e->commander.vel.x * e->commander.vel.x + e->commander.vel.z * e->commander.vel.z));
+    lua_setfield(L, -2, "speed");
+    lua_pushnumber(L, e->feel_motion);
+    lua_setfield(L, -2, "motion");
+    lua_pushboolean(L, e->has_commander && e->commander.xr.active);
+    lua_setfield(L, -2, "xr");
+    return 1;
+}
+
+/* prts.commander.impulse{ dip, shake }: kicks the view down (m/s) and/or shakes it (0..1). */
+static int l_commander_impulse(lua_State *L)
+{
+    prts_engine *e = prts_engine_from_lua(L);
+    luaL_checktype(L, 1, LUA_TTABLE);
+    float dip = field_number(L, 1, "dip", 0.0f), shake = field_number(L, 1, "shake", 0.0f);
+    if (!(dip >= 0.0f && dip <= 10.0f)) return luaL_error(L, "dip must be between 0 and 10 (m/s)");
+    if (!(shake >= 0.0f && shake <= 1.0f)) return luaL_error(L, "shake must be between 0 and 1");
+    prts_commander_impulse(&e->commander, dip, shake);
+    return 0;
+}
+
+/* prts.commander.set_feel{ motion }: how much the view moves on its own (0 off .. 1 full). */
+static int l_commander_set_feel(lua_State *L)
+{
+    prts_engine *e = prts_engine_from_lua(L);
+    luaL_checktype(L, 1, LUA_TTABLE);
+    float motion = field_number(L, 1, "motion", e->feel_motion);
+    if (!(motion >= 0.0f && motion <= 1.0f)) return luaL_error(L, "motion must be between 0 and 1");
+    e->feel_motion = motion;
+    return 0;
+}
+
 /* --- prts.render ------------------------------------------------------------------ */
 
 static int l_render_settings(lua_State *L)
@@ -814,7 +865,9 @@ void prts_engine_open_game_api(prts_engine *e)
     static const prts_script_fn input[] = {
         {"action", l_input_action}, {"value", l_input_value}, {"down", l_input_down}, {"scheme", l_input_scheme}, {NULL, NULL}};
     static const prts_script_fn commander[] = {
-        {"spawn", l_commander_spawn}, {"entity", l_commander_entity}, {"view", l_commander_view}, {NULL, NULL}};
+        {"spawn", l_commander_spawn}, {"entity", l_commander_entity}, {"view", l_commander_view},
+        {"feel", l_commander_feel},   {"impulse", l_commander_impulse}, {"set_feel", l_commander_set_feel},
+        {NULL, NULL}};
     static const prts_script_fn render[] = {{"settings", l_render_settings}, {NULL, NULL}};
     prts_script_register(e->script, "scene", scene);
     prts_script_register(e->script, "entity", entity);

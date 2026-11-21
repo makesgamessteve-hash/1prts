@@ -562,15 +562,50 @@ bool prts_cworld_ground(const prts_cworld *cw, prts_vec3 p, float max_drop, floa
     return found;
 }
 
+/* Whether a solid box blocks the segment origin + dir * [0, max_dist]: the same boxes the
+ * segment's bounds query would test, but the tree is walked along the ray (nodes it misses are
+ * skipped) and the first hit ends the walk. The light bake casts two such rays per vertex. */
+static bool segment_blocked(const prts_cworld *cw, prts_vec3 o, prts_vec3 dir, float max_dist)
+{
+    bvh_state *st = cw->bvh;
+    if (st->dirty) rebuild(cw);
+    prts_aabb q = segment_bounds(o, dir, max_dist);
+    const prts_vec3 grow = prts_v3(1e-3f, 1e-3f, 1e-3f);
+    float t = 0.0f;
+    prts_array_clear(&st->stack);
+    if (st->nodes.len) {
+        int root = 0;
+        prts_array_push(&st->stack, &root);
+    }
+    while (st->stack.len) {
+        int ni = *(int *)prts_array_at(&st->stack, st->stack.len - 1);
+        st->stack.len--;
+        const bvh_node *n = prts_array_at(&st->nodes, (size_t)ni);
+        prts_aabb nb = {prts_v3_sub(n->box.min, grow), prts_v3_add(n->box.max, grow)};
+        if (!touches(n->box, q) || !ray_box(o, dir, nb, &t) || t > max_dist + 1e-3f) continue;
+        if (n->count) {
+            for (size_t i = n->first; i < n->first + n->count; i++) {
+                const cbox *b = prts_array_at(&cw->boxes, (size_t)((bvh_item *)prts_array_at(&st->items, i))->id);
+                if (b->enabled && !b->use_only && touches(b->world, q) && ray_box(o, dir, b->world, &t) && t <= max_dist) {
+                    return true;
+                }
+            }
+        } else {
+            prts_array_push(&st->stack, &n->left);
+            prts_array_push(&st->stack, &n->right);
+        }
+    }
+    for (size_t i = 0; i < st->dynamic.len; i++) {
+        const cbox *b = prts_array_at(&cw->boxes, (size_t)*(int *)prts_array_at(&st->dynamic, i));
+        if (b->enabled && !b->use_only && touches(b->world, q) && ray_box(o, dir, b->world, &t) && t <= max_dist) return true;
+    }
+    return false;
+}
+
 bool prts_cworld_occluded(const prts_cworld *cw, prts_vec3 origin, prts_vec3 dir, float max_dist)
 {
     dir = prts_v3_normalize(dir);
-    const prts_array *found = query(cw, segment_bounds(origin, dir, max_dist), false);
-    for (size_t k = 0; k < found->len; k++) {
-        cbox *b = prts_array_at(&cw->boxes, (size_t)*(const int *)prts_array_at(found, k));
-        float t = 0.0f;
-        if (ray_box(origin, dir, b->world, &t) && t <= max_dist) return true;
-    }
+    if (segment_blocked(cw, origin, dir, max_dist)) return true;
     if (cw->hf) {
         for (float t = 1.0f; t <= max_dist; t += 2.0f) {
             prts_vec3 p = prts_v3_add(origin, prts_v3_scale(dir, t));

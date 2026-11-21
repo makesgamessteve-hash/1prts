@@ -97,6 +97,7 @@ void prts_voice_params_default(prts_voice_params *p)
     memset(p, 0, sizeof(*p));
     p->bus = PRTS_BUS_EFFECTS;
     p->volume = 1.0f;
+    p->pitch = 1.0f;
 }
 
 prts_mixer *prts_mixer_create(int rate)
@@ -168,7 +169,7 @@ prts_voice_id prts_mixer_play(prts_mixer *m, const prts_voice_params *p)
         src_rate = prts_stream_rate(p->stream);
         v->sbuf = prts_malloc((size_t)STREAM_BUF * (size_t)v->channels * sizeof(float));
     }
-    v->step = (double)src_rate / (double)m->rate;
+    v->step = (double)src_rate / (double)m->rate * (double)clampf(p->pitch > 0.0f ? p->pitch : 1.0f, 0.5f, 2.0f);
     v->loop = p->loop;
     v->bus = (unsigned)p->bus < (unsigned)PRTS_BUS_COUNT ? p->bus : PRTS_BUS_EFFECTS;
     v->volume = clampf(p->volume, 0.0f, 8.0f);

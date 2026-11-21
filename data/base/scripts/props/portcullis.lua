@@ -2,7 +2,7 @@
 -- winch next to it. MIT License.
 local P = {}
 P.SPEED = 1.4 -- m/s
-P.SOUNDS = { clank = "sounds/lift_clank.wav", click = "sounds/lever_click.wav" }
+P.SOUNDS = { clank = "sounds/lift_clank.wav", click = "sounds/lever_click.wav", slam = "sounds/portcullis_slam.wav" }
 
 -- cfg = { name, x, z (centre of the passage where the grille hangs, across x), width, height,
 -- material, open (default true), winch = { x, y, z } }. Returns the grille entity.
@@ -29,6 +29,8 @@ function P.make(cfg)
   data.open = false
   local winch = prts.entity.spawn{ name = cfg.name .. ".winch", usable = true, pos = cfg.winch }
   prts.scene.box{ min = { -0.15, -0.3, -0.15 }, max = { 0.15, 0.3, 0.15 }, material = "oak", entity = winch }
+  -- picked a little beyond its edges (it is small)
+  prts.scene.box{ min = { -0.17, -0.34, -0.17 }, max = { 0.17, 0.34, 0.17 }, entity = winch, visible = false, use_only = true }
   prts.entity.data(winch).kind = "portcullis_winch"
   prts.entity.data(winch).grille = grille
   data.winch = winch
@@ -44,6 +46,7 @@ function P.set(grille, open, now)
   local x, _, z = prts.entity.local_pos(grille)
   local target = { x, open and data.lift or 0, z }
   if now then
+    data.quiet = true -- set when the map is built: no sound when it gets there
     prts.entity.move_to(grille, target, 1000)
   else
     prts.entity.move_to(grille, target, P.SPEED)
@@ -64,5 +67,25 @@ function P.on_use(e)
   return true
 end
 
+-- The grille reaching the sill: a slam that shakes the gate passage; raised, a lighter clank.
+function P.on_move_done(e)
+  local data = prts.entity.data(e)
+  if data.kind ~= "portcullis" then return false end
+  if data.quiet then
+    data.quiet = nil
+    return false
+  end
+  local x, y, z = prts.entity.pos(e)
+  if data.open then
+    prts.audio.play{ sound = P.SOUNDS.clank, entity = e, volume = 0.5, pitch = 1.2 }
+    require("game.feel").heavy(x, y, z, 0.15)
+  else
+    prts.audio.play{ sound = P.SOUNDS.slam, entity = e }
+    require("game.feel").heavy(x, y, z, 0.7)
+  end
+  return true
+end
+
 prts.events.on("use", "props.portcullis", P.on_use)
+prts.events.on("move_done", "props.portcullis", P.on_move_done)
 return P

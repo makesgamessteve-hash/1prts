@@ -168,7 +168,7 @@ are held and begin from their start at that moment, so scripts can start the men
 
 | Function | What it does |
 |---|---|
-| `prts.audio.play{ sound, at, entity, bus, volume, loop, range }` | Plays a sound at a point (`at`), on an entity (follows it, stops when it is gone) or without a position. `bus` defaults to `"effects"`. Returns a handle, or `nil` when every voice is busy. A missing file logs an error and plays a short placeholder beep. |
+| `prts.audio.play{ sound, at, entity, bus, volume, pitch, loop, range }` | Plays a sound at a point (`at`), on an entity (follows it, stops when it is gone) or without a position. `bus` defaults to `"effects"`. Returns a handle, or `nil` when every voice is busy. A missing file logs an error and plays a short placeholder beep. `pitch` plays it faster and higher (2) or slower and lower (0.5); default 1. |
 | `prts.audio.stop(h [, fade])` | Stops a sound, fading out over `fade` seconds. Returns `true` if it was playing. |
 | `prts.audio.music{ track, fade, volume }` | Cross-fades to a streamed music track over `fade` seconds (default 1); `track = nil` fades the music out. |
 | `prts.audio.set_volume(bus, v)` | Sets a bus volume (0..1). |
@@ -231,6 +231,9 @@ actions per scheme (`kbm`, `gamepad`, `touch`, `xr`); their overrides are kept i
 | `prts.commander.spawn{ marker \| pos, yaw, walk_speed, run_speed, sprint_speed, crouch_speed, jump_speed, eye_stand, eye_crouch, step_height, reach, look_sensitivity }` | Creates (or re-creates) the commander, the player's first-person body, at a marker or position. Returns its entity. |
 | `prts.commander.entity()` | The commander's entity, or nothing before it is spawned. |
 | `prts.commander.view()` | `yaw, pitch, eye_height, on_ground`. |
+| `prts.commander.feel()` | The body's feedback this tick: `{ steps, jumped, landed, speed, offset, pitch, trauma, motion, xr }`. `steps` counts footfalls (in time with the head bob; play a footstep when it goes up). `jumped` is `true` on the tick a jump starts. `landed` is the impact speed of a landing this tick (m/s, else 0). `speed` is the horizontal speed (m/s). `offset` and `pitch` are the view's own motion (m, rad). `trauma` is the shake (0..1). `motion` is the camera motion setting. `xr` is `true` in a headset, where the view never moves on its own. |
+| `prts.commander.impulse{ dip, shake }` | Feedback for the view: `dip` kicks it down (m/s, 0..10) and `shake` adds trauma (0..1; the shake grows with its square and fades by itself). Presentation only: never moves the body or the use ray. Off in XR and with camera motion 0. |
+| `prts.commander.set_feel{ motion }` | How much the view moves on its own (head bob, dips, shake): 0 turns it off, 1 is full. Kept across spawns and loads; the "Camera motion" game option sets it. |
 | `prts.commander.target()` | `entity, name` of the usable entity in view within reach (in XR: on the pointer ray of the pointer hand), or nothing (also before the commander is spawned). The ray stops at the first box it hits, solid or `use_only`, and the entity owning that box counts if it is usable. |
 
 ## `prts.xr`

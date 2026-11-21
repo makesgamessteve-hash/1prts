@@ -268,6 +268,82 @@ def alarm_bell(rnd):
     return normalize(out, 0.75)
 
 
+def armour_jingle(rnd, n, count, spread):
+    """Small rings of mail and buckles: short high bursts scattered over `spread` seconds."""
+    out = [0.0] * n
+    for _ in range(count):
+        at = int(rnd.uniform(0.0, spread) * RATE)
+        ring = partials(int(0.08 * RATE), [rnd.uniform(3000, 5200), rnd.uniform(6000, 7500)], [0.02, 0.012], [0.5, 0.3])
+        mix_into(out, at, ring, rnd.uniform(0.15, 0.4))
+    return out
+
+
+def land_thud(rnd):
+    """Boots coming down hard: a heavy thump, grit and the commander's armour."""
+    n = int(0.45 * RATE)
+    out = [0.0] * n
+    mix_into(out, 0, thump(n, 150, 48, 0.07), 1.0)
+    grit = lowpass(noise(rnd, n), 1200)
+    mix_into(out, 0, [s * math.exp(-i / (0.06 * RATE)) for i, s in enumerate(grit)], 2.4)
+    mix_into(out, int(0.01 * RATE), armour_jingle(rnd, n, 7, 0.12), 1.0)
+    return normalize(out, 0.7)
+
+
+def jump_rustle(rnd):
+    """Pushing off: a scuff of the boots and a rustle of cloth and mail."""
+    n = int(0.3 * RATE)
+    out = [0.0] * n
+    mix_into(out, 0, thump(int(0.12 * RATE), 120, 80, 0.02), 0.5)
+    cloth = bandpass(noise(rnd, n), 1800, 1.2)
+    env = [math.sin(math.pi * min(1.0, i / (0.25 * RATE))) ** 2 for i in range(n)]
+    mix_into(out, 0, [s * e for s, e in zip(cloth, env)], 1.2)
+    mix_into(out, int(0.03 * RATE), armour_jingle(rnd, n, 4, 0.15), 0.8)
+    return normalize(out, 0.5)
+
+
+def portcullis_slam(rnd):
+    """An iron grille hitting the stone sill: a deep boom, ringing bars and rattling chains."""
+    n = int(1.6 * RATE)
+    out = [0.0] * n
+    mix_into(out, 0, thump(n, 95, 32, 0.28), 1.2)
+    bars = ([96, 241, 377, 612, 958], [0.6, 0.45, 0.35, 0.25, 0.15], [0.6, 0.7, 0.5, 0.35, 0.2])
+    mix_into(out, 0, partials(n, *bars), 0.8)
+    rattle = [0.0] * n
+    t = 0.02
+    while t < 0.9:
+        mix_into(rattle, int(t * RATE), [math.exp(-i / 35.0) * rnd.uniform(-1, 1) for i in range(180)], rnd.uniform(0.2, 0.6) * (1.0 - t))
+        t += rnd.uniform(0.02, 0.06)
+    mix_into(out, 0, bandpass(rattle, 2800, 2), 1.4)
+    return normalize(out, 0.85)
+
+
+def talk_murmur(rnd):
+    """A placeholder voice: a short spoken 'hm-hm' (a buzz through two vowel formants)."""
+    n = int(0.42 * RATE)
+    buzz, ph = [], 0.0
+    for i in range(n):
+        t = i / RATE
+        f = 118 + 14 * math.sin(TAU * 2.3 * t) - 20 * t
+        ph += f / RATE
+        buzz.append(2.0 * (ph % 1.0) - 1.0)
+    voice = [a + b for a, b in zip(bandpass(buzz, 620, 4), bandpass(buzz, 1150, 5))]
+    env = [math.sin(math.pi * min(1.0, i / (0.18 * RATE))) ** 2 if i < 0.18 * RATE else
+           (math.sin(math.pi * min(1.0, (i - 0.22 * RATE) / (0.2 * RATE))) ** 2 if i > 0.22 * RATE else 0.0)
+           for i in range(n)]
+    return normalize([v * e for v, e in zip(voice, env)], 0.55)
+
+
+def discover_chime(rnd):
+    """A small hand bell, struck once: a new place found, an order done."""
+    n = int(1.8 * RATE)
+    out = [0.0] * n
+    base = 784.0
+    ratios = [1.0, 2.0, 2.76, 5.4]
+    mix_into(out, 0, partials(n, [base * r for r in ratios], [0.9, 0.5, 0.35, 0.15], [0.7, 0.35, 0.25, 0.1]), 1.0)
+    mix_into(out, 0, bandpass(noise(rnd, 120), 5000, 2), 0.2)
+    return normalize(out, 0.5)
+
+
 EFFECTS = [
     ("door_open", door_open),
     ("door_close", door_close),
@@ -277,6 +353,11 @@ EFFECTS = [
     ("forge_loop", forge_loop),
     ("torch_loop", torch_loop),
     ("alarm_bell", alarm_bell),
+    ("land_thud", land_thud),
+    ("jump_rustle", jump_rustle),
+    ("portcullis_slam", portcullis_slam),
+    ("talk_murmur", talk_murmur),
+    ("discover_chime", discover_chime),
 ]
 
 

@@ -3,6 +3,8 @@
 -- Everything is heard or read through the commander's eyes and ears (docs/concept/15-story.md).
 -- Text uses plain ASCII: the UI font has no other glyphs. MIT License.
 local subtitles = require("ui.subtitles")
+local progress = require("story.progress")
+local banner = require("ui.banner")
 
 local H = {}
 
@@ -126,6 +128,85 @@ H.NOTICES = {
   lines = { "Bar gates at dusk", "Man the wall-walks", "Count the arrows", "Watch the north" },
 }
 
+-- What the garrison reports as each of the castellan's orders is done.
+H.ORDER_LINES = {
+  bar_gates = { "Oswin Tarrant (stone)", "The King's Gate is barred, Marshal. Nobody in or out until the Captain says." },
+  wall_walks = { "Tobin Reed (stone)", "Wall-walks manned, Marshal. Every crenel has a pair of eyes on it." },
+  arrows = { "Quartermaster's tally", "Forty sheaves of twenty-four: nine hundred and sixty shafts. Enough for a hard week." },
+  north = { "Sending stone", "[No fires on the Merewatch. Far off on the meres something glints, then is gone.]" },
+}
+H.FINISHED = { "Edric Thorne (stone)",
+               "That is my list done, Marshal. Ring the dusk bell: Harrowmark is ready for the night." }
+
+local function in_rect(x, z, r) return x > r.x0 and x < r.x1 and z > r.z0 and z < r.z1 end
+
+-- On top of a curtain wall (between its inner and outer faces, at wall-walk height).
+local function on_wall(x, y, z, r)
+  local grown = { x0 = r.x0 - r.thick, x1 = r.x1 + r.thick, z0 = r.z0 - r.thick, z1 = r.z1 + r.thick }
+  return y > r.height - 0.3 and in_rect(x, z, grown) and not in_rect(x, z, r)
+end
+
+-- The places of Harrowmark announced the first time the Marshal reaches them.
+function H.places(map)
+  local I, O, R = map.INNER, map.OUTER, map.RAVEN
+  local inner_walls = { x0 = I.x0 - I.thick, x1 = I.x1 + I.thick, z0 = I.z0 - I.thick, z1 = I.z1 + I.thick }
+  return {
+    { id = "outer_ward", title = "The Outer Ward", sub = "Harrowmark, the Crown's fortress on the northern march",
+      inside = function(x, y, z) return y < 5 and in_rect(x, z, O) and not in_rect(x, z, inner_walls) end },
+    { id = "inner_ward", title = "The Inner Ward", sub = "Through the Lion Gate",
+      inside = function(x, y, z) return y < 5 and in_rect(x, z, I) end },
+    { id = "great_keep", title = "The Great Keep", sub = "The Marshal's hall",
+      inside = function(x, y, z) return prts.scene.in_zone("keep.great_hall", x, y, z) end },
+    { id = "war_room", title = "The War Room", sub = "The oldest war table in the kingdom",
+      inside = function(x, y, z) return prts.scene.in_zone("keep.floor3.war_room", x, y, z) end },
+    { id = "wall_walk", title = "The Wall-walk", sub = "Fifteen metres above the Inner Ward",
+      inside = function(x, y, z) return on_wall(x, y, z, I) or on_wall(x, y, z, O) end },
+    { id = "raven_tower", title = "The Raven Tower", sub = "The whole march below you",
+      inside = function(x, y, z)
+        return y > R.height - 0.3 and (x - R.x) ^ 2 + (z - R.z) ^ 2 < (R.radius + 1) ^ 2
+      end },
+  }
+end
+
+-- The castellan's orders (H.NOTICES, in the same order), each with the check that does it.
+function H.orders(map)
+  local I, O, R = map.INNER, map.OUTER, map.RAVEN
+  return {
+    { id = "bar_gates", text = H.NOTICES.lines[1], line = H.ORDER_LINES.bar_gates,
+      done = function()
+        local grille = map.kings_gate
+        return not prts.entity.data(grille).open and not prts.entity.moving(grille)
+      end },
+    { id = "wall_walks", text = H.NOTICES.lines[2], line = H.ORDER_LINES.wall_walks,
+      done = function(s) return on_wall(s.x, s.y, s.z, I) or on_wall(s.x, s.y, s.z, O) end },
+    { id = "arrows", text = H.NOTICES.lines[3], line = H.ORDER_LINES.arrows,
+      done = function(s) return s.used["harrowmark.arrow_store"] == true end },
+    { id = "north", text = H.NOTICES.lines[4], line = H.ORDER_LINES.north,
+      done = function(s) -- a moment on the Raven Tower's roof, looking north
+        local yaw = (s.yaw + math.pi) % (2 * math.pi) - math.pi
+        local up = s.y > R.height - 0.3 and (s.x - R.x) ^ 2 + (s.z - R.z) ^ 2 < (R.radius + 1) ^ 2
+        return progress.held_for("north", up and math.abs(yaw) < 0.6) >= 45
+      end },
+  }
+end
+
+-- All the orders done: the castellan's word, and the dusk bell rings from the Raven Tower.
+function H.finished()
+  local map = require("maps.proving_ground")
+  subtitles.say(H.FINISHED[1], H.FINISHED[2])
+  banner.show("Harrowmark stands ready", "All the castellan's orders are done", 0.7)
+  prts.audio.play{ sound = "sounds/alarm_bell.wav", at = { map.RAVEN.x, map.RAVEN.height, map.RAVEN.z }, range = 400 }
+  return true
+end
+
+-- Every session of this map keeps track of the places found and the orders done.
+function H.on_map_started(id)
+  if id ~= H.MAP then return false end
+  local map = require("maps." .. id)
+  progress.setup(H.places(map), H.orders(map), { board = map.notices, finished = H.finished })
+  return true
+end
+
 -- A session of this map started from the front-end menu opens with the prologue (runs that
 -- start the map at once, such as tests, do not ask for it).
 function H.on_session_started(id, opts)
@@ -135,4 +216,5 @@ function H.on_session_started(id, opts)
 end
 
 prts.events.on("session_started", "story.harrowmark", H.on_session_started)
+prts.events.on("session_started", "story.harrowmark.progress", H.on_map_started)
 return H

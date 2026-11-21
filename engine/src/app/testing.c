@@ -106,6 +106,8 @@ static int t_place(lua_State *L)
     prts_world_set_parent(e->world, c->entity, PRTS_ENTITY_NONE);
     prts_world_set_local(e->world, c->entity, pos, 0.0f);
     prts_world_begin_tick(e->world);
+    c->vel = prts_v3(0, 0, 0); /* placed standing still */
+    c->jump_buffer = 0;
     return 0;
 }
 

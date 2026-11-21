@@ -1,7 +1,7 @@
 # Screenshots
 
-`01`–`12` and `18`–`22` (Harrowmark: the outer ward, the wall-walk, the view from the Raven
-Tower, the inner ward and the King's Gate) are taken with `tests/game/scenarios/tour.lua` at 960×540 (OpenGL 3.3 core on Mesa
+`01`–`12`, `18`–`22` (Harrowmark: the outer ward, the wall-walk, the view from the Raven
+Tower, the inner ward and the King's Gate) and `26`–`27` are taken with `tests/game/scenarios/tour.lua` at 960×540 (OpenGL 3.3 core on Mesa
 llvmpipe under Xvfb, retro preset 270 lines):
 
 ```sh
@@ -15,6 +15,10 @@ labeled observer camera (developer builds only).
 `23`–`25` show the story told in first person: the prologue's subtitles on the road to the
 King's Gate, talking to a gate guard, and the castellan in the great hall with his orders on
 the notice board.
+
+`26` and `27` show what the fun audit (`tools/fun/README.md`) led to: a title card the first
+time the Marshal walks into a part of the castle, and one of the castellan's orders done (the
+arrows counted in the barracks), reported by the quartermaster's tally.
 
 These images show Banner & Bastion art and are licensed under CC BY 4.0 like the rest of the
 art (see `LICENSING.md`). Credit: "Banner & Bastion screenshot" by The Banner & Bastion

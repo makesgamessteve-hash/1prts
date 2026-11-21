@@ -11,6 +11,7 @@ are described in [`docs/architecture/quality-and-build.md`](../docs/architecture
 | `tests/game/determinism/` | Walks that are recorded, replayed (every tick's state hash must match) and recorded again (byte-identical) | CTest `determinism_<name>_record`, `_replay`, `_rerun`, `_identical` |
 | `tests/golden/` | Render golden images: fixed views compared with `tests/golden/ref/` (8 levels, at most 0.5% of pixels); refresh with `xvfb-run -a tools/golden/update` | CTest `render_golden`, `render_golden_catches_fog_change` (need a display) |
 | `web/tests/` | Browser end-to-end tests of the web build (Playwright + Chromium): boot, keyboard, audio unlock, mobile emulation with touch, IndexedDB, XR mock, and the scenario smoke set run in the page | `node web/tests/run.js` (CI `web` job; needs a web-release build with `-DPRTS_WEB_TEST_HOOKS=ON`) |
+| `tests/fun/` | The fun audit's instruments: a mod with telemetry, bot personas, Harrowmark's route graph and probes (never shipped), the persona episodes and the survey | `python3 tools/fun/audit.py` (see `tools/fun/README.md`); CTest `fun_survey` |
 | `tools/tests/` | Self-tests of the repository checks (asset validator, API documentation and spec coverage checks) | `python3 -I tools/tests/test_validate_assets.py` and `test_check_scripts.py` in the CI `checks` job |
 
 ```sh
@@ -134,3 +135,19 @@ is missing. References are C unit tests (`suite.case`), test files and scripts (
 | storytelling | Starting Harrowmark from the menu | `tests/game/scenarios/story_prologue.lua`, `data/base/scripts/tests/test_story.lua` (prologue only from the menu, option) |
 | storytelling | Talking to a guard | `tests/game/scenarios/npc_talk.lua`, `data/base/scripts/tests/test_story.lua`, `collide.use_boxes_stop_only_the_use_ray` |
 | storytelling | Reading the board | `tests/golden/golden.lua` (notice_board: the orders drawn on the board's surface), `data/base/scripts/tests/test_story.lua` (the board's text fits) |
+| audio-playback | Pitch changes the playback rate | `audio.pitch_changes_the_playback_rate` |
+| automated-testing | Auditing a build | `tools/fun/audit.py` (a 20-episode run per persona; reports kept in `docs/fun-audit/`), `tools/tests/test_fun_metrics.py` |
+| automated-testing | A way through the map is broken | `tests/fun/survey.lua` (CTest `fun_survey`; on the commit before the stair fix it fails naming `stair_foot - war_stair`) |
+| automated-testing | Same light, less waiting | `collide.bvh_matches_checking_every_box` (occlusion against brute force), `tests/golden/golden.lua` (CTest `render_golden`: the references are unchanged), `tests/fun/probe_frames.lua` (the audit's load time) |
+| castle-content | The keep's stairs to the war room | `tests/game/scenarios/keep_war_room_stairs.lua`, `tests/fun/survey.lua` |
+| commander-locomotion | Speeding up and slowing down | `commander.movement_feel_buffer_coyote_and_easing`, `commander.walking_speed_and_crouch`, `tests/game/scenarios/commander_feel.lua` |
+| commander-locomotion | Jump pressed just before landing | `commander.movement_feel_buffer_coyote_and_easing`, `tests/game/scenarios/commander_feel.lua` |
+| commander-locomotion | Jump just after the edge | `commander.movement_feel_buffer_coyote_and_easing`, `tests/fun/probe_feel.lua` (the audit's 40 human-timed jumps) |
+| commander-locomotion | Hang time | `commander.movement_feel_buffer_coyote_and_easing` |
+| commander-locomotion | Feel stays out of VR | `commander.movement_feel_buffer_coyote_and_easing` |
+| commander-locomotion | Footsteps and landings | `tests/game/scenarios/commander_feel.lua`, `data/base/scripts/tests/test_feel.lua` |
+| commander-locomotion | Camera motion setting | `tests/game/scenarios/commander_feel.lua`, `data/base/scripts/tests/test_feel.lua` |
+| commander-locomotion | Heavy things nearby | `data/base/scripts/tests/test_feel.lua` (the slam and the shake), `tests/fun/probe_feel.lua` (the shake stays under 4% of the view) |
+| storytelling | Coming through the King's Gate | `tests/game/scenarios/castellan_orders.lua`, `data/base/scripts/tests/test_feel.lua` |
+| storytelling | Doing the castellan's orders | `tests/game/scenarios/castellan_orders.lua`, `data/base/scripts/tests/test_feel.lua` |
+| storytelling | Talking to a guard turns them | `tests/game/scenarios/npc_talk.lua`, `data/base/scripts/tests/test_feel.lua` |

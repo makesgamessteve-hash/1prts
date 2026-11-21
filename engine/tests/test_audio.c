@@ -390,6 +390,34 @@ UTEST(audio, voices_handles_and_lifetimes)
     prts_sound_destroy(NULL);
 }
 
+UTEST(audio, pitch_changes_the_playback_rate)
+{
+    /* footsteps vary their pitch a little: pitch 2 plays twice as fast, so a sound ends in half
+     * the time; out-of-range pitches are clamped to 0.5 .. 2 */
+    enum { N = 4096 };
+    static float out[N * 2];
+    prts_mixer *m = prts_mixer_create(0);
+    prts_sound *s = sine(500.0, 0.5f, 2000, RATE);
+    prts_voice_params p;
+    prts_voice_params_default(&p);
+    ASSERT_EQ(1.0f, p.pitch);
+    p.sound = s;
+    p.pitch = 2.0f;
+    prts_voice_id fast = prts_mixer_play(m, &p);
+    p.pitch = 0.0f; /* unset: normal speed */
+    prts_voice_id normal = prts_mixer_play(m, &p);
+    p.pitch = 9.0f; /* clamped to 2 */
+    prts_voice_id clamped = prts_mixer_play(m, &p);
+    prts_mixer_render(m, out, 1100);
+    ASSERT_FALSE(prts_mixer_playing(m, fast));
+    ASSERT_FALSE(prts_mixer_playing(m, clamped));
+    ASSERT_TRUE(prts_mixer_playing(m, normal));
+    prts_mixer_render(m, out, 1000);
+    ASSERT_FALSE(prts_mixer_playing(m, normal));
+    prts_mixer_destroy(m);
+    prts_sound_destroy(s);
+}
+
 UTEST(audio, a_stream_that_ends)
 {
     enum { N = 4096 };

@@ -71,6 +71,7 @@ typedef struct prts_voice_params {
     prts_stream *stream;     /* or a stream, which the voice owns from now on */
     prts_audio_bus bus;
     float volume;            /* linear gain, 1 = unchanged */
+    float pitch;             /* playback rate, 1 = unchanged (0.5 .. 2; footsteps vary it a little) */
     bool loop;               /* sounds repeat; streams loop by themselves (kept for info) */
     bool positional;         /* false: plain stereo, no attenuation or panning */
     prts_dvec3 pos;          /* world position when positional */

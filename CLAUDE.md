@@ -16,5 +16,8 @@
   - Code is MIT. Art is CC BY 4.0 with a `CREDITS.md` entry for every asset file.
   - The simulation is deterministic per build: fixed tick, seeded RNG, no wall-clock time in
     simulation code.
+- To judge or improve how the game plays, use the `game-fun-evaluator` skill
+  (`.claude/skills/game-fun-evaluator/`). Its harness for this game is `python3 tools/fun/audit.py`
+  (bots, probes, the six pillars; see `tools/fun/README.md`). Earlier results are in `docs/fun-audit/`.
 - C symbols use the `prts_` prefix. Only `engine/src/platform/` and `engine/src/xr/` may include SDL or
   Emscripten headers. Only `engine/src/gfx/` may call OpenGL.

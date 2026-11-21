@@ -97,6 +97,13 @@ function O.draw_game()
     local value, changed = prts.ui.checkbox(o.label, g[o.key], "game." .. o.key)
     if changed then settings.set_game(o.key, value) end
   end
+  prts.ui.row({ 160, -1 })
+  prts.ui.label("Camera motion (bob, dips, shake)")
+  local v, moved = prts.ui.slider("game.camera_motion", g.camera_motion, 0, 1, 0.25)
+  if moved then
+    settings.set_game("camera_motion", v)
+    prts.commander.set_feel{ motion = v }
+  end
 end
 
 function O.draw_audio()

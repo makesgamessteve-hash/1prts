@@ -33,7 +33,13 @@ end)
 T.case("prompt texts by kind of object", function()
   local door = prts.entity.find("keep.door")
   T.eq(hud.prompt_text(door), prts.entity.data(door).open and "Close door" or "Open door")
-  T.eq(hud.prompt_text(prts.entity.find("keep.lift.lever")), "Pull the lever")
+  local lever = prts.entity.find("keep.lift.lever")
+  local lift = prts.entity.data(prts.entity.data(lever).lift)
+  T.eq(hud.prompt_text(lever), lift.current == #lift.floors and "Pull the lever: down" or "Pull the lever: up")
+  local grille = require("maps.proving_ground").kings_gate
+  local winch = prts.entity.data(grille).winch
+  T.eq(hud.prompt_text(winch), prts.entity.data(grille).open and "Lower the portcullis" or "Raise the portcullis")
+  T.eq(hud.prompt_text(prts.entity.find("harrowmark.arrow_store")), "Count the arrows")
   T.eq(hud.prompt_text(prts.entity.find("keep.lift.call0")), "Call the lift")
   local bell = prts.entity.spawn{ name = "bell", usable = true }
   prts.entity.data(bell).prompt = "Ring the bell"

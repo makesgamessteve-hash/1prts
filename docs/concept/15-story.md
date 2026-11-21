@@ -145,7 +145,9 @@ Nothing is shown from outside the commander's eyes.
 | Harrowmark as the map's name in the menu (map id `proving_ground`) | `scripts/game/session.lua` |
 | The prologue on the road before the King's Gate: Captain Ferrier over the sending stone, then the silent north | `scripts/story/harrowmark.lua` (`PROLOGUE`), played by `ui/subtitles.lua` |
 | Twelve people to talk to: the household in the Great Keep and on the road (Pell Durran, Maud Ferrier, Edric Thorne, Brannoc Hale, Wenna Pryce, Ansel Brook) and the garrison (Oswin Tarrant, Hedda Marsh, Garrick Holt, Ida Fenn, Tobin Reed, Bryn Calloway) | `scripts/story/harrowmark.lua` (`PEOPLE`), `props/npc.lua`; placed by `people()` and `garrison()` in `scripts/maps/proving_ground.lua` |
-| The castellan's orders on the great hall's notice board | `scripts/story/harrowmark.lua` (`NOTICES`) |
+| The castellan's orders on the great hall's notice board, as tasks. Bar the gates at dusk: lower the King's Gate portcullis. Man the wall-walks: climb onto one. Count the arrows: the arrow store in the barracks. Watch the north: look north from the Raven Tower's roof. Each one done is ticked off on the board, announced, and reported over the sending stone (the gate guard, the wall sentry, the quartermaster's tally, what the Marshal sees). All four done: the castellan's word, and the dusk bell rings | `scripts/story/harrowmark.lua` (`NOTICES`, `orders`, `ORDER_LINES`, `finished`), `scripts/story/progress.lua` |
+| Title cards the first time the Marshal reaches each part of the castle: the Outer Ward, the Inner Ward, the Great Keep, the War Room, the Wall-walk, the Raven Tower | `scripts/story/harrowmark.lua` (`places`), `ui/banner.lua` |
+| People at their posts turn to the Marshal while they talk, with a murmur of a voice, and turn back afterwards | `props/npc.lua` |
 
 Story text is plain data in Lua, so mods can replace it like any other script. It is written in
 plain ASCII, because the UI font has no other glyphs.

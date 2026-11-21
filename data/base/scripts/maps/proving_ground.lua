@@ -171,7 +171,10 @@ local function stairwell()
   prts.scene.cells{ "keep.stairs", "keep.floor3" }
   local F3 = F[3]
   B.box("planks", 8.6, F3 - M.SLAB, -5.7, 11, F3, -3)
-  B.box("planks", 6, F3 - M.SLAB, -9, 11, F3, -5.7)
+  -- the floor above the landing stops short of the upper flight, so a standing commander
+  -- climbs it without hitting their head (found by the fun audit's bots)
+  B.box("planks", 8.4, F3 - M.SLAB, -9, 11, F3, -5.7)
+  B.box("planks", 6, F3 - M.SLAB, -9, 8.4, F3, -6.6)
   prts.scene.cells{ "keep.stairs", "keep.floor3", "outside" }
   local sp = M.SPIRAL
   M.spiral_top = B.spiral("stone_floor", { center = { sp.x, sp.z }, base = F3, steps = sp.steps, radius = sp.radius,
@@ -449,6 +452,17 @@ local function outer_ward()
   Castle.hall{ x0 = -60, z0 = 62, x1 = -48, z1 = 72, height = 4.5, ridge = 2.5, material = "stone",
                door = { side = "x1", at = 67, width = 2.2 } }                               -- smithy
   prts.scene.marker("outer_ward", { 0, 0, 72 }, 0)
+  -- the quartermaster's arrow store just inside the barracks door: one of the castellan's orders
+  local store = prts.entity.spawn{ name = "harrowmark.arrow_store", pos = { 64.4, 0, 8.6 }, usable = true }
+  prts.scene.box{ min = { -0.6, 0, -0.4 }, max = { 0.6, 0.8, 0.4 }, material = "oak", entity = store }
+  for i = 0, 4 do -- sheaves of arrows standing in the crate
+    prts.scene.box{ min = { -0.48 + i * 0.22, 0.8, -0.22 }, max = { -0.36 + i * 0.22, 1.45, 0.22 }, material = "planks",
+                    entity = store, solid = false }
+  end
+  prts.scene.box{ min = { -0.66, 0, -0.45 }, max = { 0.66, 1.6, 0.45 }, entity = store, visible = false, use_only = true }
+  prts.entity.data(store).kind = "arrow_store"
+  prts.entity.data(store).prompt = "Count the arrows"
+  prts.scene.marker("arrow_store", { 63.6, 0, 7.0 }, math.pi) -- just inside, facing the crate
   prts.scene.marker("outer_wall_stair", { 17.5, 0, O.z1 - 0.9 }, -math.pi / 2)
 end
 

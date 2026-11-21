@@ -165,7 +165,8 @@ UTEST(commander, walking_speed_and_crouch)
     prts_input_override(in, "run", 1.0f, 30);
     prts_input_override(in, "move_right", 1.0f, 30);
     run_ticks(&c, w, cw, in, 30);
-    ASSERT_NEAR(3.5, prts_world_pos(w, c.entity).x - start.x, 0.1);
+    /* 1 s at 3.5 m/s, less the 0.15 s it takes to get up to speed */
+    ASSERT_NEAR(3.3, prts_world_pos(w, c.entity).x - start.x, 0.05);
     prts_input_override(in, "sprint", 1.0f, 30);
     prts_input_override(in, "move_back", 1.0f, 30);
     prts_input_override(in, "move_left", 1.0f, 30);
@@ -173,6 +174,116 @@ UTEST(commander, walking_speed_and_crouch)
     ASSERT_TRUE(c.stamina < p.stamina_max);
     prts_dvec3 eye = prts_commander_eye(&c, w, 1.0);
     ASSERT_NEAR(1.70, eye.y, 1e-4);
+    prts_input_destroy(in);
+    prts_cworld_destroy(cw);
+    prts_world_destroy(w);
+}
+
+static float flat_speed(const prts_commander *c) { return sqrtf(c->vel.x * c->vel.x + c->vel.z * c->vel.z); }
+
+UTEST(commander, movement_feel_buffer_coyote_and_easing)
+{
+    /* Spec (commander-locomotion): Speeding up and slowing down; Jump pressed just before
+     * landing; Jump just after the edge; Hang time; Feel stays out of XR */
+    prts_world *w = prts_world_create();
+    prts_cworld *cw = prts_cworld_create();
+    prts_cworld_add_box(cw, prts_aabb_make(prts_v3(-50, -1, -50), prts_v3(50, 0, 50)), PRTS_ENTITY_NONE);
+    prts_cworld_add_box(cw, prts_aabb_make(prts_v3(60, -1, -5), prts_v3(64, 1, 5)), PRTS_ENTITY_NONE); /* a ledge */
+    prts_input *in = commander_input();
+    prts_commander_params p;
+    prts_commander_params_default(&p);
+    prts_commander c;
+    prts_commander_init(&c, prts_world_spawn(w, "commander"), &p);
+    run_ticks(&c, w, cw, in, 3);
+    /* speeding up over 4-5 ticks and stopping over 3-4 */
+    prts_input_override(in, "run", 1.0f, 20);
+    prts_input_override(in, "move_forward", 1.0f, 20);
+    run_ticks(&c, w, cw, in, 1);
+    ASSERT_NEAR(0.8f, flat_speed(&c), 1e-4f);
+    run_ticks(&c, w, cw, in, 4);
+    ASSERT_NEAR(3.5f, flat_speed(&c), 1e-4f);
+    run_ticks(&c, w, cw, in, 15);
+    run_ticks(&c, w, cw, in, 2);
+    ASSERT_TRUE(flat_speed(&c) > 0.0f && flat_speed(&c) < 1.6f);
+    run_ticks(&c, w, cw, in, 2);
+    ASSERT_EQ(0.0f, flat_speed(&c));
+    ASSERT_TRUE(c.feel.steps > 0);
+    /* a jump pressed 3 ticks before landing happens on landing */
+    prts_input_override(in, "jump", 1.0f, 1);
+    run_ticks(&c, w, cw, in, 1);
+    ASSERT_TRUE(c.feel.jumped);
+    int air = 0;
+    while (!c.on_ground && air < 60) {
+        run_ticks(&c, w, cw, in, 1);
+        air++;
+    }
+    ASSERT_TRUE(c.feel.landed > 2.0f); /* landing impact for feedback */
+    ASSERT_EQ(28, air);                /* 0.93 s: hang time at the top (25 ticks without) */
+    prts_input_override(in, "jump", 1.0f, 1);
+    run_ticks(&c, w, cw, in, 1);
+    for (int i = 0; i < air - 4; i++) run_ticks(&c, w, cw, in, 1);
+    prts_input_override(in, "jump", 1.0f, 1); /* early: still in the air */
+    run_ticks(&c, w, cw, in, 1);
+    ASSERT_FALSE(c.on_ground);
+    int wait = 0;
+    while (!c.feel.jumped && wait < 10) {
+        run_ticks(&c, w, cw, in, 1);
+        wait++;
+    }
+    ASSERT_TRUE(c.feel.jumped);
+    ASSERT_EQ(4, wait); /* on the first tick that starts on the ground */
+    /* the view dips on landing and the spring brings it back */
+    while (!c.on_ground) run_ticks(&c, w, cw, in, 1);
+    run_ticks(&c, w, cw, in, 3);
+    ASSERT_TRUE(c.feel.offset < -0.01f);
+    float pitch = 1.0f;
+    ASSERT_TRUE(prts_commander_view_offset(&c, 0.5, &pitch) < 0.0f);
+    ASSERT_EQ(0.0f, pitch);
+    run_ticks(&c, w, cw, in, 60);
+    ASSERT_NEAR(0.0f, c.feel.offset, 2e-3f);
+    ASSERT_FALSE(c.jumping); /* landed */
+    /* a jump 2 ticks after running off the ledge still works (coyote time); before it, the fall
+     * has full gravity (hang time is for jumps only) */
+    prts_world_set_pos(w, c.entity, prts_dv3(62, 1, -3.5)); /* 1.5 m from the north edge */
+    run_ticks(&c, w, cw, in, 3);
+    int t = 0;
+    prts_input_override(in, "move_forward", 1.0f, 200);
+    while (c.on_ground && t < 100) {
+        run_ticks(&c, w, cw, in, 1);
+        t++;
+    }
+    ASSERT_FALSE(c.on_ground);
+    ASSERT_FALSE(c.jumping);
+    float before = c.vertical_speed;
+    run_ticks(&c, w, cw, in, 1);
+    ASSERT_NEAR(before - p.gravity / 30.0f, c.vertical_speed, 1e-4f);
+    prts_input_override(in, "jump", 1.0f, 1);
+    run_ticks(&c, w, cw, in, 1);
+    ASSERT_TRUE(c.feel.jumped);
+    ASSERT_TRUE(c.vertical_speed > 3.0f);
+    ASSERT_TRUE(c.jumping);
+    prts_input_override(in, "move_forward", 0.0f, 0);
+    run_ticks(&c, w, cw, in, 40);
+    /* shake from scripts, turned off by the motion setting, never in XR */
+    prts_commander_impulse(&c, 0.0f, 0.8f);
+    run_ticks(&c, w, cw, in, 2);
+    ASSERT_TRUE(fabsf(c.feel.offset) > 1e-4f || fabsf(c.feel.pitch) > 1e-4f);
+    ASSERT_TRUE(fabsf(c.feel.pitch) <= 0.03f);
+    c.feel.motion = 0.0f;
+    run_ticks(&c, w, cw, in, 1);
+    ASSERT_EQ(0.0f, c.feel.offset);
+    c.feel.motion = 1.0f;
+    prts_commander_impulse(&c, 2.0f, 1.0f);
+    c.xr.active = true;
+    run_ticks(&c, w, cw, in, 1);
+    ASSERT_EQ(0.0f, c.feel.offset);
+    ASSERT_EQ(0.0f, c.feel.pitch);
+    /* in XR walking starts and stops at once */
+    prts_input_override(in, "move_forward", 1.0f, 2);
+    run_ticks(&c, w, cw, in, 1);
+    ASSERT_NEAR(p.walk_speed, flat_speed(&c), 1e-4f);
+    run_ticks(&c, w, cw, in, 2);
+    ASSERT_EQ(0.0f, flat_speed(&c));
     prts_input_destroy(in);
     prts_cworld_destroy(cw);
     prts_world_destroy(w);

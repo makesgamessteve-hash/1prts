@@ -308,7 +308,7 @@ UTEST(snapshot, damaged_or_foreign_saves_are_refused)
     w.data[8] = 9;
     ASSERT_FALSE(load_bytes(e, w.data, w.len, err));
     ASSERT_TRUE(strstr(err, "save format 9 is not supported") != NULL);
-    w.data[8] = 1;
+    w.data[8] = (unsigned char)PRTS_SNAPSHOT_FORMAT;
     /* checksum */
     w.data[30] ^= 0x40;
     ASSERT_FALSE(load_bytes(e, w.data, w.len, err));
@@ -395,7 +395,7 @@ UTEST(snapshot, damaged_sections_are_named)
     prts_cworld_destroy(e->cworld);
     e->cworld = saved;
     /* script data section: rebuilt by hand after the commander */
-    size_t edata_at = boxes_at + 4u + prts_cworld_box_count(e->cworld) + 1u + 8u + 17u * 4u + 6u * 4u + 1u;
+    size_t edata_at = boxes_at + 4u + prts_cworld_box_count(e->cworld) + 1u + 8u + 17u * 4u + 8u * 4u + 1u + 2u;
     const unsigned char tails[][14] = {
         {1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 2},    /* one entity whose data is `true` */
         {5, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 6, 0}, /* five entities, data cut short */

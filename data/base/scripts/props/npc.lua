@@ -3,7 +3,9 @@
 -- shows their next line as a subtitle. MIT License.
 local subtitles = require("ui.subtitles")
 
-local NPC = {}
+local NPC = { turned = {} }
+NPC.SOUNDS = { talk = "sounds/talk_murmur.wav" }
+NPC.TURN_SPEED = 5 -- rad/s
 
 -- What the use ray hits on a person: their body, which nothing collides with (use_only).
 NPC.BODY = { min = { -0.3, 0, -0.3 }, max = { 0.3, 1.8, 0.3 } }
@@ -12,12 +14,19 @@ local function facing(dx, dz)
   return math.atan(-dx, -dz) -- yaw 0 looks along -z
 end
 
+-- The yaw to turn to for `want`, the short way round from where `e` faces now.
+local function turn_towards(e, want)
+  local now = prts.entity.yaw(e)
+  return now + ((want - now + math.pi) % (2 * math.pi) - math.pi)
+end
+
 -- n: name, sprite, pos {x, y, z}, yaw, patrol = { {x, y, z}, ... }, speed,
 -- person = { name, title, lines = { "...", ... } } for someone the commander can talk to
 function NPC.make(n)
   local e = prts.entity.spawn{ name = n.name, pos = n.pos, yaw = n.yaw or 0, usable = n.person ~= nil }
   local data = prts.entity.data(e)
   data.kind = "npc"
+  data.post_yaw = n.yaw or 0
   data.sprite = prts.scene.sprite{ sprite = n.sprite, entity = e, anim = "idle" }
   data.patrol = n.patrol
   data.speed = n.speed or 1.4
@@ -49,10 +58,36 @@ function NPC.next_line(e)
 end
 
 -- The person answers at once, over whatever was being said.
+-- Says the next line: a murmur of a voice, the subtitle, and someone standing at their post
+-- turns to face the commander while the line lasts (people on patrol keep walking).
 function NPC.talk(e)
   local speaker, text = NPC.next_line(e)
   subtitles.interrupt(speaker, text)
+  prts.audio.play{ sound = NPC.SOUNDS.talk, entity = e, volume = 0.8 }
+  local data = prts.entity.data(e)
+  local c = prts.commander.entity()
+  if c and not data.patrol then
+    local x, _, z = prts.entity.pos(e)
+    local cx, _, cz = prts.entity.pos(c)
+    prts.entity.rotate_to(e, turn_towards(e, facing(cx - x, cz - z)), NPC.TURN_SPEED)
+    data.turn_back = prts.time.tick() + subtitles.ticks(subtitles.duration(text))
+    NPC.turned[#NPC.turned + 1] = e
+  end
   return text
+end
+
+-- Back to their post once their line is over.
+function NPC.update(now)
+  for i = #NPC.turned, 1, -1 do
+    local e = NPC.turned[i]
+    local data = prts.entity.data(e)
+    if not data.turn_back or now >= data.turn_back then
+      if data.turn_back then prts.entity.rotate_to(e, turn_towards(e, data.post_yaw), NPC.TURN_SPEED) end
+      data.turn_back = nil
+      table.remove(NPC.turned, i)
+    end
+  end
+  return #NPC.turned
 end
 
 function NPC.on_use(e)
@@ -82,5 +117,6 @@ function NPC.on_move_done(e)
 end
 
 prts.events.on("move_done", "props.npc", NPC.on_move_done)
+prts.events.on("tick", "props.npc", NPC.update)
 prts.events.on("use", "props.npc", NPC.on_use)
 return NPC

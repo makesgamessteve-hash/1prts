@@ -31,11 +31,45 @@ typedef struct prts_commander_xr {
     prts_vec3 pointer_origin, pointer_dir;
 } prts_commander_xr;
 
+/* Movement feel (desktop and phone; never in XR, where the view must only move with the head):
+ * the body speeds up and slows down over a few ticks instead of at once, a jump pressed a
+ * little before landing is kept (input buffer), one pressed just after walking off an edge
+ * still counts (coyote time), and gravity eases off at the top of a jump (hang time). */
+#define PRTS_COMMANDER_ACCEL 24.0f     /* m/s^2 on the ground, towards the wanted velocity */
+#define PRTS_COMMANDER_DECEL 30.0f     /* m/s^2 on the ground when stopping */
+#define PRTS_COMMANDER_AIR_ACCEL 8.0f  /* m/s^2 in the air */
+#define PRTS_COMMANDER_JUMP_BUFFER 5   /* ticks a jump press is kept, its own tick included: */
+                                       /* a press up to 120 ms before landing still jumps */
+#define PRTS_COMMANDER_COYOTE 4        /* ticks of grace after leaving the ground: a press up */
+                                       /* to 100 ms after walking off an edge still jumps */
+#define PRTS_COMMANDER_APEX_SPEED 1.0f /* below this vertical speed in the air ... */
+#define PRTS_COMMANDER_APEX_GRAVITY 0.6f /* ... gravity is scaled by this */
+
+/* The view's own motion, for feedback only: it moves the camera, never the body, the use ray
+ * or the simulation, and is not part of the state hash or saves. Scaled by `motion` (the
+ * camera motion setting, 0 turns it off) and off in XR. */
+typedef struct prts_commander_feel {
+    float motion;                  /* 0..1 */
+    float dip, dip_vel;            /* the landing/jump dip: a damped spring (m, m/s) */
+    float bob_phase, bob_amp;      /* head bob while walking (rad, m) */
+    float trauma;                  /* shake, 0..1, decays; the shake grows with its square */
+    float offset, offset_prev;     /* vertical view offset this tick and the last (m) */
+    float pitch, pitch_prev;       /* pitch offset this tick and the last (rad) */
+    uint32_t steps;                /* footfalls so far (scripts play footsteps on them) */
+    uint32_t clock;                /* ticks, for the shake's deterministic wobble */
+    float landed;                  /* impact speed of a landing this tick (m/s), else 0 */
+    bool jumped;                   /* a jump started this tick */
+} prts_commander_feel;
+
 typedef struct prts_commander {
     prts_entity entity; /* feet position; parent frame = what it stands on */
     prts_commander_params p;
     float yaw, pitch;
     float vertical_speed;
+    prts_vec3 vel;               /* horizontal velocity (m/s, world axes) */
+    uint8_t jump_buffer, coyote; /* ticks left of a kept jump press / of coyote time */
+    bool jumping;                /* in the air from a jump (hang time applies), not from a fall */
+    prts_commander_feel feel;
     bool on_ground, crouched, hit_wall;
     float eye;      /* current eye height above the feet (smoothed) */
     float eye_prev; /* previous tick, for interpolation */
@@ -51,6 +85,10 @@ void prts_commander_init(prts_commander *c, prts_entity e, const prts_commander_
 void prts_commander_look(prts_commander *c, float dyaw, float dpitch);
 /* Simulates one fixed tick of movement. */
 void prts_commander_tick(prts_commander *c, prts_world *w, const prts_cworld *cw, const prts_input *in, float dt);
+/* Feedback impulses from scripts: `dip` kicks the view down (m/s), `shake` adds trauma (0..1). */
+void prts_commander_impulse(prts_commander *c, float dip, float shake);
+/* The view's feedback offset between the last two ticks: vertical metres, *pitch radians. */
+float prts_commander_view_offset(const prts_commander *c, double alpha, float *pitch);
 prts_aabb prts_commander_box(const prts_commander *c, const prts_world *w);
 /* Eye position in world space, interpolated between ticks. */
 prts_dvec3 prts_commander_eye(const prts_commander *c, const prts_world *w, double alpha);
