@@ -142,3 +142,67 @@ jobs:
         run: |
           python3 -I tools/tests/test_validate_assets.py
           python3 -I tools/tests/test_check_scripts.py
+
+  # Release archives (task 14.1): the executable with data/ and every license, extracted and run
+  # headless on each desktop platform (spec: Extract and run, Licenses included).
+  package:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, windows-2022, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ninja-build libx11-dev libxext-dev libxrandr-dev libxcursor-dev libxi-dev \
+            libxss-dev libxfixes-dev libxtst-dev libxkbcommon-dev libegl-dev libgl-dev libasound2-dev libpulse-dev
+      - if: runner.os == 'macOS'
+        run: brew install ninja
+      - if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@v1
+      - if: runner.os == 'Windows'
+        run: cmake --preset release -DCMAKE_C_COMPILER=cl
+      - if: runner.os != 'Windows'
+        run: cmake --preset release
+      - run: cmake --build --preset release --target 1stprts
+      - name: Package
+        working-directory: build/release
+        run: cpack
+      - name: Extract and run
+        shell: bash
+        run: |
+          PY=$(command -v python3 || command -v python)
+          "$PY" -I tools/package_smoke.py build/release/package/1stprts-*.* tests/game/scenarios/keep_door.lua
+      - uses: actions/upload-artifact@v4
+        with:
+          name: 1stprts-${{ runner.os }}
+          path: build/release/package/1stprts-*.*
+
+  # The web bundle (no test hooks), packed as a zip for any static web server.
+  package-web:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Emscripten and Ninja
+        run: |
+          sudo apt-get update && sudo apt-get install -y ninja-build
+          git clone --depth 1 https://github.com/emscripten-core/emsdk.git "$HOME/emsdk"
+          "$HOME/emsdk/emsdk" install 7.0.0
+          "$HOME/emsdk/emsdk" activate 7.0.0
+      - name: Build web-release
+        run: |
+          source "$HOME/emsdk/emsdk_env.sh"
+          cmake --preset web-release && cmake --build --preset web-release
+      - name: Bundle
+        run: |
+          mkdir -p dist/1stprts-web/licenses
+          cp build/web-release/bin/1stprts.* dist/1stprts-web/
+          cp LICENSE LICENSE-ASSETS LICENSING.md dist/1stprts-web/
+          for d in third_party/*/; do mkdir -p "dist/1stprts-web/licenses/$(basename $d)"; cp $d/LICENSE* "dist/1stprts-web/licenses/$(basename $d)/"; done
+          cd dist && zip -qr 1stprts-web.zip 1stprts-web
+      - uses: actions/upload-artifact@v4
+        with:
+          name: 1stprts-web
+          path: dist/1stprts-web.zip
