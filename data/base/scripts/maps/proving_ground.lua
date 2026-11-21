@@ -75,6 +75,11 @@ local function torch(x, y, z, facing_x, facing_z)
   prts.scene.light{ pos = { x + facing_x * 0.4, y + 0.3, z + facing_z * 0.4 }, color = { 1.35, 0.82, 0.42 }, radius = 11 }
 end
 
+-- A looping ambience sound at a fixed place (the forge, torches).
+local function ambience(sound, x, y, z, volume, range)
+  return prts.audio.play{ sound = sound, at = { x, y, z }, bus = "ambience", loop = true, volume = volume, range = range }
+end
+
 -- An upper floor, leaving holes for the stairwell (north-east) and the lift shaft (west).
 -- Places a model (glTF or .vox); opts: yaw, scale, solid, name (marker prefix).
 local function model(path, x, y, z, opts)
@@ -188,6 +193,8 @@ local function great_hall()
   prts.scene.light{ pos = { 0, F[1] + 1.4, -7.0 }, color = { 1.6, 0.75, 0.3 }, radius = 12 }
   torch(-10.9, F[1] + 2.4, 6.0, 1, 0)
   torch(-1.6, F[1] + 2.4, 8.9, 0, -1)
+  M.torch_sounds = { ambience("sounds/torch_loop.wav", -1.6, F[1] + 2.5, 8.9, 0.5, 12),
+                     ambience("sounds/torch_loop.wav", 5.0, F[1] + 2.5, 8.9, 0.5, 12) }
   prts.scene.zone("keep.great_hall", { -11, F[1] - 0.1, -9 }, { 11, F[2] - M.SLAB, 9 })
 end
 
@@ -207,6 +214,7 @@ local function forge_room()
   model("models/crate.vox", -10.3, F[1] + 0.84, -5.0, { yaw = 0.4, scale = 0.07, solid = true })
   model("models/crate.vox", -10.2, F[1], -6.0, { yaw = 0.1, scale = 0.07, solid = true })
   prts.scene.light{ pos = { -9.7, F[1] + 1.8, -7.6 }, color = { 1.3, 0.55, 0.2 }, radius = 9 }
+  M.forge_sound = ambience("sounds/forge_loop.wav", -9.7, F[1] + 1.0, -8.1, 1.0, 25)
   prts.scene.zone("keep.forge", { -11, F[1] - 0.1, -9 }, { -4.9, F[2] - M.SLAB, -4.3 })
 end
 

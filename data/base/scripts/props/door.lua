@@ -1,6 +1,7 @@
 -- Hinged doors that open and close with the `use` action. MIT License.
 local Door = {}
 local SPEED = 2.5 -- radians per second
+Door.SOUNDS = { open = "sounds/door_open.wav", close = "sounds/door_close.wav" }
 
 -- Spawns a door: hinge at `hinge`, closed along local +x for `width` meters.
 function Door.make(d)
@@ -23,6 +24,7 @@ function Door.toggle(e)
   local target = data.closed_yaw + (data.open and data.swing or 0)
   prts.entity.rotate_to(e, target, SPEED)
   if data.portal then prts.scene.set_portal(data.portal, data.open) end
+  data.sound = prts.audio.play{ sound = data.open and Door.SOUNDS.open or Door.SOUNDS.close, entity = e }
   return data.open
 end
 

@@ -2,7 +2,7 @@
 file(GLOB_RECURSE PRTS_ENGINE_SOURCES CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/src/*.c)
 add_library(prts STATIC ${PRTS_ENGINE_SOURCES})
 target_include_directories(prts PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
-target_link_libraries(prts PUBLIC prts_lua prts_stb prts_cgltf SDL3::SDL3)
+target_link_libraries(prts PUBLIC prts_lua prts_stb prts_stb_vorbis prts_cgltf SDL3::SDL3)
 if(PRTS_DEV)
   target_compile_definitions(prts PUBLIC PRTS_DEV=1 PRTS_SOURCE_DATA_DIR="${CMAKE_SOURCE_DIR}/data")
 endif()

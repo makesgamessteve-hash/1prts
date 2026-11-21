@@ -4,6 +4,7 @@ local Lift = {}
 local SPEED = 1.6      -- m/s
 local GATE_RISE = 2.6  -- how far a gate slides up when open
 local GATE_SPEED = 2.0
+Lift.SOUNDS = { clank = "sounds/lift_clank.wav", click = "sounds/lever_click.wav" }
 
 -- cfg: name, pos {x, y, z} of the platform at the ground floor, floors {heights},
 -- size {w, d}, gate (x offset of the gates), material, gate_material, lever_material
@@ -63,6 +64,7 @@ function Lift.go_to(platform, i)
   for g = 1, #state.gates do Lift.set_gate(platform, g, false) end
   state.target = i
   prts.entity.move_to(platform, { state.x, state.floors[i], state.z }, SPEED)
+  prts.audio.play{ sound = Lift.SOUNDS.clank, entity = platform }
   return true
 end
 
@@ -75,8 +77,10 @@ end
 function Lift.on_use(e)
   local data = prts.entity.data(e)
   if data.kind == "lift_call" then
+    prts.audio.play{ sound = Lift.SOUNDS.click, entity = e }
     return Lift.go_to(data.lift, data.floor)
   elseif data.kind == "lift_lever" then
+    prts.audio.play{ sound = Lift.SOUNDS.click, entity = e }
     return Lift.go_to(data.lift, Lift.lever_target(prts.entity.data(data.lift)))
   end
   return false
@@ -86,6 +90,7 @@ function Lift.on_move_done(e)
   local state = prts.entity.data(e)
   if state.kind ~= "lift" then return false end
   state.current = state.target
+  prts.audio.play{ sound = Lift.SOUNDS.clank, entity = e, volume = 0.7 }
   Lift.set_gate(e, state.current, true)
   return true
 end

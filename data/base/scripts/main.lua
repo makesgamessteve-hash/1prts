@@ -10,4 +10,5 @@ local map = require("maps.proving_ground")
 map.build()
 
 prts.commander.spawn{ marker = "start" }
+prts.audio.music{ track = "music/proving_ground.ogg", fade = 2 }
 prts.log.info("Proving Ground ready (scripting API " .. prts.api_version .. ")")

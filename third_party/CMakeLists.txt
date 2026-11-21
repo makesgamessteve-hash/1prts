@@ -16,6 +16,21 @@ endif()
 add_library(prts_stb INTERFACE)
 target_include_directories(prts_stb SYSTEM INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/stb)
 
+# stb_vorbis: OGG Vorbis decoding (sound effects and streamed music). Users include
+# <stb_vorbis.c> with STB_VORBIS_HEADER_ONLY for the declarations.
+add_library(prts_stb_vorbis STATIC ${CMAKE_CURRENT_SOURCE_DIR}/stb/stb_vorbis.c)
+target_include_directories(prts_stb_vorbis SYSTEM PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/stb)
+target_compile_definitions(prts_stb_vorbis PUBLIC STB_VORBIS_NO_STDIO STB_VORBIS_NO_PUSHDATA_API)
+set_target_properties(prts_stb_vorbis PROPERTIES C_STANDARD 11 C_EXTENSIONS ON POSITION_INDEPENDENT_CODE ON)
+if(UNIX AND NOT EMSCRIPTEN)
+  target_link_libraries(prts_stb_vorbis PUBLIC m)
+endif()
+if(MSVC)
+  target_compile_options(prts_stb_vorbis PRIVATE /W0)
+else()
+  target_compile_options(prts_stb_vorbis PRIVATE -w)
+endif()
+
 add_library(prts_utest INTERFACE)
 target_include_directories(prts_utest SYSTEM INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/utest)
 
