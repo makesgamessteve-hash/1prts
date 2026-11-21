@@ -2,6 +2,7 @@
 #include <SDL3/SDL.h>
 #include <string.h>
 
+#include "platform/web_glue.h"
 #include "prts/prts_fs.h"
 
 bool prts_fs_is_dir(const char *path)
@@ -99,9 +100,13 @@ char *prts_fs_base_dir(void)
 
 char *prts_fs_user_dir(void)
 {
+#if defined(__EMSCRIPTEN__)
+    return prts_strdup(PRTS_WEB_USER_DIR); /* IndexedDB-backed and kept in sync by web/prts_pre.js */
+#else
     char *pref = SDL_GetPrefPath("1stPRTS", "1stprts");
     if (!pref) return NULL;
     char *out = strip_trailing_sep(pref);
     SDL_free(pref);
     return out;
+#endif
 }

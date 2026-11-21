@@ -21,9 +21,11 @@
   (enable a mod), `--user <dir>` (user data directory, which tests use for isolation).
 - **Web**: `1stprts.html`, `1stprts.js`, `1stprts.wasm` and **`1stprts.data`** (the packed
   `data/` folder, loaded by Emscripten's file packager into an in-memory file system at
-  `/data`). The data file is a separate download and can be rebuilt without rebuilding the
-  `.wasm`. The user data directory on the web is IndexedDB-backed (`/user`), so settings and
-  saves are kept between visits.
+  `/data`). The data file is a separate download (with its small loader `1stprts.data.js`, which
+  the shell page loads first) and can be rebuilt without rebuilding the `.wasm`. The user data
+  directory on the web is IndexedDB-backed (`/user`, IDBFS): it is loaded before the engine
+  starts and every change is written back after the frame that made it (IDBFS `autoPersist`), so
+  settings and saves are kept between visits. See `web/` and `cmake/PrtsWeb.cmake`.
 
 ## 2. Virtual file system (VFS)
 

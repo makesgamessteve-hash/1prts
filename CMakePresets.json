@@ -15,10 +15,10 @@
     { "name": "sanitize", "inherits": "base", "displayName": "Clang ASan + UBSan",
       "cacheVariables": { "CMAKE_BUILD_TYPE": "Debug", "CMAKE_C_COMPILER": "clang", "PRTS_DEV": "ON",
         "CMAKE_C_FLAGS": "-fsanitize=address,undefined -fno-omit-frame-pointer" } },
-    { "name": "web-dev", "inherits": "base", "displayName": "Emscripten debug (planned)",
+    { "name": "web-dev", "inherits": "base", "displayName": "Emscripten debug, browser test hooks on",
       "toolchainFile": "$env{EMSDK}/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake",
-      "cacheVariables": { "CMAKE_BUILD_TYPE": "Debug", "PRTS_BUILD_TESTS": "OFF" } },
-    { "name": "web-release", "inherits": "base", "displayName": "Emscripten release (planned)",
+      "cacheVariables": { "CMAKE_BUILD_TYPE": "Debug", "PRTS_BUILD_TESTS": "OFF", "PRTS_WEB_TEST_HOOKS": "ON" } },
+    { "name": "web-release", "inherits": "base", "displayName": "Emscripten release (CI adds -DPRTS_WEB_TEST_HOOKS=ON)",
       "toolchainFile": "$env{EMSDK}/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake",
       "cacheVariables": { "CMAKE_BUILD_TYPE": "Release", "PRTS_BUILD_TESTS": "OFF", "PRTS_DEV": "OFF" } }
   ],
@@ -26,7 +26,9 @@
     { "name": "dev", "configurePreset": "dev" },
     { "name": "release", "configurePreset": "release" },
     { "name": "coverage", "configurePreset": "coverage" },
-    { "name": "sanitize", "configurePreset": "sanitize" }
+    { "name": "sanitize", "configurePreset": "sanitize" },
+    { "name": "web-dev", "configurePreset": "web-dev" },
+    { "name": "web-release", "configurePreset": "web-release" }
   ],
   "testPresets": [
     { "name": "dev", "configurePreset": "dev", "output": { "outputOnFailure": true } },

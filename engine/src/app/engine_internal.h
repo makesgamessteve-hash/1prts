@@ -39,6 +39,7 @@ struct prts_engine {
     bool quit;
     int exit_code;
     double time;
+    uint64_t frames; /* prts_engine_frame calls */
     /* scenario runner */
     lua_State *co;
     int co_ref;

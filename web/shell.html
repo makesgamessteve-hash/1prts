@@ -1,0 +1,164 @@
+<!doctype html>
+<!-- 1stPRTS web shell page (Emscripten --shell-file). MIT License. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<title>1stPRTS</title>
+<style>
+  :root { --bg: #0d0f12; --fg: #e8e2d4; --dim: #9a948a; --accent: #d9a441; --panel: rgba(13, 15, 18, 0.92); }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--fg); overflow: hidden;
+    font: 16px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  /* The canvas fills the page; SDL follows its CSS size (resizable window, external size). */
+  #canvas { position: fixed; inset: 0; width: 100%; height: 100%; display: block; outline: none;
+    touch-action: none; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+  .prts-panel { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%);
+    width: min(28rem, calc(100% - 2rem)); box-sizing: border-box; padding: 1.5rem 1.75rem;
+    background: var(--panel); border: 1px solid #2a2d33; border-radius: 6px; text-align: center; }
+  .prts-panel h1 { margin: 0 0 0.75rem; font-size: 1.6rem; letter-spacing: 0.08em; color: var(--accent); }
+  .prts-panel p { margin: 0.5rem 0; }
+  #prts-status { color: var(--dim); font-size: 0.95rem; min-height: 1.4em; }
+  #prts-progress { width: 100%; height: 0.6rem; margin-top: 0.75rem; accent-color: var(--accent); }
+  #prts-message { text-align: left; }
+  #prts-message h1 { text-align: center; }
+  #prts-message-text { white-space: pre-wrap; }
+  #prts-enter-vr { position: fixed; right: max(1rem, env(safe-area-inset-right)); bottom: max(1rem, env(safe-area-inset-bottom));
+    padding: 0.6rem 1.1rem; font: inherit; font-weight: 600; color: var(--bg); background: var(--accent);
+    border: 0; border-radius: 4px; cursor: pointer; }
+  #prts-enter-vr:focus-visible { outline: 2px solid var(--fg); outline-offset: 2px; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body data-prts-state="loading" data-prts-xr="unknown">
+<canvas id="canvas" tabindex="0" aria-label="1stPRTS game view" oncontextmenu="event.preventDefault()"></canvas>
+
+<div id="prts-overlay" class="prts-panel" aria-live="polite">
+  <h1>1stPRTS</h1>
+  <p id="prts-status">Loading…</p>
+  <progress id="prts-progress" max="1"></progress>
+</div>
+
+<div id="prts-message" class="prts-panel" role="alert" hidden>
+  <h1 id="prts-message-title"></h1>
+  <p id="prts-message-text"></p>
+</div>
+
+<!-- Shown by web/prts_xr.js only when the browser supports immersive VR. -->
+<button id="prts-enter-vr" type="button" hidden>Enter VR</button>
+
+<!-- The engine's loader. Kept inert here and started by the script below once WebGL 2 is known
+     to work, so a browser without it downloads nothing. -->
+<template id="prts-main-script">{{{ SCRIPT }}}</template>
+
+<script>
+(function () {
+  'use strict';
+  var body = document.body;
+  var overlay = document.getElementById('prts-overlay');
+  var statusEl = document.getElementById('prts-status');
+  var progressEl = document.getElementById('prts-progress');
+  var lastErrors = [];
+
+  function setState(state) { body.dataset.prtsState = state; }
+
+  function showMessage(title, text) {
+    document.getElementById('prts-message-title').textContent = title;
+    document.getElementById('prts-message-text').textContent = text;
+    overlay.hidden = true;
+    document.getElementById('prts-message').hidden = false;
+  }
+
+  function hasWebGL2() {
+    try {
+      return !!(window.WebGL2RenderingContext && document.createElement('canvas').getContext('webgl2'));
+    } catch (e) {
+      return false;
+    }
+  }
+
+  // Spec "Browser without WebGL 2": a readable message instead of a blank page.
+  if (!hasWebGL2()) {
+    setState('no-webgl2');
+    showMessage('WebGL 2 is required',
+      '1stPRTS needs WebGL 2, and this browser could not provide it, so the game cannot start.\n\n' +
+      'Use a current version of Chrome, Edge, Firefox or Safari, and check that hardware ' +
+      'acceleration (graphics acceleration) is turned on in the browser settings.');
+    return;
+  }
+
+  window.Module = {
+    canvas: document.getElementById('canvas'),
+    print: function (text) { console.log(text); },
+    printErr: function (text) {
+      console.warn(text);
+      lastErrors.push(text);
+      if (lastErrors.length > 8) lastErrors.shift();
+    },
+    // The data package reports "Downloading data... (loaded/total)".
+    setStatus: function (text) {
+      if (!text) return;
+      var m = /\((\d+(?:\.\d+)?)\/(\d+)\)/.exec(text);
+      if (m && +m[2] > 0) {
+        progressEl.value = +m[1] / +m[2];
+        statusEl.textContent = 'Downloading game data… ' + Math.round(100 * m[1] / m[2]) + '%';
+      } else {
+        statusEl.textContent = text;
+      }
+    },
+    monitorRunDependencies: function (left) {
+      if (left === 0) statusEl.textContent = 'Starting…';
+    },
+    postRun: [function () {
+      if (body.dataset.prtsState !== 'loading') return;
+      progressEl.value = 1;
+      overlay.hidden = true;
+      setState('started');
+      Module.canvas.focus();
+    }],
+    onAbort: function (what) {
+      setState('error');
+      showMessage('1stPRTS stopped', 'The game stopped because of an internal error.\n\n' +
+        (lastErrors.length ? lastErrors.join('\n') : String(what)));
+    },
+    // Called by the engine (web/prts_web.js) for errors it would show in a dialog on desktop.
+    prtsShowError: function (title, text) {
+      setState('error');
+      showMessage(title, text);
+    }
+  };
+
+  Module.canvas.addEventListener('webglcontextlost', function (e) {
+    e.preventDefault();
+    setState('error');
+    showMessage('The graphics context was lost', 'Reload the page to continue.');
+  });
+
+  function load(src, inline) {
+    return new Promise(function (resolve, reject) {
+      var s = document.createElement('script');
+      if (inline) {
+        s.textContent = inline;
+      } else {
+        s.src = src;
+        s.onload = resolve;
+        s.onerror = function () { reject(new Error('could not load ' + src)); };
+      }
+      document.body.appendChild(s);
+      if (inline) resolve();
+    });
+  }
+
+  // The data package must register before the engine's loader runs.
+  var main = document.getElementById('prts-main-script').content.querySelector('script');
+  load('1stprts.data.js').then(function () {
+    return load(main.getAttribute('src'), main.getAttribute('src') ? null : main.textContent);
+  }).catch(function (err) {
+    setState('error');
+    showMessage('1stPRTS could not be loaded', String(err.message || err) +
+      '\n\nCheck the connection and reload the page.');
+  });
+})();
+</script>
+</body>
+</html>
