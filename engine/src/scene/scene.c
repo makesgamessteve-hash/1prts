@@ -108,6 +108,8 @@ prts_scene *prts_scene_create(void)
     prts_array_init(&s->lines, sizeof(prts_line_set));
     prts_array_init(&s->cells, sizeof(prts_cell));
     prts_array_init(&s->surfaces, sizeof(prts_surface));
+    prts_array_init(&s->sprite_defs, sizeof(prts_sprite_def));
+    prts_array_init(&s->sprites, sizeof(prts_sprite));
     prts_array_init(&s->portals, sizeof(prts_portal));
     prts_scene_clear(s);
     return s;
@@ -125,6 +127,8 @@ void prts_scene_clear(prts_scene *s)
     prts_array_clear(&s->lines);
     prts_array_clear(&s->cells);
     prts_array_clear(&s->surfaces);
+    prts_array_clear(&s->sprite_defs);
+    prts_array_clear(&s->sprites);
     prts_array_clear(&s->portals);
     prts_cell outside;
     memset(&outside, 0, sizeof(outside));
@@ -149,6 +153,8 @@ void prts_scene_destroy(prts_scene *s)
     prts_array_free(&s->lines);
     prts_array_free(&s->cells);
     prts_array_free(&s->surfaces);
+    prts_array_free(&s->sprite_defs);
+    prts_array_free(&s->sprites);
     prts_array_free(&s->portals);
     prts_free(s);
 }
@@ -500,4 +506,52 @@ int prts_scene_find_surface(const prts_scene *s, const char *name)
         if (strcmp(((prts_surface *)prts_array_at(&s->surfaces, i))->name, name) == 0) return (int)i;
     }
     return -1;
+}
+
+int prts_scene_add_sprite_def(prts_scene *s, const prts_sprite_def *def)
+{
+    prts_array_push(&s->sprite_defs, def);
+    s->revision++;
+    return (int)s->sprite_defs.len - 1;
+}
+
+int prts_scene_find_sprite_def(const prts_scene *s, const char *path)
+{
+    for (size_t i = 0; i < s->sprite_defs.len; i++) {
+        if (strcmp(((prts_sprite_def *)prts_array_at(&s->sprite_defs, i))->path, path) == 0) return (int)i;
+    }
+    return -1;
+}
+
+int prts_scene_find_anim(const prts_sprite_def *def, const char *name)
+{
+    for (int i = 0; i < def->anim_count; i++) {
+        if (strcmp(def->anims[i].name, name) == 0) return i;
+    }
+    return -1;
+}
+
+int prts_scene_add_sprite(prts_scene *s, const prts_sprite *sprite)
+{
+    prts_sprite copy = *sprite;
+    copy.cells = s->current_cells;
+    prts_array_push(&s->sprites, &copy);
+    return (int)s->sprites.len - 1;
+}
+
+int prts_sprite_direction(float facing_yaw, prts_vec3 to_viewer, int directions)
+{
+    if (directions <= 1) return 0;
+    /* yaw convention: yaw 0 looks along -z, so the yaw pointing at the viewer is atan2(-x, -z) */
+    float towards = atan2f(-to_viewer.x, -to_viewer.z);
+    float diff = prts_wrap_angle(towards - facing_yaw);
+    float step = (float)(2.0 * PRTS_PI) / (float)directions;
+    int d = (int)lroundf(diff / step);
+    return ((d % directions) + directions) % directions;
+}
+
+int prts_sprite_frame(const prts_sprite_anim *a, double seconds)
+{
+    if (a->frames <= 1 || a->fps <= 0.0f || seconds <= 0.0) return 0;
+    return (int)fmod(floor(seconds * (double)a->fps), (double)a->frames);
 }

@@ -287,6 +287,82 @@ static int l_scene_surface(lua_State *L)
     return 1;
 }
 
+/* Loads (once) a sprite definition from its Lua metadata file through the VFS. */
+static int load_sprite_def(lua_State *L, prts_engine *e, const char *path)
+{
+    int found = prts_scene_find_sprite_def(e->scene, path);
+    if (found >= 0) return found;
+    char *code = NULL;
+    if (prts_vfs_read(e->vfs, path, &code, NULL) != PRTS_VFS_OK) return luaL_error(L, "cannot read sprite '%s'", path);
+    bool ok = prts_script_eval_data(e->script, code, path);
+    prts_free(code);
+    if (!ok || !lua_istable(L, -1)) return luaL_error(L, "sprite '%s' is not a data table", path);
+    int t = lua_gettop(L);
+    prts_sprite_def def;
+    memset(&def, 0, sizeof(def));
+    strncpy(def.path, path, sizeof(def.path) - 1);
+    strncpy(def.texture, field_string(L, t, "texture", ""), sizeof(def.texture) - 1);
+    prts_vec3 frame = prts_v3(32, 64, 0);
+    read_vec3(L, t, "frame", &frame);
+    def.frame_w = (int)frame.x;
+    def.frame_h = (int)frame.y;
+    def.columns = PRTS_MAX(1, (int)field_number(L, t, "columns", 1));
+    def.rows = PRTS_MAX(1, (int)field_number(L, t, "rows", 1));
+    def.height = field_number(L, t, "height", 1.8f);
+    def.directions = PRTS_MAX(1, (int)field_number(L, t, "directions", 8));
+    lua_getfield(L, t, "anims");
+    int anims = lua_gettop(L);
+    for (int i = 1; def.anim_count < PRTS_SPRITE_MAX_ANIMS && lua_istable(L, anims) && lua_rawgeti(L, anims, i) == LUA_TTABLE; i++) {
+        int a = lua_gettop(L);
+        prts_sprite_anim *an = &def.anims[def.anim_count++];
+        strncpy(an->name, field_string(L, a, "name", "idle"), sizeof(an->name) - 1);
+        an->first_row = (int)field_number(L, a, "first_row", 0);
+        an->frames = PRTS_MAX(1, (int)field_number(L, a, "frames", 1));
+        an->fps = field_number(L, a, "fps", 1.0f);
+        lua_pop(L, 1);
+    }
+    lua_settop(L, t - 1);
+    if (def.anim_count == 0) return luaL_error(L, "sprite '%s' has no animations", path);
+    return prts_scene_add_sprite_def(e->scene, &def);
+}
+
+/* prts.scene.sprite{ sprite = "sprites/x.lua", pos =, yaw =, entity =, anim = } -> id */
+static int l_scene_sprite(lua_State *L)
+{
+    prts_engine *e = prts_engine_from_lua(L);
+    luaL_checktype(L, 1, LUA_TTABLE);
+    const char *path = field_string(L, 1, "sprite", NULL);
+    if (!path) return luaL_error(L, "field 'sprite' is required");
+    prts_sprite sp;
+    memset(&sp, 0, sizeof(sp));
+    sp.def = load_sprite_def(L, e, path);
+    sp.owner = opt_entity(L, 1, "entity");
+    read_vec3(L, 1, "pos", &sp.pos);
+    sp.yaw = field_number(L, 1, "yaw", 0.0f);
+    const prts_sprite_def *def = prts_array_at(&e->scene->sprite_defs, (size_t)sp.def);
+    sp.anim = PRTS_MAX(0, prts_scene_find_anim(def, field_string(L, 1, "anim", "idle")));
+    sp.anim_start = (double)e->clock.tick * e->clock.tick_seconds;
+    lua_pushinteger(L, prts_scene_add_sprite(e->scene, &sp));
+    return 1;
+}
+
+/* prts.scene.sprite_anim(id, name): switches animation (restarting it). */
+static int l_scene_sprite_anim(lua_State *L)
+{
+    prts_engine *e = prts_engine_from_lua(L);
+    lua_Integer id = luaL_checkinteger(L, 1);
+    prts_sprite *sp = id >= 0 ? prts_array_at(&e->scene->sprites, (size_t)id) : NULL;
+    if (!sp) return luaL_error(L, "unknown sprite %d", (int)id);
+    const prts_sprite_def *def = prts_array_at(&e->scene->sprite_defs, (size_t)sp->def);
+    int a = prts_scene_find_anim(def, luaL_checkstring(L, 2));
+    if (a < 0) return luaL_error(L, "sprite has no animation '%s'", lua_tostring(L, 2));
+    if (a != sp->anim) {
+        sp->anim = a;
+        sp->anim_start = (double)e->clock.tick * e->clock.tick_seconds;
+    }
+    return 0;
+}
+
 /* --- cells and portals ------------------------------------------------------------- */
 
 static int check_cell(lua_State *L, prts_engine *e, const char *name)
@@ -651,6 +727,7 @@ void prts_engine_open_game_api(prts_engine *e)
         {"env", l_scene_env},           {"illusion", l_scene_illusion}, {"cell", l_scene_cell},
         {"portal", l_scene_portal},     {"set_portal", l_scene_set_portal}, {"portal_open", l_scene_portal_open},
         {"cells", l_scene_cells},       {"cell_at", l_scene_cell_at},   {"surface", l_scene_surface},
+        {"sprite", l_scene_sprite},     {"sprite_anim", l_scene_sprite_anim},
         {NULL, NULL}};
     static const prts_script_fn entity[] = {
         {"spawn", l_entity_spawn},   {"pos", l_entity_pos},         {"local_pos", l_entity_local_pos},

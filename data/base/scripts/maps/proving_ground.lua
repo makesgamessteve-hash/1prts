@@ -3,6 +3,7 @@
 local B = require("lib.build")
 local Door = require("props.door")
 local Lift = require("props.lift")
+local NPC = require("props.npc")
 
 local M = {}
 
@@ -313,6 +314,24 @@ local function countryside()
   return placed
 end
 
+local function people()
+  local F = M.FLOORS
+  local guard, clerk = "sprites/crown_guard.lua", "sprites/crown_clerk.lua"
+  local list = {}
+  prts.scene.cells{ "outside" }
+  list[#list + 1] = NPC.make{ name = "npc.door_guard", sprite = guard, pos = { 2.3, 0, 11.4 }, yaw = math.pi }
+  list[#list + 1] = NPC.make{ name = "npc.road_patrol", sprite = guard, pos = { -2.6, 0, 16 },
+                              patrol = { { -2.6, 0, 46 }, { -2.6, 0, 16 } }, speed = 1.3 }
+  prts.scene.cells{ "keep.hall" }
+  list[#list + 1] = NPC.make{ name = "npc.hall_guard", sprite = guard, pos = { 4.2, F[1], -6.5 }, yaw = -math.pi / 2 }
+  list[#list + 1] = NPC.make{ name = "npc.hall_patrol", sprite = guard, pos = { -6, F[1], 6 },
+                              patrol = { { 3, F[1], 6 }, { 3, F[1], -2 }, { -6, F[1], -2 }, { -6, F[1], 6 } }, speed = 1.2 }
+  prts.scene.cells{ "keep.floor3" }
+  list[#list + 1] = NPC.make{ name = "npc.clerk", sprite = clerk, pos = { -5.5, F[3], -5.9 }, yaw = 0 }
+  list[#list + 1] = NPC.make{ name = "npc.war_room_guard", sprite = guard, pos = { -2.6, F[3], 6.4 }, yaw = math.pi * 0.85 }
+  return #list
+end
+
 function M.build()
   materials()
   define_cells()
@@ -346,6 +365,7 @@ function M.build()
   M.door = Door.make{ name = "keep.door", hinge = { -1.1, M.FLOORS[1], M.HZ - 0.5 }, width = 2.2, height = 3.2,
                       thickness = 0.16, material = "oak", portal = "keep.door" }
   M.trees = countryside()
+  M.people = people()
   prts.scene.cells()
 
   local F = M.FLOORS

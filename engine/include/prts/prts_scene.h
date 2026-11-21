@@ -81,6 +81,43 @@ typedef struct prts_surface {
     bool fog; /* scrying views usually see through the haze */
 } prts_surface;
 
+/* Billboard sprites: people and creatures drawn from a sheet with one row per (animation,
+ * direction) and one column per frame. Direction 0 faces the viewer, then clockwise in
+ * 45-degree steps as seen from above. */
+#define PRTS_SPRITE_MAX_ANIMS 8
+typedef struct prts_sprite_anim {
+    char name[16];
+    int first_row; /* row of direction 0; directions follow */
+    int frames;
+    float fps;
+} prts_sprite_anim;
+
+typedef struct prts_sprite_def {
+    char path[PRTS_SCENE_PATH_MAX];    /* metadata file it was loaded from */
+    char texture[PRTS_SCENE_PATH_MAX];
+    int frame_w, frame_h, columns, rows;
+    float height; /* meters */
+    int directions;
+    int anim_count;
+    prts_sprite_anim anims[PRTS_SPRITE_MAX_ANIMS];
+} prts_sprite_def;
+
+typedef struct prts_sprite {
+    int def;
+    prts_entity owner; /* follows this entity's position and facing, if set */
+    prts_vec3 pos;     /* in the owner's frame (or the world) */
+    float yaw;
+    int anim;
+    double anim_start;
+    prts_cell_mask cells;
+} prts_sprite;
+
+/* Which of `directions` directions to show for a sprite facing `facing_yaw`, seen from
+ * `to_viewer` (horizontal vector from the sprite to the eye). */
+int prts_sprite_direction(float facing_yaw, prts_vec3 to_viewer, int directions);
+/* Animation frame at a time (looping). */
+int prts_sprite_frame(const prts_sprite_anim *a, double seconds);
+
 typedef struct prts_marker {
     char name[PRTS_SCENE_NAME_MAX];
     prts_dvec3 pos;
@@ -130,6 +167,8 @@ typedef struct prts_scene {
     prts_array zones;     /* prts_zone */
     prts_array lines;     /* prts_line_set */
     prts_array surfaces; /* prts_surface */
+    prts_array sprite_defs; /* prts_sprite_def */
+    prts_array sprites;     /* prts_sprite */
     prts_array cells;   /* prts_cell; index 0 is outside */
     prts_array portals; /* prts_portal */
     prts_cell_mask current_cells; /* cells given to geometry added from now on */
@@ -151,6 +190,10 @@ void prts_scene_add_box(prts_scene *s, prts_aabb box, int material, prts_entity 
 /* Like add_box, but each face maps the whole texture once (for display surfaces). */
 void prts_scene_add_box_fitted(prts_scene *s, prts_aabb box, int material, prts_entity owner);
 int prts_scene_add_surface(prts_scene *s, const prts_surface *surface);
+int prts_scene_add_sprite_def(prts_scene *s, const prts_sprite_def *def);
+int prts_scene_find_sprite_def(const prts_scene *s, const char *path);
+int prts_scene_find_anim(const prts_sprite_def *def, const char *name);
+int prts_scene_add_sprite(prts_scene *s, const prts_sprite *sprite);
 int prts_scene_find_surface(const prts_scene *s, const char *name);
 /* Vertical prism (cylinder or cone): sides >= 3, top_radius 0 makes a cone. */
 void prts_scene_add_prism(prts_scene *s, prts_vec3 base, float radius, float top_radius, float height, int sides,

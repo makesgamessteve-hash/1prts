@@ -43,5 +43,13 @@ return {
     t.ticks(3)
     t.screenshot("09_battlements")
     t.expect(t.in_zone(c, "keep.great_hall"), "on the roof, not in the hall").equals(false)
+    t.place(-1.2, 0, 15.2)
+    t.face("npc.door_guard", 0, 1.3, 0)
+    t.ticks(3)
+    t.screenshot("10_door_guard")
+    t.place(-1.5, 0.2, 3.0)
+    t.face("npc.hall_guard", 0, 1.2, 0)
+    t.ticks(3)
+    t.screenshot("11_hall_guard")
   end,
 }

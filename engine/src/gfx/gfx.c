@@ -168,6 +168,7 @@ prts_gfx *prts_gfx_create(prts_gfx_getproc getproc, prts_vfs *vfs, bool gles)
     prts_array_init(&g->lines, sizeof(gpu_lines));
     prts_array_init(&g->textures, sizeof(texture_entry));
     prts_array_init(&g->surface_targets, sizeof(prts_render_target));
+    prts_array_init(&g->sprite_verts, sizeof(prts_vertex));
     if (!getproc) {
         g->null = true;
         strcpy(g->info, "null");
@@ -220,11 +221,16 @@ void prts_gfx_destroy(prts_gfx *g)
         delete_program(g, &g->prog_post);
         if (g->prog_fallback) g->gl.glDeleteProgram(g->prog_fallback);
         g->gl.glDeleteVertexArrays(1, &g->empty_vao);
+        if (g->sprite_vao) {
+            g->gl.glDeleteVertexArrays(1, &g->sprite_vao);
+            g->gl.glDeleteBuffers(1, &g->sprite_vbo);
+        }
     }
     prts_array_free(&g->meshes);
     prts_array_free(&g->lines);
     prts_array_free(&g->textures);
     prts_array_free(&g->surface_targets);
+    prts_array_free(&g->sprite_verts);
     prts_free(g);
 }
 
@@ -286,6 +292,24 @@ GLuint prts_gfx_texture(prts_gfx *g, const char *path)
 
 /* --- scene upload ------------------------------------------------------------- */
 
+/* Attribute layout of prts_vertex for the bound VAO/VBO. */
+static void set_vertex_layout(prts_gfx *g)
+{
+    GLsizei stride = (GLsizei)sizeof(prts_vertex);
+    g->gl.glEnableVertexAttribArray(0);
+    g->gl.glVertexAttribPointer(0, 3, GL_FLOAT, 0, stride, (const void *)0);
+    g->gl.glEnableVertexAttribArray(1);
+    g->gl.glVertexAttribPointer(1, 3, GL_FLOAT, 0, stride, (const void *)(3 * sizeof(float)));
+    g->gl.glEnableVertexAttribArray(2);
+    g->gl.glVertexAttribPointer(2, 2, GL_FLOAT, 0, stride, (const void *)(6 * sizeof(float)));
+    g->gl.glEnableVertexAttribArray(3);
+    g->gl.glVertexAttribPointer(3, 3, GL_FLOAT, 0, stride, (const void *)(8 * sizeof(float)));
+    g->gl.glEnableVertexAttribArray(4);
+    g->gl.glVertexAttribPointer(4, 1, GL_FLOAT, 0, stride, (const void *)(11 * sizeof(float)));
+    g->gl.glEnableVertexAttribArray(5);
+    g->gl.glVertexAttribPointer(5, 1, GL_FLOAT, 0, stride, (const void *)(12 * sizeof(float)));
+}
+
 static void upload_scene(prts_gfx *g, const prts_scene *s)
 {
     free_scene_gpu(g);
@@ -303,19 +327,7 @@ static void upload_scene(prts_gfx *g, const prts_scene *s)
         g->gl.glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m.ibo);
         g->gl.glBufferData(GL_ELEMENT_ARRAY_BUFFER, (GLsizeiptr)(grp->mesh.indices.len * sizeof(uint32_t)),
                            grp->mesh.indices.data, GL_STATIC_DRAW);
-        GLsizei stride = (GLsizei)sizeof(prts_vertex);
-        g->gl.glEnableVertexAttribArray(0);
-        g->gl.glVertexAttribPointer(0, 3, GL_FLOAT, 0, stride, (const void *)0);
-        g->gl.glEnableVertexAttribArray(1);
-        g->gl.glVertexAttribPointer(1, 3, GL_FLOAT, 0, stride, (const void *)(3 * sizeof(float)));
-        g->gl.glEnableVertexAttribArray(2);
-        g->gl.glVertexAttribPointer(2, 2, GL_FLOAT, 0, stride, (const void *)(6 * sizeof(float)));
-        g->gl.glEnableVertexAttribArray(3);
-        g->gl.glVertexAttribPointer(3, 3, GL_FLOAT, 0, stride, (const void *)(8 * sizeof(float)));
-        g->gl.glEnableVertexAttribArray(4);
-        g->gl.glVertexAttribPointer(4, 1, GL_FLOAT, 0, stride, (const void *)(11 * sizeof(float)));
-        g->gl.glEnableVertexAttribArray(5);
-        g->gl.glVertexAttribPointer(5, 1, GL_FLOAT, 0, stride, (const void *)(12 * sizeof(float)));
+        set_vertex_layout(g);
         prts_array_push(&g->meshes, &m);
     }
     for (size_t i = 0; i < s->lines.len; i++) {
@@ -334,6 +346,7 @@ static void upload_scene(prts_gfx *g, const prts_scene *s)
     }
     g->gl.glBindVertexArray(0);
     for (size_t i = 0; i < s->materials.len; i++) prts_gfx_texture(g, ((prts_material *)prts_array_at(&s->materials, i))->texture);
+    for (size_t i = 0; i < s->sprite_defs.len; i++) prts_gfx_texture(g, ((prts_sprite_def *)prts_array_at(&s->sprite_defs, i))->texture);
     g->uploaded_scene = s;
     g->uploaded_revision = s->revision;
 }
@@ -500,6 +513,82 @@ static void draw_meshes(prts_gfx *g, const frame_ctx *f, prts_mat4 view_proj)
     }
 }
 
+int prts_gfx_sprites_drawn(const prts_gfx *g) { return g->sprites_drawn; }
+
+static void push_sprite_vertex(prts_array *out, prts_vec3 p, prts_vec3 n, float u, float v, float sun)
+{
+    prts_vertex vx = {p.x, p.y, p.z, n.x, n.y, n.z, u, v, 1.0f, 1.0f, 1.0f, sun, 1.0f}; /* full ambient light */
+    prts_array_push(out, &vx);
+}
+
+/* Camera-facing (around the vertical axis) quads for every visible sprite. Uses the world
+ * program state set up by draw_meshes (same view, lights and fog). */
+static void draw_sprites(prts_gfx *g, const frame_ctx *f)
+{
+    const prts_scene *s = f->scene;
+    if (s->sprites.len == 0) return;
+    if (!g->sprite_vao) {
+        g->gl.glGenVertexArrays(1, &g->sprite_vao);
+        g->gl.glGenBuffers(1, &g->sprite_vbo);
+        g->gl.glBindVertexArray(g->sprite_vao);
+        g->gl.glBindBuffer(GL_ARRAY_BUFFER, g->sprite_vbo);
+        set_vertex_layout(g);
+    }
+    const prts_mat4 *r = &f->view->rotation;
+    prts_vec3 right = prts_v3_normalize(prts_v3(r->m[0], 0.0f, r->m[8]));
+    prts_vec3 normal = prts_v3(-right.z, 0.0f, right.x); /* towards the viewer */
+    GLuint p = g->prog_world;
+    g->gl.glUniformMatrix4fv(prts_gfx_uniform(g, p, "u_model"), 1, 0, prts_mat4_identity().m);
+    g->gl.glUniform1f(prts_gfx_uniform(g, p, "u_emissive"), 0.0f);
+    g->gl.glUniform1f(prts_gfx_uniform(g, p, "u_magic"), 0.0f);
+    g->gl.glUniform1f(prts_gfx_uniform(g, p, "u_flip_v"), 0.0f);
+    g->gl.glBindVertexArray(g->sprite_vao);
+    g->gl.glBindBuffer(GL_ARRAY_BUFFER, g->sprite_vbo);
+    int drawn = 0;
+    for (size_t d = 0; d < s->sprite_defs.len; d++) {
+        const prts_sprite_def *def = prts_array_at(&s->sprite_defs, d);
+        prts_array_clear(&g->sprite_verts);
+        for (size_t i = 0; i < s->sprites.len; i++) {
+            const prts_sprite *sp = prts_array_at(&s->sprites, i);
+            if (sp->def != (int)d || !(sp->cells & f->visible)) continue;
+            prts_dvec3 base = prts_dv3_from_v3(sp->pos);
+            float yaw = sp->yaw;
+            if (sp->owner != PRTS_ENTITY_NONE) {
+                if (!prts_world_alive(f->world, sp->owner)) continue;
+                float oy = prts_world_yaw_interp(f->world, sp->owner, f->alpha);
+                base = prts_dv3_add(prts_world_pos_interp(f->world, sp->owner, f->alpha),
+                                    prts_dv3_from_v3(prts_v3_rotate_y(sp->pos, oy)));
+                yaw += oy;
+            }
+            prts_vec3 rel = prts_dv3_relative(base, f->view->eye);
+            int dir = prts_sprite_direction(yaw, prts_v3(-rel.x, 0.0f, -rel.z), def->directions);
+            const prts_sprite_anim *a = &def->anims[PRTS_CLAMP(sp->anim, 0, def->anim_count - 1)];
+            int col = prts_sprite_frame(a, f->time - sp->anim_start), row = a->first_row + dir;
+            float u0 = (float)col / (float)def->columns, u1 = (float)(col + 1) / (float)def->columns;
+            float v0 = (float)row / (float)def->rows, v1 = (float)(row + 1) / (float)def->rows;
+            float h = def->height, w = h * (float)def->frame_w / (float)def->frame_h;
+            prts_vec3 bl = prts_v3_sub(rel, prts_v3_scale(right, w * 0.5f)), br = prts_v3_add(rel, prts_v3_scale(right, w * 0.5f));
+            prts_vec3 tl = prts_v3(bl.x, bl.y + h, bl.z), tr = prts_v3(br.x, br.y + h, br.z);
+            float sun = (sp->cells & PRTS_CELL_BIT(0)) ? 1.0f : 0.0f;
+            push_sprite_vertex(&g->sprite_verts, bl, normal, u0, v1, sun);
+            push_sprite_vertex(&g->sprite_verts, br, normal, u1, v1, sun);
+            push_sprite_vertex(&g->sprite_verts, tr, normal, u1, v0, sun);
+            push_sprite_vertex(&g->sprite_verts, bl, normal, u0, v1, sun);
+            push_sprite_vertex(&g->sprite_verts, tr, normal, u1, v0, sun);
+            push_sprite_vertex(&g->sprite_verts, tl, normal, u0, v0, sun);
+            drawn++;
+        }
+        if (g->sprite_verts.len == 0) continue;
+        g->gl.glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)(g->sprite_verts.len * sizeof(prts_vertex)), g->sprite_verts.data,
+                           GL_DYNAMIC_DRAW);
+        g->gl.glBindTexture(GL_TEXTURE_2D, prts_gfx_texture(g, def->texture));
+        g->gl.glDisable(GL_CULL_FACE);
+        g->gl.glDrawArrays(GL_TRIANGLES, 0, (GLsizei)g->sprite_verts.len);
+        g->gl.glEnable(GL_CULL_FACE);
+    }
+    g->sprites_drawn = drawn;
+}
+
 static void draw_lines(prts_gfx *g, const frame_ctx *f, prts_mat4 view_proj, double time)
 {
     if (g->lines.len == 0) return;
@@ -569,6 +658,7 @@ static void draw_view_scene(prts_gfx *g, frame_ctx *f, prts_render_target *t, do
         prts_mat4 proj = prts_mat4_frustum(v->tan_left, v->tan_right, v->tan_down, v->tan_up, layers[l][0], layers[l][1]);
         view_proj = prts_mat4_mul(proj, v->rotation);
         draw_meshes(g, f, view_proj);
+        draw_sprites(g, f);
     }
     draw_lines(g, f, view_proj, time);
 }

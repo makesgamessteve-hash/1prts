@@ -60,6 +60,9 @@ struct prts_gfx {
     int last_views;
     prts_cell_mask last_visible; /* cells visible in the last view drawn */
     prts_array surface_targets;  /* prts_render_target, one per scene surface */
+    GLuint sprite_vao, sprite_vbo;
+    prts_array sprite_verts;     /* prts_vertex scratch for billboards */
+    int sprites_drawn;
     int surfaces_drawn;
     GLuint empty_vao;
 };
