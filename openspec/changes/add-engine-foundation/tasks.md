@@ -120,12 +120,12 @@
 - [x] 14.2 Run the headless runner on a display-less CI machine with the Proving Ground; verify exit status 0 (spec *Headless on a server*)
 - [x] 14.3 Check that every scenario in this change's specs is linked to at least one automated test (a mapping table in `tests/README.md`, checked by a script in `checks`); verify the script passes
 - [x] 14.4 Update `README.md` with build, run and test instructions for every platform; verify the documented commands work as written in a clean checkout
-- [ ] 14.5 Run `openspec validate --strict` and the full CI pipeline on the final branch; verify everything is green and both coverage gates are ≥ 95%
+- [x] 14.5 Run `openspec validate --strict` and the full CI pipeline on the final branch; verify everything is green and both coverage gates are ≥ 95%
 
 ## Implementation notes
 
-Status on 2026-11-21: 79 of 80 tasks are done and verified (checked above); 14.5 is the final
-check of the whole pipeline. CTest runs 31 suites on Linux (C unit tests, Lua unit tests,
+Status on 2026-11-21: all 80 tasks are done and verified (checked above). The final check
+(14.5) passed: `openspec validate --strict` and CI run 13 with every job green. CTest runs 31 suites on Linux (C unit tests, Lua unit tests,
 headless scenarios, determinism record/replay checks, rendered runs and golden images under
 Xvfb + Mesa llvmpipe) with 99% C and 99.9% Lua line coverage; 21 browser tests run against the
 web build; CI builds and tests on Windows, Linux and macOS and packages all four platforms.
