@@ -93,7 +93,9 @@ prts_scene *prts_scene_create(void)
     prts_array_init(&s->markers, sizeof(prts_marker));
     prts_array_init(&s->zones, sizeof(prts_zone));
     prts_array_init(&s->lines, sizeof(prts_line_set));
-    prts_scene_env_default(&s->env);
+    prts_array_init(&s->cells, sizeof(prts_cell));
+    prts_array_init(&s->portals, sizeof(prts_portal));
+    prts_scene_clear(s);
     return s;
 }
 
@@ -107,6 +109,13 @@ void prts_scene_clear(prts_scene *s)
     prts_array_clear(&s->markers);
     prts_array_clear(&s->zones);
     prts_array_clear(&s->lines);
+    prts_array_clear(&s->cells);
+    prts_array_clear(&s->portals);
+    prts_cell outside;
+    memset(&outside, 0, sizeof(outside));
+    strcpy(outside.name, "outside");
+    prts_array_push(&s->cells, &outside);
+    s->current_cells = PRTS_CELLS_ALL;
     prts_heightfield_destroy(s->terrain);
     s->terrain = NULL;
     prts_scene_env_default(&s->env);
@@ -123,6 +132,8 @@ void prts_scene_destroy(prts_scene *s)
     prts_array_free(&s->markers);
     prts_array_free(&s->zones);
     prts_array_free(&s->lines);
+    prts_array_free(&s->cells);
+    prts_array_free(&s->portals);
     prts_free(s);
 }
 
@@ -153,11 +164,12 @@ prts_mesh_group *prts_scene_group(prts_scene *s, int material, prts_entity owner
 {
     for (size_t i = 0; i < s->groups.len; i++) {
         prts_mesh_group *g = prts_array_at(&s->groups, i);
-        if (g->material == material && g->owner == owner) return g;
+        if (g->material == material && g->owner == owner && g->cells == s->current_cells) return g;
     }
     prts_mesh_group *g = prts_array_push(&s->groups, NULL);
     g->material = material;
     g->owner = owner;
+    g->cells = s->current_cells;
     prts_mesh_init(&g->mesh);
     return g;
 }
@@ -356,6 +368,7 @@ void prts_scene_add_contours(prts_scene *s, prts_entity owner, prts_vec3 center,
 {
     prts_line_set *ls = prts_array_push(&s->lines, NULL);
     ls->owner = owner;
+    ls->cells = s->current_cells;
     ls->color = color;
     prts_array_init(&ls->points, sizeof(prts_vec3));
     if (!s->terrain || levels < 1) return;

@@ -27,6 +27,7 @@ typedef struct gpu_mesh {
     GLsizei count;
     int material;
     prts_entity owner;
+    prts_cell_mask cells;
 } gpu_mesh;
 
 typedef struct gpu_lines {
@@ -34,6 +35,7 @@ typedef struct gpu_lines {
     GLsizei count;
     prts_vec3 color;
     prts_entity owner;
+    prts_cell_mask cells;
 } gpu_lines;
 
 typedef struct texture_entry {
@@ -56,6 +58,7 @@ struct prts_gfx {
     uint32_t uploaded_revision;
     prts_render_target views[PRTS_GFX_MAX_VIEWS];
     int last_views;
+    prts_cell_mask last_visible; /* cells visible in the last view drawn */
     GLuint empty_vao;
 };
 

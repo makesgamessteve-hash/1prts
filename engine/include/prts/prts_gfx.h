@@ -73,6 +73,8 @@ void prts_gfx_render_views(prts_gfx *g, const prts_scene *scene, const prts_worl
                            int view_count, const prts_render_settings *settings, double alpha, double time);
 /* Number of views drawn by the last render call. */
 int prts_gfx_last_view_count(const prts_gfx *g);
+/* Cells that were visible in the last view drawn. */
+prts_cell_mask prts_gfx_last_visible_cells(const prts_gfx *g);
 /* Saves the last rendered frame as PNG. */
 bool prts_gfx_screenshot(prts_gfx *g, const char *real_path, int out_w, int out_h);
 /* Number of mesh groups and textures currently on the GPU (for tests). */

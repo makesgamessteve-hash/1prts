@@ -12,6 +12,8 @@ function Door.make(d)
   data.open = false
   data.closed_yaw = d.yaw or 0
   data.swing = d.swing or (math.pi / 2)
+  data.portal = d.portal -- the cell portal this door opens and closes, if any
+  if data.portal then prts.scene.set_portal(data.portal, false) end
   return e
 end
 
@@ -20,6 +22,7 @@ function Door.toggle(e)
   data.open = not data.open
   local target = data.closed_yaw + (data.open and data.swing or 0)
   prts.entity.rotate_to(e, target, SPEED)
+  if data.portal then prts.scene.set_portal(data.portal, data.open) end
   return data.open
 end
 

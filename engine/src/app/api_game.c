@@ -259,6 +259,80 @@ static int l_scene_illusion(lua_State *L)
     return 0;
 }
 
+/* --- cells and portals ------------------------------------------------------------- */
+
+static int check_cell(lua_State *L, prts_engine *e, const char *name)
+{
+    int c = prts_scene_find_cell(e->scene, name);
+    if (c < 0) return luaL_error(L, "unknown cell '%s'", name);
+    return c;
+}
+
+static int l_scene_cell(lua_State *L)
+{
+    prts_engine *e = prts_engine_from_lua(L);
+    luaL_checktype(L, 1, LUA_TTABLE);
+    const char *name = field_string(L, 1, "name", NULL);
+    if (!name) return luaL_error(L, "field 'name' is required");
+    if (prts_scene_find_cell(e->scene, name) >= 0) return luaL_error(L, "cell '%s' already exists", name);
+    int c = prts_scene_add_cell(e->scene, name, prts_aabb_make(check_vec3(L, 1, "min"), check_vec3(L, 1, "max")));
+    if (c < 0) return luaL_error(L, "too many cells (at most %d)", PRTS_MAX_CELLS);
+    lua_pushinteger(L, c);
+    return 1;
+}
+
+static int l_scene_portal(lua_State *L)
+{
+    prts_engine *e = prts_engine_from_lua(L);
+    luaL_checktype(L, 1, LUA_TTABLE);
+    const char *name = field_string(L, 1, "name", NULL);
+    if (!name) return luaL_error(L, "field 'name' is required");
+    int a = check_cell(L, e, field_string(L, 1, "a", "outside"));
+    int b = check_cell(L, e, field_string(L, 1, "b", "outside"));
+    prts_aabb box = prts_aabb_make(check_vec3(L, 1, "min"), check_vec3(L, 1, "max"));
+    prts_scene_add_portal(e->scene, name, a, b, box, field_bool(L, 1, "open", true));
+    return 0;
+}
+
+static int l_scene_set_portal(lua_State *L)
+{
+    prts_engine *e = prts_engine_from_lua(L);
+    const char *name = luaL_checkstring(L, 1);
+    if (!prts_scene_set_portal(e->scene, name, lua_toboolean(L, 2))) return luaL_error(L, "unknown portal '%s'", name);
+    return 0;
+}
+
+static int l_scene_portal_open(lua_State *L)
+{
+    lua_pushboolean(L, prts_scene_portal_open(prts_engine_from_lua(L)->scene, luaL_checkstring(L, 1)));
+    return 1;
+}
+
+/* prts.scene.cells{ "a", "b" } tags geometry added afterwards; prts.scene.cells() resets to all. */
+static int l_scene_cells(lua_State *L)
+{
+    prts_engine *e = prts_engine_from_lua(L);
+    prts_cell_mask mask = PRTS_CELLS_ALL;
+    if (lua_istable(L, 1)) {
+        mask = 0;
+        for (int i = 1; lua_rawgeti(L, 1, i) == LUA_TSTRING; i++) {
+            mask |= PRTS_CELL_BIT(check_cell(L, e, lua_tostring(L, -1)));
+            lua_pop(L, 1);
+        }
+        lua_pop(L, 1);
+    }
+    e->scene->current_cells = mask;
+    return 0;
+}
+
+static int l_scene_cell_at(lua_State *L)
+{
+    prts_engine *e = prts_engine_from_lua(L);
+    prts_vec3 p = prts_v3((float)luaL_checknumber(L, 1), (float)luaL_checknumber(L, 2), (float)luaL_checknumber(L, 3));
+    lua_pushstring(L, prts_scene_cell_name(e->scene, prts_scene_cell_at(e->scene, p)));
+    return 1;
+}
+
 /* --- prts.entity ------------------------------------------------------------------- */
 
 static int l_entity_spawn(lua_State *L)
@@ -546,7 +620,9 @@ void prts_engine_open_game_api(prts_engine *e)
         {"material", l_scene_material}, {"box", l_scene_box},       {"prism", l_scene_prism},
         {"terrain", l_scene_terrain},   {"height", l_scene_height}, {"light", l_scene_light},
         {"marker", l_scene_marker},     {"marker_pos", l_scene_marker_pos}, {"zone", l_scene_zone},
-        {"env", l_scene_env},           {"illusion", l_scene_illusion}, {NULL, NULL}};
+        {"env", l_scene_env},           {"illusion", l_scene_illusion}, {"cell", l_scene_cell},
+        {"portal", l_scene_portal},     {"set_portal", l_scene_set_portal}, {"portal_open", l_scene_portal_open},
+        {"cells", l_scene_cells},       {"cell_at", l_scene_cell_at},   {NULL, NULL}};
     static const prts_script_fn entity[] = {
         {"spawn", l_entity_spawn},   {"pos", l_entity_pos},         {"local_pos", l_entity_local_pos},
         {"yaw", l_entity_yaw},       {"move_to", l_entity_move_to}, {"rotate_to", l_entity_rotate_to},

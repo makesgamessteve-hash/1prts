@@ -289,7 +289,7 @@ static void upload_scene(prts_gfx *g, const prts_scene *s)
     for (size_t i = 0; i < s->groups.len; i++) {
         const prts_mesh_group *grp = prts_array_at(&s->groups, i);
         if (grp->mesh.indices.len == 0) continue;
-        gpu_mesh m = {0, 0, 0, (GLsizei)grp->mesh.indices.len, grp->material, grp->owner};
+        gpu_mesh m = {0, 0, 0, (GLsizei)grp->mesh.indices.len, grp->material, grp->owner, grp->cells};
         g->gl.glGenVertexArrays(1, &m.vao);
         g->gl.glBindVertexArray(m.vao);
         g->gl.glGenBuffers(1, &m.vbo);
@@ -318,7 +318,7 @@ static void upload_scene(prts_gfx *g, const prts_scene *s)
     for (size_t i = 0; i < s->lines.len; i++) {
         const prts_line_set *ls = prts_array_at(&s->lines, i);
         if (ls->points.len == 0) continue;
-        gpu_lines l = {0, 0, (GLsizei)ls->points.len, ls->color, ls->owner};
+        gpu_lines l = {0, 0, (GLsizei)ls->points.len, ls->color, ls->owner, ls->cells};
         g->gl.glGenVertexArrays(1, &l.vao);
         g->gl.glBindVertexArray(l.vao);
         g->gl.glGenBuffers(1, &l.vbo);
@@ -386,6 +386,7 @@ typedef struct frame_ctx {
     const prts_render_settings *rs;
     double alpha;
     int iw, ih;
+    prts_cell_mask visible;
 } frame_ctx;
 
 static prts_mat4 owner_model(const frame_ctx *f, prts_entity owner)
@@ -475,6 +476,7 @@ static void draw_meshes(prts_gfx *g, const frame_ctx *f, prts_mat4 view_proj)
     GLint model_loc = prts_gfx_uniform(g, p, "u_model"), emissive_loc = prts_gfx_uniform(g, p, "u_emissive");
     for (size_t i = 0; i < g->meshes.len; i++) {
         gpu_mesh *m = prts_array_at(&g->meshes, i);
+        if (!(m->cells & f->visible)) continue;
         if (m->owner != PRTS_ENTITY_NONE && !prts_world_alive(f->world, m->owner)) continue;
         const prts_material *mat = prts_array_at(&f->scene->materials, (size_t)m->material);
         g->gl.glBindTexture(GL_TEXTURE_2D, prts_gfx_texture(g, mat ? mat->texture : ""));
@@ -498,6 +500,7 @@ static void draw_lines(prts_gfx *g, const frame_ctx *f, prts_mat4 view_proj, dou
     g->gl.glDepthMask(0);
     for (size_t i = 0; i < g->lines.len; i++) {
         gpu_lines *l = prts_array_at(&g->lines, i);
+        if (!(l->cells & f->visible)) continue;
         if (l->owner != PRTS_ENTITY_NONE && !prts_world_alive(f->world, l->owner)) continue;
         prts_mat4 model = owner_model(f, l->owner);
         g->gl.glUniformMatrix4fv(prts_gfx_uniform(g, p, "u_model"), 1, 0, model.m);
@@ -526,6 +529,7 @@ void prts_view_from_camera(prts_view *v, const prts_camera *cam, float fov_y, in
 }
 
 int prts_gfx_last_view_count(const prts_gfx *g) { return g->last_views; }
+prts_cell_mask prts_gfx_last_visible_cells(const prts_gfx *g) { return g->last_visible; }
 
 /* Draws the scene for one view into its low-resolution target. */
 static void draw_view_scene(prts_gfx *g, frame_ctx *f, prts_render_target *t, double time)
@@ -540,6 +544,11 @@ static void draw_view_scene(prts_gfx *g, frame_ctx *f, prts_render_target *t, do
     g->gl.glEnable(GL_CULL_FACE);
     g->gl.glCullFace(GL_BACK);
     const prts_view *v = f->view;
+    prts_mat4 cull = prts_mat4_mul(prts_mat4_frustum(v->tan_left, v->tan_right, v->tan_down, v->tan_up, NEAR_LAYER_NEAR,
+                                                     FAR_LAYER_FAR),
+                                   v->rotation);
+    f->visible = prts_scene_visible_cells(f->scene, prts_v3((float)v->eye.x, (float)v->eye.y, (float)v->eye.z), cull);
+    g->last_visible = f->visible;
     /* Two depth layers: far geometry first, then a fresh depth range for nearby geometry. */
     const float layers[2][2] = {{FAR_LAYER_NEAR, FAR_LAYER_FAR}, {NEAR_LAYER_NEAR, NEAR_LAYER_FAR}};
     prts_mat4 view_proj = v->rotation;
@@ -592,7 +601,7 @@ void prts_gfx_render_views(prts_gfx *g, const prts_scene *scene, const prts_worl
     if (g->null) return;
     if (g->uploaded_scene != scene || g->uploaded_revision != scene->revision) upload_scene(g, scene);
     for (int i = 0; i < view_count; i++) {
-        frame_ctx f = {scene, world, &views[i], rs, alpha, 0, 0};
+        frame_ctx f = {scene, world, &views[i], rs, alpha, 0, 0, PRTS_CELLS_ALL};
         prts_gfx_internal_size(rs->preset, views[i].w, views[i].h, &f.iw, &f.ih);
         prts_gfx_target_ensure(g, &g->views[i], f.iw, f.ih);
         draw_view_scene(g, &f, &g->views[i], time);

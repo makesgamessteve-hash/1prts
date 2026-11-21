@@ -166,6 +166,17 @@ static int t_in_zone(lua_State *L)
     return 1;
 }
 
+static int t_in_cell(lua_State *L)
+{
+    prts_engine *e = E(L);
+    prts_dvec3 p = prts_world_pos(e->world, prts_engine_check_entity(L, 1));
+    const char *want = luaL_checkstring(L, 2);
+    if (prts_scene_find_cell(e->scene, want) < 0) return luaL_error(L, "unknown cell '%s'", want);
+    const char *at = prts_scene_cell_name(e->scene, prts_scene_cell_at(e->scene, prts_v3((float)p.x, (float)p.y + 1.0f, (float)p.z)));
+    lua_pushboolean(L, strcmp(at, want) == 0);
+    return 1;
+}
+
 static int t_target(lua_State *L)
 {
     prts_engine *e = E(L);
@@ -198,7 +209,7 @@ static int t_headless(lua_State *L)
 static const luaL_Reg T_FUNCS[] = {
     {"commander", t_commander}, {"ticks", t_ticks},   {"screenshot", t_screenshot}, {"_hold", t_hold},
     {"place", t_place},         {"look", t_look},     {"pos", t_pos},               {"parent", t_parent},
-    {"face", t_face},
+    {"face", t_face},           {"in_cell", t_in_cell},
     {"in_zone", t_in_zone},     {"target", t_target}, {"hash", t_hash},             {"tick", t_tick},
     {"headless", t_headless},   {NULL, NULL}};
 

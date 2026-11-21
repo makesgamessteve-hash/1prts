@@ -38,9 +38,29 @@ typedef struct prts_material {
     bool emissive;  /* ignores lighting and fog (torch flames, glowing runes) */
 } prts_material;
 
+/* Interior cells: bit 0 is "outside"; a geometry group is drawn when any of its cells is
+ * visible. PRTS_CELLS_ALL marks geometry that belongs everywhere. */
+typedef uint64_t prts_cell_mask;
+#define PRTS_MAX_CELLS 64
+#define PRTS_CELLS_ALL (~(prts_cell_mask)0)
+#define PRTS_CELL_BIT(i) ((prts_cell_mask)1 << (i))
+
+typedef struct prts_cell {
+    char name[48];
+    prts_aabb box; /* volume; cell 0 (outside) has none */
+} prts_cell;
+
+typedef struct prts_portal {
+    char name[48];
+    int a, b;      /* the two cells it connects */
+    prts_aabb box; /* the opening */
+    bool open;
+} prts_portal;
+
 typedef struct prts_mesh_group {
     int material;
     prts_entity owner; /* PRTS_ENTITY_NONE: static world geometry */
+    prts_cell_mask cells;
     prts_mesh_cpu mesh;
 } prts_mesh_group;
 
@@ -63,6 +83,7 @@ typedef struct prts_zone {
 
 typedef struct prts_line_set {
     prts_entity owner;
+    prts_cell_mask cells;
     prts_vec3 color;
     prts_array points; /* prts_vec3 pairs (segments), in the owner's frame */
 } prts_line_set;
@@ -97,6 +118,9 @@ typedef struct prts_scene {
     prts_array markers;   /* prts_marker */
     prts_array zones;     /* prts_zone */
     prts_array lines;     /* prts_line_set */
+    prts_array cells;   /* prts_cell; index 0 is outside */
+    prts_array portals; /* prts_portal */
+    prts_cell_mask current_cells; /* cells given to geometry added from now on */
     prts_heightfield *terrain;
     prts_scene_env env;
     uint32_t revision; /* bumped on every change, so the renderer knows to re-upload */
@@ -128,6 +152,25 @@ const prts_zone *prts_scene_find_zone(const prts_scene *s, const char *name);
 void prts_scene_add_contours(prts_scene *s, prts_entity owner, prts_vec3 center, float size_x, float size_z,
                              float relief, float x0, float z0, float x1, float z1, int levels, prts_vec3 color);
 void prts_scene_env_default(prts_scene_env *env);
+
+/* --- cells and portals --------------------------------------------------------------- */
+
+/* Adds a cell (a room or a group of rooms); returns its index (1..63) or -1 when full. */
+int prts_scene_add_cell(prts_scene *s, const char *name, prts_aabb volume);
+/* Index of a cell by name ("outside" is 0); -1 if unknown. */
+int prts_scene_find_cell(const prts_scene *s, const char *name);
+const char *prts_scene_cell_name(const prts_scene *s, int cell);
+/* The smallest cell whose volume contains p, or 0 (outside). */
+int prts_scene_cell_at(const prts_scene *s, prts_vec3 p);
+int prts_scene_add_portal(prts_scene *s, const char *name, int a, int b, prts_aabb opening, bool open);
+/* Opens or closes a portal (a door); returns false for unknown names. */
+bool prts_scene_set_portal(prts_scene *s, const char *name, bool open);
+bool prts_scene_portal_open(const prts_scene *s, const char *name);
+/* Cells visible from an eye: start in the eye's cell, then walk through open portals that
+ * are inside the (shrinking) screen rectangle. view_proj is eye-relative. */
+prts_cell_mask prts_scene_visible_cells(const prts_scene *s, prts_vec3 eye, prts_mat4 view_proj);
+/* Cells reachable from a cell through open portals (sound travels this way). */
+prts_cell_mask prts_scene_reachable_cells(const prts_scene *s, int cell);
 /* Bakes sun and sky visibility into every vertex by casting rays towards the sun and
  * straight up against the collision world (boxes and terrain). Moving entities use their
  * pose at bake time. */

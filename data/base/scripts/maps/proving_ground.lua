@@ -34,6 +34,38 @@ local function materials()
   m{ id = "rock", texture = "textures/rock.png", uv_scale = 2 }
 end
 
+M.INSIDE = { "keep.hall", "keep.forge", "keep.stairs", "keep.lift", "keep.floor2", "keep.floor3" }
+
+-- Rooms of the keep. Geometry is tagged with the cells it can be seen from, and the renderer
+-- only draws cells visible through open portals (doors, windows, stair and lift openings).
+local function define_cells()
+  local F, c = M.FLOORS, prts.scene.cell
+  local top = M.ROOF - M.SLAB
+  c{ name = "keep.hall", min = { -11, -0.5, -9 }, max = { 11, F[2] - M.SLAB, 9 } }
+  c{ name = "keep.forge", min = { -11, -0.5, -9 }, max = { -4.9, F[2] - M.SLAB, -3.9 } }
+  c{ name = "keep.stairs", min = { 6, -0.5, -9 }, max = { 11, top, -1 } }
+  c{ name = "keep.lift", min = { -11, -0.7, -2.3 }, max = { -7.6, top, 2.3 } }
+  c{ name = "keep.floor2", min = { -11, F[2] - M.SLAB, -9 }, max = { 11, F[3] - M.SLAB, 9 } }
+  c{ name = "keep.floor3", min = { -11, F[3] - M.SLAB, -9 }, max = { 11, top, 9 } }
+end
+
+local function define_portals()
+  local F, p = M.FLOORS, prts.scene.portal
+  p{ name = "keep.door", a = "outside", b = "keep.hall", min = { -1.1, F[1], M.HZ - M.T }, max = { 1.1, F[1] + 3.2, M.HZ } }
+  p{ name = "keep.forge.door", a = "keep.hall", b = "keep.forge", min = { -9.0, F[1], -4.3 }, max = { -7.8, F[1] + 2.4, -3.9 } }
+  for f, cell in ipairs({ "keep.hall", "keep.floor2", "keep.floor3" }) do
+    p{ name = "keep.stairs." .. f, a = "keep.stairs", b = cell, min = { 6, F[f], -1.05 }, max = { 11, F[f] + 3.9, -0.95 } }
+    p{ name = "keep.lift.gate" .. (f - 1), a = "keep.lift", b = cell, min = { -7.6, F[f], -1.2 }, max = { -7.2, F[f] + 2.8, 1.2 } }
+  end
+end
+
+-- A window is a hole in an outer wall and a portal between its room and the outside.
+local function window_portal(min, max, inward_x, inward_z)
+  local cx, cy, cz = (min[1] + max[1]) / 2, (min[2] + max[2]) / 2, (min[3] + max[3]) / 2
+  local room = prts.scene.cell_at(cx + inward_x, cy, cz + inward_z)
+  prts.scene.portal{ name = "window." .. room .. "." .. cx .. "." .. cz, a = room, b = "outside", min = min, max = max }
+end
+
 local function torch(x, y, z, facing_x, facing_z)
   B.box("iron", x - 0.06 - facing_x * 0.1, y - 0.3, z - 0.06 - facing_z * 0.1,
         x + 0.06 - facing_x * 0.1, y, z + 0.06 - facing_z * 0.1, { solid = false })
@@ -61,23 +93,39 @@ local function outer_walls()
     end
     return w
   end
+  local function portals(list, axis, t0, t1, inward)
+    for _, w in ipairs(list) do
+      if axis == "x" then
+        window_portal({ w.from, w.bottom, t0 }, { w.to, w.top, t1 }, 0, inward)
+      else
+        window_portal({ t0, w.bottom, w.from }, { t1, w.top, w.to }, inward, 0)
+      end
+    end
+  end
   -- south wall with the main door
   local south = windows({ -7, -3.5, 3.5, 7 })
+  portals(south, "x", HZ - T, HZ, -1.5)
   south[#south + 1] = { from = -1.1, to = 1.1, bottom = 0.2, top = 3.4 }
   B.wall("stone", "x", -HX, HX, HZ - T, HZ, 0, M.ROOF, south)
-  B.wall("stone", "x", -HX, HX, -HZ, -HZ + T, 0, M.ROOF, windows({ -7, -2, 2, 7 }))
-  B.wall("stone", "z", -HZ + T, HZ - T, HX - T, HX, 0, M.ROOF, windows({ 2, 6 }))
-  B.wall("stone", "z", -HZ + T, HZ - T, -HX, -HX + T, 0, M.ROOF, windows({ -6, 6 }))
+  local north, east, west = windows({ -7, -2, 2, 7 }), windows({ 2, 6 }), windows({ -6, 6 })
+  portals(north, "x", -HZ, -HZ + T, 1.5)
+  portals(east, "z", HX - T, HX, -1.5)
+  portals(west, "z", -HX, -HX + T, 1.5)
+  B.wall("stone", "x", -HX, HX, -HZ, -HZ + T, 0, M.ROOF, north)
+  B.wall("stone", "z", -HZ + T, HZ - T, HX - T, HX, 0, M.ROOF, east)
+  B.wall("stone", "z", -HZ + T, HZ - T, -HX, -HX + T, 0, M.ROOF, west)
 end
 
 local function stairwell()
   local F = M.FLOORS
+  -- inner wall between the great hall and the stairwell (seen from both sides)
+  prts.scene.cells{ "keep.stairs", "keep.hall", "keep.floor2", "keep.floor3" }
+  B.box("plaster", 5.4, 0, -9, 6, M.ROOF - M.SLAB, -1)
+  prts.scene.cells{ "keep.stairs" }
   for f = 1, 3 do torch(10.9, F[f] + 2.4, -2.0, -1, 0) end
   torch(8.0, F[1] + 4.6, -8.9, 0, 1)
   torch(8.0, F[2] + 4.6, -8.9, 0, 1)
-  -- inner wall between the great hall and the stairwell, and the wall between flights
-  B.box("plaster", 5.4, 0, -9, 6, M.ROOF - M.SLAB, -1)
-  B.box("plaster", 8.4, 0, -5.7, 8.6, M.ROOF - M.SLAB, -3)
+  B.box("plaster", 8.4, 0, -5.7, 8.6, M.ROOF - M.SLAB, -3)  -- the wall between flights
   for f = 1, 2 do
     local base = F[f]
     local mid = B.stairs("stone_floor", { axis = "z", sign = -1, start = -3, w0 = 8.6, w1 = 11, steps = 9,
@@ -90,6 +138,7 @@ end
 
 local function lift_shaft()
   local F, L = M.FLOORS, M.LIFT
+  prts.scene.cells{ "keep.lift", "keep.hall", "keep.floor2", "keep.floor3" }
   B.box("plaster", -11, 0, -2.3, -7.6, M.ROOF - M.SLAB, -1.9)
   B.box("plaster", -11, 0, 1.9, -7.6, M.ROOF - M.SLAB, 2.3)
   local gates = {}
@@ -102,6 +151,7 @@ end
 
 local function great_hall()
   local F = M.FLOORS
+  prts.scene.cells{ "keep.hall" }
   for _, x in ipairs({ -4, 2 }) do
     for _, z in ipairs({ -4, 1, 6 }) do B.box("stone", x - 0.35, F[1], z - 0.35, x + 0.35, F[2] - M.SLAB, z + 0.35) end
   end
@@ -127,10 +177,13 @@ end
 
 local function forge_room()
   local F = M.FLOORS
+  prts.scene.cells{ "keep.forge", "keep.hall" }
   B.wall("plaster", "x", -11, -4.9, -4.3, -3.9, F[1] - 0.2, F[2] - M.SLAB,
          { { from = -9.0, to = -7.8, bottom = F[1], top = F[1] + 2.4 } })
   B.box("plaster", -5.3, F[1] - 0.2, -9, -4.9, F[2] - M.SLAB, -4.3)
-  Door.make{ name = "keep.forge.door", hinge = { -9.0, F[1], -4.1 }, width = 1.2, height = 2.4, material = "oak" }
+  Door.make{ name = "keep.forge.door", hinge = { -9.0, F[1], -4.1 }, width = 1.2, height = 2.4, material = "oak",
+             portal = "keep.forge.door" }
+  prts.scene.cells{ "keep.forge" }
   B.box("stone", -10.9, F[1], -8.9, -8.5, F[1] + 1.0, -7.4)          -- hearth
   B.box("flame", -10.6, F[1] + 1.0, -8.6, -8.8, F[1] + 1.25, -7.7, { solid = false })
   B.box("iron", -7.2, F[1], -6.6, -6.4, F[1] + 0.8, -6.0)            -- anvil
@@ -140,6 +193,7 @@ end
 
 local function quarters()
   local F = M.FLOORS
+  prts.scene.cells{ "keep.floor2" }
   for i = 0, 3 do
     local z = -7.5 + i * 3.2
     if z > -3.5 then z = z + 2.5 end
@@ -154,6 +208,7 @@ end
 
 local function war_room()
   local F = M.FLOORS
+  prts.scene.cells{ "keep.floor3" }
   local y = F[3]
   B.box("rug", -4, y, -0.5, 4, y + 0.02, 5.5, { solid = false })
   B.box("table", -2.2, y + 0.85, 1.2, 2.2, y + 1.0, 3.8)             -- the war table
@@ -181,7 +236,9 @@ end
 
 local function roof()
   local HX, HZ = M.HX, M.HZ
+  prts.scene.cells{ "outside", "keep.floor3" }
   B.box("stone_floor", -HX, M.ROOF - M.SLAB, -HZ, HX, M.ROOF, HZ)
+  prts.scene.cells{ "outside" }
   local y0, y1 = M.ROOF, M.ROOF + 1.2
   for x = -HX, HX - 1.2, 2.0 do
     B.box("stone", x, y0, HZ - 0.6, x + 1.2, y1, HZ)
@@ -217,6 +274,7 @@ local function watchtower(x, z)
 end
 
 local function countryside()
+  prts.scene.cells{ "outside" }
   -- the road to the keep's door
   for i = 0, 15 do
     local z0 = 10 + i * 6
@@ -253,6 +311,9 @@ end
 
 function M.build()
   materials()
+  define_cells()
+  define_portals()
+  prts.scene.cells{ "outside" }
   prts.scene.terrain{ size = 1024, spacing = 4, seed = 7, height = 26, octaves = 4, material = "grass",
                       flats = { { x = 0, z = 15, radius = 48, height = 0, blend = 70 } } }
   prts.scene.env{
@@ -260,12 +321,16 @@ function M.build()
     fog_color = { 0.56, 0.44, 0.46 }, fog_near = 90, fog_far = 780,
     sky_horizon = { 0.93, 0.56, 0.42 }, sky_zenith = { 0.13, 0.17, 0.38 }, stars = 0.7, moons = true,
   }
+  prts.scene.cells{ "keep.hall", "keep.forge", "keep.stairs", "keep.lift" }
   B.box("stone_floor", -M.HX, -0.4, -M.HZ, M.HX, M.FLOORS[1], -1.9)   -- ground floor (with the lift pit)
   B.box("stone_floor", -M.HX, -0.4, 1.9, M.HX, M.FLOORS[1], M.HZ)
   B.box("stone_floor", -7.6, -0.4, -1.9, M.HX, M.FLOORS[1], 1.9)
+  prts.scene.cells()
   outer_walls()
   stairwell()
+  prts.scene.cells{ "keep.hall", "keep.forge", "keep.stairs", "keep.lift", "keep.floor2" }
   slab(M.FLOORS[2])
+  prts.scene.cells{ "keep.floor2", "keep.floor3", "keep.stairs", "keep.lift" }
   slab(M.FLOORS[3])
   M.lift = lift_shaft()
   great_hall()
@@ -273,9 +338,11 @@ function M.build()
   quarters()
   war_room()
   roof()
+  prts.scene.cells{ "outside", "keep.hall" }
   M.door = Door.make{ name = "keep.door", hinge = { -1.1, M.FLOORS[1], M.HZ - 0.5 }, width = 2.2, height = 3.2,
-                      thickness = 0.16, material = "oak" }
+                      thickness = 0.16, material = "oak", portal = "keep.door" }
   M.trees = countryside()
+  prts.scene.cells()
 
   local F = M.FLOORS
   prts.scene.marker("start", { 0, 0, 42 }, 0)
