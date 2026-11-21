@@ -7,6 +7,7 @@
  *   world (prts_world_write)
  *   u32 collision boxes { u8 enabled }
  *   u8 has_commander [ u64 entity, 17 f32 params, 6 f32 state, u8 flags ]
+ *     flags: 1 on the ground, 2 crouched, 4 against a wall, 8 aiming a teleport
  *   u32 entities with script data { u64 entity, plain table }
  *   u64 FNV-1a checksum of everything before it */
 #include "app/snapshot.h"
@@ -128,7 +129,8 @@ bool prts_engine_snapshot_write(prts_engine *e, prts_writer *w, char *err, size_
         write_params(w, &c->p);
         const float state[] = {c->yaw, c->pitch, c->vertical_speed, c->eye, c->eye_prev, c->stamina};
         for (size_t i = 0; i < PRTS_ARRAY_COUNT(state); i++) prts_w_f32(w, state[i]);
-        prts_w_u8(w, (uint8_t)((c->on_ground ? 1u : 0u) | (c->crouched ? 2u : 0u) | (c->hit_wall ? 4u : 0u)));
+        prts_w_u8(w, (uint8_t)((c->on_ground ? 1u : 0u) | (c->crouched ? 2u : 0u) | (c->hit_wall ? 4u : 0u) |
+                               (c->aiming ? 8u : 0u)));
     }
     prts_array keys;
     bool ok = true;
@@ -236,6 +238,7 @@ bool prts_engine_snapshot_read(prts_engine *e, const void *data, size_t size, bo
         cmd.on_ground = (flags & 1u) != 0;
         cmd.crouched = (flags & 2u) != 0;
         cmd.hit_wall = (flags & 4u) != 0;
+        cmd.aiming = (flags & 8u) != 0;
     }
     /* script data: built into a new table, which replaces the old one only if all is well */
     lua_State *L = prts_script_lua(e->script);

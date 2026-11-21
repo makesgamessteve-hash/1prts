@@ -114,3 +114,14 @@ good from 0.05 m (the field map in your hand) to tens of kilometers (views from 
   loop.
 - The engine's frame function is shared, and only the **frame driver** differs, so the
   simulation, scripts and audio behave the same in and out of XR.
+- **Head and body** (`engine/src/app/engine_xr.c`): the reference space (the play area) is
+  anchored at the commander's feet and turned by the play area's yaw. Head and hand poses are
+  frame input like mouse look; each tick reads them as the commander's XR input (recorded in
+  replays), and the body follows the head across the floor until a wall stops it. At render time
+  the head is swept out from the body's centre against the collision world, and every eye is
+  shifted by the same push-back, so a head leaned into a wall stops 12 cm short of its surface.
+- **XR presentation**: each controller's pointer ray is drawn as a line into both eyes (not
+  into in-world surfaces); the comfort vignette darkens the view's edges in the upscale pass,
+  centred on each eye's optical axis; and VR uses its own video settings (by default no vertex
+  snapping, dithering, affine textures or crosshair, and the `hd` preset), so the flat screen's
+  retro look and golden images are unchanged.

@@ -4,6 +4,7 @@
 
 #include "prts_base.h"
 #include "prts_gfx.h"
+#include "prts_input.h"
 
 #define PRTS_XR_MAX_VIEWS 2
 #define PRTS_XR_MAX_CONTROLLERS 2
@@ -74,6 +75,25 @@ void prts_xr_end(prts_xr *xr);
  * at `origin` (the commander's feet) and turned by `yaw`, so the player walks and turns the
  * commander as usual and the headset adds head motion on top. Returns the number of views. */
 int prts_xr_build_views(const prts_xr *xr, prts_dvec3 origin, float yaw, prts_view *out, int max);
+
+/* Rotates v by the pose's orientation (a unit quaternion; a zero one counts as identity). */
+prts_vec3 prts_xr_rotate(const prts_xr_pose *p, prts_vec3 v);
+/* The direction the pose looks or points along (its -z axis). */
+prts_vec3 prts_xr_forward(const prts_xr_pose *p);
+/* Yaw and pitch of that direction, in the convention of prts_view_forward (yaw 0 looks along
+ * -z, positive yaw turns towards -x, pitch up is positive). */
+void prts_xr_yaw_pitch(const prts_xr_pose *p, float *yaw, float *pitch);
+/* The connected controller held in a hand, or NULL. One without handedness takes the right
+ * hand, or the left one when a right-handed controller is there too. */
+const prts_xr_controller *prts_xr_hand_controller(const prts_xr *xr, prts_xr_hand hand);
+/* Copies the controllers of an active session into the device state by hand (xr_* fields of
+ * prts_input_state); clears them when no session runs. A button reads 1 while the browser
+ * reports it pressed and at most 0.5 (half its analog value) otherwise, so an action bound to
+ * it is down exactly while it is pressed. */
+void prts_xr_feed_input(const prts_xr *xr, prts_input_state *s);
+/* Asks to end the session (the game's menu). On the web the browser ends it and calls
+ * prts_xr_end through the glue; elsewhere (simulated sessions in tests) it ends at once. */
+void prts_xr_request_exit(prts_xr *xr);
 
 /* Packed frame data, as the web glue (web/prts_xr.js) writes it into a float array once per
  * XR frame. All offsets are in floats. Flags are 0 or 1; counts are clamped when read. */

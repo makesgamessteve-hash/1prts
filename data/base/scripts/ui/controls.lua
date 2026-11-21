@@ -1,5 +1,5 @@
 -- The controls page of the options menu: every action with its bindings per input scheme.
--- Keyboard/mouse and gamepad bindings change by pressing the new key or button; touch
+-- Keyboard/mouse, gamepad and VR controller bindings change by pressing the new key or button; touch
 -- bindings cycle through the touch controls. Changes are saved at once. MIT License.
 local glyphs = require("ui.glyphs")
 
@@ -9,6 +9,7 @@ C.SCHEMES = {
   { id = "kbm", label = "Keyboard & mouse" },
   { id = "gamepad", label = "Gamepad" },
   { id = "touch", label = "Touch" },
+  { id = "xr", label = "VR" },
 }
 
 -- Stops waiting for a key; returns whether it was waiting.
@@ -52,7 +53,7 @@ end
 
 function C.draw()
   C.poll()
-  prts.ui.row({ 120, 80, 70, -1 })
+  prts.ui.row({ 112, 64, 52, 36, -1 })
   for _, s in ipairs(C.SCHEMES) do
     if prts.ui.button(s.id == C.scheme and ("[" .. s.label .. "]") or s.label, "scheme." .. s.id) then
       C.scheme = s.id

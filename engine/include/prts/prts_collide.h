@@ -61,6 +61,10 @@ prts_vec3 prts_cworld_move(const prts_cworld *cw, prts_aabb *box, prts_vec3 delt
 bool prts_cworld_overlaps(const prts_cworld *cw, prts_aabb box);
 /* True if anything (box or terrain) blocks the ray within max_dist (any-hit query). */
 bool prts_cworld_occluded(const prts_cworld *cw, prts_vec3 origin, prts_vec3 dir, float max_dist);
+/* The walkable ground under p: the highest box top or terrain surface at most max_drop below
+ * p (and not above it). Terrain steeper than the slope limit does not count. Returns false if
+ * there is none, else true and the ground's height in *height. */
+bool prts_cworld_ground(const prts_cworld *cw, prts_vec3 p, float max_drop, float *height);
 /* Ray against boxes and terrain. Returns the box id, -2 for terrain, -1 for no hit. */
 int prts_cworld_raycast(const prts_cworld *cw, prts_vec3 origin, prts_vec3 dir, float max_dist, float *out_dist);
 

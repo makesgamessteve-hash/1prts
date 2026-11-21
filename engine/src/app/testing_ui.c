@@ -207,4 +207,5 @@ void prts_engine_open_test_ui(prts_engine *e, int table, bool synchronous)
     lua_pushvalue(L, table);
     lua_pushboolean(L, synchronous);
     prts_script_call(e->script, 2, 0);
+    prts_engine_open_test_xr(e, table);
 }

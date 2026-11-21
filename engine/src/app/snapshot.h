@@ -9,7 +9,7 @@
 typedef struct prts_engine prts_engine;
 
 #define PRTS_SNAPSHOT_FORMAT 1u
-#define PRTS_REPLAY_FORMAT 1u
+#define PRTS_REPLAY_FORMAT 2u
 
 /* A snapshot holds the simulation state on top of the booted map: every entity slot (parents,
  * local transforms, velocities, movers, usable flags), which collision boxes are enabled, the
@@ -29,7 +29,7 @@ void prts_engine_hash_script_data(const prts_engine *e, prts_hasher *h);
 void prts_engine_open_save_api(prts_engine *e);
 
 /* Replays: a start snapshot plus each tick's simulation inputs (action values and presses,
- * the commander's look yaw and pitch) and the state hash after the tick. --record writes one
+ * the commander's look yaw and pitch and XR body input) and the state hash after the tick. --record writes one
  * when the engine is destroyed; --replay plays one back, checking every tick's hash, and stops
  * with exit code 1 at the first tick that differs. Pending save loads are applied here too. */
 bool prts_engine_replay_start(prts_engine *e, char *err, size_t err_size);

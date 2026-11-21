@@ -107,7 +107,7 @@ is missing. References are C unit tests (`suite.case`), test files and scripts (
 | simulation-core | High refresh display | `world.interpolation_between_ticks` |
 | simulation-core | Two identical runs | `engine.headless_ticks_and_determinism`, `replay.record_and_replay_match_every_tick`, `tests/game/determinism/keep_walk.lua` (CTest `determinism_keep_walk_identical`) |
 | simulation-core | Divergence is detected | `world.state_hash_detects_divergence` |
-| simulation-core | Record and replay | `tests/game/determinism/keep_walk.lua` (CTest `determinism_keep_walk_replay`), `replay.record_and_replay_match_every_tick` |
+| simulation-core | Record and replay | `tests/game/determinism/keep_walk.lua` (CTest `determinism_keep_walk_replay`), `tests/game/determinism/xr_walk.lua` (XR head and hand input, CTest `determinism_xr_walk_replay`), `replay.record_and_replay_match_every_tick` |
 | simulation-core | Slot reuse | `world.spawn_names_and_slot_reuse` |
 | simulation-core | Riding a moving frame | `world.nested_frames_and_reparenting` |
 | simulation-core | Changing parent without a jump | `world.nested_frames_and_reparenting` |
@@ -115,7 +115,7 @@ is missing. References are C unit tests (`suite.case`), test files and scripts (
 | xr-presentation | Entering VR | `web/tests/xr.test.js`, `xr.eye_views_follow_the_commander` |
 | xr-presentation | No XR support | `web/tests/boot.test.js` (no Enter VR control without support) |
 | xr-presentation | Session ended by the headset | `web/tests/xr.test.js` |
-| xr-presentation | Leaning toward a wall | pending (task 13.3) |
-| xr-presentation | Pulling the lift lever | `tests/game/scenarios/keep_lift.lua` (the use path an XR ray triggers); XR controller input pending (task 13.2) |
-| xr-presentation | Teleport movement | pending (task 13.4) |
-| xr-presentation | Comfort defaults | pending (task 13.4) |
+| xr-presentation | Leaning toward a wall | `tests/game/scenarios/xr_lean_wall.lua` (the view stops short of the keep's wall; the body follows the head; seated mode), `commander.xr_body_follows_the_head_and_walls_push_the_view_back` |
+| xr-presentation | Pulling the lift lever | `tests/game/scenarios/xr_lift_lever.lua`, `xr.recorded_frames_pull_the_lift_lever` (a recorded pose fixture, `engine/tests/fixtures/xr/lever_pull.txt`), `xr.controllers_drive_actions_by_hand`, `commander.xr_pointer_ray_uses_things_but_not_through_walls`, `tests/game/determinism/xr_walk.lua` |
+| xr-presentation | Teleport movement | `tests/game/scenarios/xr_teleport.lua`, `commander.xr_teleport_to_reachable_floor_only`, `web/tests/xr.test.js` (the setting saved in the user area, the mocked headset's stick and ray) |
+| xr-presentation | Comfort defaults | `tests/game/scenarios/xr_comfort.lua` (also the vignette, snap and smooth turning, the menu button), `web/tests/xr.test.js`, `data/base/scripts/tests/test_xr.lua` |

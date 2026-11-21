@@ -59,6 +59,11 @@ typedef struct prts_engine_status {
     double commander[3];  /* world position of the commander's feet */
     float yaw, pitch;     /* radians */
     int scheme;           /* active prts_input_scheme */
+    /* XR comfort options and their state */
+    bool xr_teleport;     /* teleport locomotion selected */
+    bool xr_vignette;     /* comfort vignette on */
+    bool xr_snap;         /* vertex snapping in XR */
+    float xr_vignette_level, xr_turn, xr_seat;
 } prts_engine_status;
 void prts_engine_get_status(const prts_engine *e, prts_engine_status *out);
 /* The engine's virtual file system, including the user area. */

@@ -12,6 +12,12 @@
 #define PRTS_INPUT_TOUCH_AXES 4     /* 0, 1: movement stick x, y; 2, 3: look drag x, y */
 #define PRTS_INPUT_TOUCH_BUTTONS 16 /* 0: tap on the look side; 1..: context buttons */
 #define PRTS_INPUT_TEXT_MAX 32
+/* XR controllers, per hand (left, right), in the WebXR xr-standard gamepad order. Buttons:
+ * 0 trigger, 1 squeeze (grip), 2 touchpad, 3 thumbstick press, 4 A or X, 5 B or Y. Axes: 0, 1
+ * touchpad x, y; 2, 3 thumbstick x, y (y is -1 when pushed forward). Binding codes count the
+ * left hand first: buttons 0-7 left, 8-15 right; axes 0-3 left, 4-7 right. */
+#define PRTS_INPUT_XR_BUTTONS 8
+#define PRTS_INPUT_XR_AXES 4
 
 /* One finger on a touch screen. Positions are fractions of the window (0..1, top-left origin). */
 typedef struct prts_touch_point {
@@ -37,6 +43,10 @@ typedef struct prts_input_state {
     float touch_axes[PRTS_INPUT_TOUCH_AXES];
     bool touch_buttons[PRTS_INPUT_TOUCH_BUTTONS];
     char text[PRTS_INPUT_TEXT_MAX]; /* UTF-8 text typed this frame */
+    /* XR controllers of a running XR session (prts_xr_feed_input): [0] left, [1] right hand */
+    bool xr_connected[2];
+    float xr_buttons[2][PRTS_INPUT_XR_BUTTONS]; /* analog 0..1 */
+    float xr_axes[2][PRTS_INPUT_XR_AXES];       /* -1..1 */
 } prts_input_state;
 
 typedef enum prts_input_scheme {
@@ -57,10 +67,12 @@ typedef enum prts_binding_kind {
     PRTS_BIND_PAD_BUTTON,
     PRTS_BIND_PAD_AXIS,   /* code: axis index; scale may be negative */
     PRTS_BIND_TOUCH_AXIS, /* code: PRTS_INPUT_TOUCH_AXES index */
-    PRTS_BIND_TOUCH_BUTTON
+    PRTS_BIND_TOUCH_BUTTON,
+    PRTS_BIND_XR_BUTTON, /* code: hand * PRTS_INPUT_XR_BUTTONS + button (left hand first) */
+    PRTS_BIND_XR_AXIS    /* code: hand * PRTS_INPUT_XR_AXES + axis; dead zone like pad axes */
 } prts_binding_kind;
 
-/* The input scheme a binding kind belongs to (keys and mouse: kbm, pad: gamepad, touch). */
+/* The input scheme a binding kind belongs to (keys and mouse: kbm, pad: gamepad, touch, xr). */
 prts_input_scheme prts_binding_scheme(prts_binding_kind kind);
 
 typedef struct prts_input prts_input;

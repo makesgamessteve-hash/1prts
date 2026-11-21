@@ -25,6 +25,7 @@ typedef struct prts_render_settings {
     bool fog;
     bool crosshair;
     float fov_y;   /* radians */
+    float vignette; /* 0..1: comfort vignette, a darkening towards the edges of each view (XR) */
 } prts_render_settings;
 
 void prts_render_settings_default(prts_render_settings *s);
@@ -50,6 +51,13 @@ typedef struct prts_view {
 /* Builds the view of a flat-screen camera covering the whole w x h output. */
 void prts_view_from_camera(prts_view *v, const prts_camera *cam, float fov_y, int out_w, int out_h);
 
+/* A line drawn into the views of the scene, such as an XR controller's pointer ray. */
+typedef struct prts_gfx_ray {
+    prts_dvec3 from, to; /* world positions */
+    prts_vec3 color;
+} prts_gfx_ray;
+#define PRTS_GFX_MAX_RAYS 4
+
 /* getproc NULL creates the null back end (headless and tests): nothing is drawn. */
 prts_gfx *prts_gfx_create(prts_gfx_getproc getproc, prts_vfs *vfs, bool gles);
 void prts_gfx_destroy(prts_gfx *g);
@@ -71,6 +79,11 @@ void prts_gfx_render(prts_gfx *g, const prts_scene *scene, const prts_world *wor
  * the preset's internal resolution and is scaled into its own output rectangle. */
 void prts_gfx_render_views(prts_gfx *g, const prts_scene *scene, const prts_world *world, const prts_view *views,
                            int view_count, const prts_render_settings *settings, double alpha, double time);
+/* Sets the rays drawn into the views (not into in-world surfaces) of the following render
+ * calls; at most PRTS_GFX_MAX_RAYS, count 0 for none. */
+void prts_gfx_set_rays(prts_gfx *g, const prts_gfx_ray *rays, int count);
+/* Number of rays drawn into the last view. */
+int prts_gfx_rays_drawn(const prts_gfx *g);
 /* Number of views drawn by the last render call. */
 int prts_gfx_last_view_count(const prts_gfx *g);
 /* Number of surface textures (in-world displays) drawn in the last frame. */

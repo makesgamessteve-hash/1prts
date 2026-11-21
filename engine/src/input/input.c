@@ -56,6 +56,8 @@ prts_input_scheme prts_binding_scheme(prts_binding_kind kind)
     case PRTS_BIND_PAD_AXIS: return PRTS_SCHEME_GAMEPAD;
     case PRTS_BIND_TOUCH_AXIS:
     case PRTS_BIND_TOUCH_BUTTON: return PRTS_SCHEME_TOUCH;
+    case PRTS_BIND_XR_BUTTON:
+    case PRTS_BIND_XR_AXIS: return PRTS_SCHEME_XR;
     default: return PRTS_SCHEME_KBM;
     }
 }
@@ -128,6 +130,8 @@ bool prts_input_bind(prts_input *in, const char *name, prts_binding_kind kind, c
               : kind == PRTS_BIND_PAD_AXIS     ? PRTS_INPUT_MAX_PAD_AXES
               : kind == PRTS_BIND_TOUCH_AXIS   ? PRTS_INPUT_TOUCH_AXES
               : kind == PRTS_BIND_TOUCH_BUTTON ? PRTS_INPUT_TOUCH_BUTTONS
+              : kind == PRTS_BIND_XR_BUTTON    ? 2 * PRTS_INPUT_XR_BUTTONS
+              : kind == PRTS_BIND_XR_AXIS      ? 2 * PRTS_INPUT_XR_AXES
                                                : PRTS_INPUT_MAX_KEYS;
     if (code < 0 || code >= limit) return false;
     binding b = {kind, code, scale == 0.0f ? 1.0f : scale};
@@ -180,6 +184,8 @@ void prts_input_set_always(prts_input *in, const char *name, bool always)
     if (a) a->always = always;
 }
 
+static float dead_zone(float v, float scale) { return fabsf(v) < 0.15f ? 0.0f : v * scale; }
+
 static float binding_value(const binding *b, const prts_input_state *s)
 {
     switch (b->kind) {
@@ -189,10 +195,15 @@ static float binding_value(const binding *b, const prts_input_state *s)
     case PRTS_BIND_PAD_BUTTON: return s->pad_connected && s->pad_buttons[b->code] ? b->scale : 0.0f;
     case PRTS_BIND_TOUCH_AXIS: return s->touch_axes[b->code] * b->scale;
     case PRTS_BIND_TOUCH_BUTTON: return s->touch_buttons[b->code] ? b->scale : 0.0f;
-    default: {
-        float v = s->pad_connected ? s->pad_axes[b->code] : 0.0f;
-        return fabsf(v) < 0.15f ? 0.0f : v * b->scale; /* dead zone */
+    case PRTS_BIND_XR_BUTTON: {
+        int hand = b->code / PRTS_INPUT_XR_BUTTONS;
+        return s->xr_connected[hand] ? s->xr_buttons[hand][b->code % PRTS_INPUT_XR_BUTTONS] * b->scale : 0.0f;
     }
+    case PRTS_BIND_XR_AXIS: {
+        int hand = b->code / PRTS_INPUT_XR_AXES;
+        return s->xr_connected[hand] ? dead_zone(s->xr_axes[hand][b->code % PRTS_INPUT_XR_AXES], b->scale) : 0.0f;
+    }
+    default: return dead_zone(s->pad_connected ? s->pad_axes[b->code] : 0.0f, b->scale);
     }
 }
 

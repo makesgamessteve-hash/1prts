@@ -69,10 +69,25 @@ EMSCRIPTEN_KEEPALIVE int prts_test_scheme(void)
 EMSCRIPTEN_KEEPALIVE int prts_test_gestures(void) { return (int)prts_platform_gesture_count(); }
 
 /* 0 supported, 1 active, 2 views, 3 XR frames, 4 sessions, 5 connected controllers,
- * 6 framebuffer, 7 head height, 8 x of the second view's viewport. */
+ * 6 framebuffer, 7 head height, 8 x of the second view's viewport; comfort options: 9 comfort
+ * vignette on, 10 vertex snapping in XR, 11 current vignette strength, 12 teleport movement,
+ * 13 yaw of the play area, 14 seated height added. */
 EMSCRIPTEN_KEEPALIVE double prts_test_xr(int field)
 {
     const prts_xr *xr = prts_xr_get();
+    prts_engine_status s;
+    if (field >= 9) {
+        if (!status(&s)) return NAN;
+        switch (field) {
+        case 9: return s.xr_vignette ? 1.0 : 0.0;
+        case 10: return s.xr_snap ? 1.0 : 0.0;
+        case 11: return s.xr_vignette_level;
+        case 12: return s.xr_teleport ? 1.0 : 0.0;
+        case 13: return s.xr_turn;
+        case 14: return s.xr_seat;
+        default: return NAN;
+        }
+    }
     int controllers = 0;
     for (int i = 0; i < PRTS_XR_MAX_CONTROLLERS; i++) controllers += xr->controllers[i].connected ? 1 : 0;
     switch (field) {

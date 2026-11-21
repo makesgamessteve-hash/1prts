@@ -9,8 +9,10 @@ local M = { screen = nil }
 local GOLD = { 240, 200, 120, 255 }
 local PALE = { 225, 214, 190, 255 }
 
--- Esc and Start open and close menus; this action works while a menu blocks game input.
-prts.input.action{ id = "menu", label = "Menu", keys = { "Escape" }, pad_buttons = { 6 }, always = true }
+-- Esc, Start and Y on the left XR controller open and close menus; this action works while a
+-- menu blocks game input.
+prts.input.action{ id = "menu", label = "Menu", keys = { "Escape" }, pad_buttons = { 6 }, xr_buttons = { 5 },
+                   always = true }
 
 -- Shows a screen ("main", "pause", "options", "credits") or closes the menu (nil).
 function M.open(screen)
@@ -25,6 +27,8 @@ function M.home() return session.current and "pause" or "main" end
 function M.on_menu_key()
   if options.cancel_capture() then return M.screen end
   if M.screen == nil then
+    -- Menus are drawn on the flat page (none in the headset yet): in VR the menu leaves VR.
+    prts.xr.exit()
     if session.current then M.open("pause") end
   elseif M.screen == "pause" then
     M.open(nil)

@@ -11,6 +11,18 @@ G.PAD_AXES = { [0] = "Left stick", [1] = "Left stick", [2] = "Right stick", [3] 
 G.MOUSE = { [1] = "Left mouse", [2] = "Middle mouse", [3] = "Right mouse", [4] = "Mouse 4", [5] = "Mouse 5" }
 G.MOUSE_AXES = { [0] = "Mouse", [1] = "Mouse", [2] = "Wheel" }
 G.TOUCH_AXES = { [0] = "Stick", [1] = "Stick", [2] = "Drag", [3] = "Drag" }
+-- XR controllers (xr-standard order): codes 0-7 left hand, 8-15 right; axes 0-3 left, 4-7 right.
+G.XR = { [0] = "trigger", [1] = "grip", [2] = "touchpad", [3] = "stick press", [4] = "X", [5] = "Y" }
+G.XR_RIGHT = { [4] = "A", [5] = "B" }
+G.XR_AXES = { [0] = "touchpad", [1] = "touchpad", [2] = "stick", [3] = "stick" }
+
+local function xr_name(code, per_hand, names)
+  local hand, i = code // per_hand, code % per_hand
+  local name = hand == 1 and G.XR_RIGHT[i] or names[i]
+  if not name then return (hand == 1 and "Right" or "Left") .. " button " .. i end
+  if #name == 1 then return name end
+  return (hand == 1 and "Right " or "Left ") .. name
+end
 
 local function touch_button(code)
   if code == 0 then return "Tap" end
@@ -27,6 +39,8 @@ function G.name(b)
   if b.kind == "pad_button" then return G.PAD[b.code] or ("Button " .. b.code) end
   if b.kind == "pad_axis" then return G.PAD_AXES[b.code] end
   if b.kind == "touch_axis" then return G.TOUCH_AXES[b.code] end
+  if b.kind == "xr_button" then return xr_name(b.code, 8, G.XR) end
+  if b.kind == "xr_axis" then return xr_name(b.code, 4, G.XR_AXES) end
   return touch_button(b.code)
 end
 
@@ -37,11 +51,12 @@ function G.list(action, scheme)
   return #names > 0 and table.concat(names, ", ") or "none"
 end
 
--- The glyph that starts an interaction prompt: [E] on keyboard, (X) on a gamepad, Tap: on touch.
+-- The glyph that starts an interaction prompt: [E] on keyboard, (X) on a gamepad or a VR
+-- controller, Tap: on touch.
 function G.prompt(action, scheme)
   local first = (prts.input.bindings(action)[scheme] or {})[1]
   if not first then return "[?]" end
-  if scheme == "gamepad" then return "(" .. G.name(first) .. ")" end
+  if scheme == "gamepad" or scheme == "xr" then return "(" .. G.name(first) .. ")" end
   if scheme == "touch" then return G.name(first) .. ":" end
   return "[" .. G.name(first) .. "]"
 end

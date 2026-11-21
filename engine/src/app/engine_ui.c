@@ -267,10 +267,15 @@ static void build_world_surface(prts_engine *e, int s)
             dir = prts_ui_screen_ray(c->yaw, c->pitch, e->render.fov_y,
                                      (float)e->screen_w / (float)PRTS_MAX(1, e->screen_h), f->x, f->y);
         }
+        prts_dvec3 from = prts_commander_eye(c, e->world, 1.0);
+        if (c->xr.active && c->xr.has_pointer) { /* XR: the controller's pointer ray */
+            from = prts_dv3_add(prts_world_pos(e->world, c->entity), prts_dv3_from_v3(c->xr.pointer_origin));
+            dir = c->xr.pointer_dir;
+        }
         float u = 0.0f, v = 0.0f, dist = 0.0f;
         int w = 0, h = 0;
         prts_ui_surface_size(e->ui, s, &w, &h);
-        if (prts_ui_ray_quad(&q, prts_commander_eye(c, e->world, 1.0), dir, SURFACE_REACH, &u, &v, &dist)) {
+        if (prts_ui_ray_quad(&q, from, dir, SURFACE_REACH, &u, &v, &dist)) {
             in.has_pointer = true;
             in.x = u * (float)w;
             in.y = v * (float)h;
@@ -362,7 +367,9 @@ void prts_engine_ui_frame(prts_engine *e, double dt)
 void prts_engine_ui_test_frame(prts_engine *e)
 {
     prts_engine_ui_before_input(e, e->clock.tick_seconds);
+    prts_engine_xr_before_input(e);
     prts_input_update(e->input, &e->dev);
+    prts_engine_xr_look(e, e->clock.tick_seconds);
     prts_platform_begin_frame(&e->dev);
     prts_engine_ui_frame(e, e->clock.tick_seconds);
 }

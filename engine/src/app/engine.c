@@ -74,6 +74,7 @@ prts_engine *prts_engine_create(const prts_engine_config *cfg, char *err, size_t
     prts_array_init(&e->move_done, sizeof(prts_entity));
     prts_clock_init(&e->clock, PRTS_TICK_HZ, 5);
     prts_render_settings_default(&e->render);
+    prts_engine_xr_init(e);
     e->vfs = prts_vfs_create();
     prts_vfs_set_user_dir(e->vfs, e->user_dir);
     e->jobs = prts_jobs_create(cfg->headless ? 0 : prts_jobs_default_threads());
@@ -122,6 +123,7 @@ prts_engine *prts_engine_create(const prts_engine_config *cfg, char *err, size_t
     prts_engine_open_game_api(e);
     prts_engine_open_audio_api(e);
     prts_engine_open_save_api(e);
+    prts_engine_open_xr_api(e);
 #if defined(PRTS_DEV) && !defined(__EMSCRIPTEN__)
     /* developer builds on desktop: on for interactive runs, opt-in for tests */
     e->hot_reload = cfg->hot_reload || (!cfg->headless && !cfg->scenario && !cfg->test_lua && !cfg->replay);
@@ -202,6 +204,7 @@ static void emit_entity_event(prts_engine *e, const char *event, prts_entity ent
 
 void prts_engine_tick(prts_engine *e)
 {
+    prts_engine_xr_before_tick(e); /* XR body input, before a replay records or replaces it */
     prts_engine_replay_before_tick(e);
     float dt = (float)e->clock.tick_seconds;
     prts_world_begin_tick(e->world);
@@ -210,6 +213,7 @@ void prts_engine_tick(prts_engine *e)
     prts_cworld_sync(e->cworld, e->world);
     if (e->has_commander) {
         prts_commander_tick(&e->commander, e->world, e->cworld, e->input, dt);
+        prts_engine_xr_after_tick(e);
         if (prts_input_pressed(e->input, "use")) {
             prts_entity target = prts_commander_target(&e->commander, e->world, e->cworld);
             if (target != PRTS_ENTITY_NONE) emit_entity_event(e, "use", target);
@@ -240,18 +244,8 @@ static void apply_look(prts_engine *e)
 static void render_frame(prts_engine *e, double alpha)
 {
     if (!e->platform) return;
-    const prts_xr *xr = prts_xr_get();
-    if (xr->active && e->has_commander) {
-        /* WebXR: both eyes into the session's framebuffer; the browser presents it */
-        prts_view views[PRTS_XR_MAX_VIEWS];
-        prts_dvec3 eye = prts_commander_eye(&e->commander, e->world, alpha);
-        prts_dvec3 feet = prts_dv3(eye.x, eye.y - e->commander.eye, eye.z);
-        int n = prts_xr_build_views(xr, feet, e->commander.yaw, views, PRTS_XR_MAX_VIEWS);
-        if (n > 0) {
-            prts_gfx_render_views(e->gfx, e->scene, e->world, views, n, &e->render, alpha, e->time);
-            return;
-        }
-    }
+    /* WebXR: both eyes into the session's framebuffer; the browser presents it */
+    if (prts_engine_xr_render(e, alpha)) return;
     int w = 0, h = 0;
     prts_platform_drawable_size(e->platform, &w, &h);
     prts_camera cam = {prts_dv3(0, 1.7, 0), 0.0f, 0.0f};
@@ -287,8 +281,9 @@ bool prts_engine_frame(prts_engine *e, double real_seconds)
     if (e->reload_timer >= 1.0) e->reload_timer = 0.0;
 #endif
     prts_engine_ui_before_input(e, real_seconds);
+    prts_engine_xr_before_input(e);
     prts_input_update(e->input, &e->dev);
-    apply_look(e);
+    if (!prts_engine_xr_look(e, real_seconds)) apply_look(e);
     prts_platform_begin_frame(&e->dev);
     /* scenarios run one tick per frame, so they are deterministic even with a window */
     int n = e->scenario_active || e->cfg.scenario ? 1 : prts_clock_advance(&e->clock, real_seconds);
@@ -334,6 +329,13 @@ void prts_engine_get_status(const prts_engine *e, prts_engine_status *out)
     out->frames = e->frames;
     out->scheme = (int)prts_input_scheme_active(e->input);
     out->has_commander = e->has_commander;
+    prts_render_settings xr = prts_engine_xr_render_settings(e);
+    out->xr_teleport = e->xr.teleport;
+    out->xr_vignette = e->xr.vignette;
+    out->xr_snap = xr.snap;
+    out->xr_vignette_level = e->xr.vignette_level;
+    out->xr_turn = e->xr.turn;
+    out->xr_seat = e->xr.seat;
     if (!e->has_commander) return;
     prts_dvec3 p = prts_world_pos(e->world, e->commander.entity);
     out->commander[0] = p.x;
@@ -360,7 +362,7 @@ uint64_t prts_engine_hash(const prts_engine *e)
         prts_hasher_f64(&h, c->vertical_speed);
         prts_hasher_f64(&h, c->eye);
         prts_hasher_f64(&h, c->stamina);
-        prts_hasher_u64(&h, (uint64_t)c->on_ground | ((uint64_t)c->crouched << 1));
+        prts_hasher_u64(&h, (uint64_t)c->on_ground | ((uint64_t)c->crouched << 1) | ((uint64_t)c->aiming << 2));
     }
     prts_engine_hash_script_data(e, &h);
     return h.h;
