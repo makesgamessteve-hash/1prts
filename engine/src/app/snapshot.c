@@ -6,7 +6,8 @@
  *   u64 tick  u64 rng_state  u64 rng_inc
  *   world (prts_world_write)
  *   u32 collision boxes { u8 enabled }
- *   u8 has_commander [ u64 entity, 17 f32 params, 8 f32 state, u8 flags, u8 jump buffer, u8 coyote ]
+ *   u8 has_commander [ u64 entity, 17 f32 params, 8 f32 state, u8 flags, u8 jump buffer, u8 coyote,
+ *                      u64 ridden frame, f32 its yaw ]
  *     state: yaw, pitch, vertical speed, eye, eye before, stamina, velocity x, velocity z
  *     flags: 1 on the ground, 2 crouched, 4 against a wall, 8 aiming a teleport, 16 in a jump
  *   u32 entities with script data { u64 entity, plain table }
@@ -135,6 +136,8 @@ bool prts_engine_snapshot_write(prts_engine *e, prts_writer *w, char *err, size_
                                (c->aiming ? 8u : 0u) | (c->jumping ? 16u : 0u)));
         prts_w_u8(w, c->jump_buffer);
         prts_w_u8(w, c->coyote);
+        prts_w_u64(w, c->ride_frame);
+        prts_w_f32(w, c->ride_yaw);
     }
     prts_array keys;
     bool ok = true;
@@ -249,6 +252,8 @@ bool prts_engine_snapshot_read(prts_engine *e, const void *data, size_t size, bo
         cmd.jumping = (flags & 16u) != 0;
         cmd.jump_buffer = prts_r_u8(&r);
         cmd.coyote = prts_r_u8(&r);
+        cmd.ride_frame = prts_r_u64(&r);
+        cmd.ride_yaw = prts_r_f32(&r);
     }
     /* script data: built into a new table, which replaces the old one only if all is well */
     lua_State *L = prts_script_lua(e->script);

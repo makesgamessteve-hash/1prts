@@ -64,6 +64,7 @@ function M.tick(now)
     end
   end
   if now % 15 == 0 then
+    C.follow_all()
     for id in prts.sorted_pairs(m.sides) do P.update(id, now) end
     for _, e in ipairs(m.structures) do
       if S.alive(e) then K.structure_think(e, 15) end

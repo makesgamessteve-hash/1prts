@@ -53,6 +53,8 @@ function C.order(c, order)
       local x, z = C.slot(i, #members, order.x, order.z, order.x - cx, order.z - cz)
       prts.agent.move(e, x, z)
     end
+  elseif order.kind == "follow" then
+    C.follow_step(c, true)
   elseif order.kind == "hold" or order.kind == "idle" then
     for _, e in ipairs(members) do prts.agent.stop(e) end
   end
@@ -83,6 +85,7 @@ function C.in_reach(c)
 end
 
 local ANSWERS = { move = "aye, marching.", attack = "aye, we go in.", hold = "holding here.", idle = "standing easy.",
+                  follow = "riding with you.",
                   rally = "coming to you.", fall_back = "falling back." }
 
 -- An order over the sending stones: it arrives after the stone delay, if the company is in
@@ -135,6 +138,8 @@ function C.horn(side_id, signal, x, z, tx, tz)
             local hx, _, hz = S.pos(hold)
             C.order(c, { kind = "move", x = hx, z = hz + 20 })
           end
+        elseif signal == "follow" then
+          C.order(c, { kind = "follow" })
         elseif signal == "rally" then
           C.order(c, { kind = "move", x = x, z = z })
         else
@@ -145,6 +150,37 @@ function C.horn(side_id, signal, x, z, tx, tz)
   end
   prts.events.emit("rts_horn", side_id, signal, heard)
   return heard
+end
+
+C.FOLLOW_BEHIND = 7 -- metres behind the commander that a following company keeps
+
+-- A company riding with the commander goes to its slots behind them: at once when `force`,
+-- else when the commander has moved on more than 3 m from where the company was sent.
+function C.follow_step(c, force)
+  local ce = prts.commander.entity()
+  if not ce then return false end
+  local x, _, z = prts.entity.pos(ce)
+  local yaw = prts.commander.view()
+  local fx, fz = -math.sin(yaw), -math.cos(yaw)
+  local tx, tz = x - fx * C.FOLLOW_BEHIND, z - fz * C.FOLLOW_BEHIND
+  local last = c.order.at
+  if not force and last and S.dist(last[1], last[2], tx, tz) < 3 then return false end
+  c.order.at = { tx, tz }
+  local members = C.members(c)
+  for i, e in ipairs(members) do
+    local sx, sz = C.slot(i, #members, tx, tz, fx, fz)
+    prts.agent.move(e, sx, sz)
+  end
+  return true
+end
+
+-- Every half second: companies riding with the commander keep up.
+function C.follow_all()
+  local n = 0
+  for _, c in prts.sorted_pairs(S.match().companies) do
+    if c.order.kind == "follow" and #C.members(c) > 0 and C.follow_step(c) then n = n + 1 end
+  end
+  return n
 end
 
 -- Companies of a side, in id order.

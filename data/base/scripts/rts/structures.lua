@@ -63,6 +63,26 @@ function SHAPES.watchtower(e, w, d)
   prts.scene.prism{ base = { 0, 13.5, 0 }, radius = hw + 0.8, top_radius = 0, height = 3, sides = 4, material = "slate", entity = e }
 end
 
+-- Stables: a long timber stall row with a paddock fence in front of it.
+function SHAPES.stables(e, w, d)
+  local hw, hd = w / 2, d / 2
+  box(e, "oak", -hw, 0, -hd, hw, 3.2, -hd + 0.4)
+  box(e, "oak", -hw, 0, -hd, -hw + 0.4, 3.2, 0)
+  box(e, "oak", hw - 0.4, 0, -hd, hw, 3.2, 0)
+  for i = 0, 5 do -- the stall partitions
+    local x = -hw + 0.4 + i * (w - 0.8) / 5
+    box(e, "planks", x - 0.1, 0, -hd + 0.4, x + 0.1, 1.6, -1)
+  end
+  prts.scene.wedge{ min = { -hw - 0.3, 3.2, -hd - 0.3 }, max = { hw + 0.3, 4.6, 0.3 }, axis = "z", sign = 1,
+                    material = "slate", entity = e }
+  for i = 0, 8 do -- the paddock fence
+    local x = -hw + i * w / 8
+    box(e, "oak", x - 0.08, 0, hd - 0.2, x + 0.08, 1.3, hd)
+  end
+  box(e, "oak", -hw, 1.0, hd - 0.15, -2, 1.12, hd - 0.05, false)
+  box(e, "oak", 2, 1.0, hd - 0.15, hw, 1.12, hd - 0.05, false)
+end
+
 -- The scaffolding of a site: a frame of poles that grows with the work.
 local function scaffold(e, w, d, frac)
   local hw, hd, h = w / 2, d / 2, 1 + 5 * frac
@@ -79,6 +99,7 @@ local function build_shape(e, def, color)
   elseif kind == "farmstead" then SHAPES.farmstead(e, w, d)
   elseif kind == "watchtower" then SHAPES.watchtower(e, w, d)
   elseif kind == "sawmill" then SHAPES.hall(e, w, d, 4, "planks")
+  elseif kind == "stables" then SHAPES.stables(e, w, d)
   else SHAPES.hall(e, w, d, 5, "plaster") end
 end
 

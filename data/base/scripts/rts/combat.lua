@@ -65,14 +65,23 @@ function K.die(e)
   prts.entity.despawn(e)
 end
 
+K.CHARGE_RUN = 15 -- ticks of riding before a strike counts as a charge
+
 local function strike(e, d, w, target)
   d.cd = math.floor(w.cooldown * 30 + 0.5)
+  local u = D.unit(d.def)
+  local damage = w.damage
+  if u.charge and (d.run or 0) >= K.CHARGE_RUN then
+    damage = damage * u.charge
+    prts.events.emit("rts_charge", e, damage)
+  end
+  d.run = 0
   local x, y, z = S.pos(e)
   if prts.audio then
     prts.audio.play{ sound = w.missile and K.SOUNDS.missile or K.SOUNDS.melee, at = { x, y + 1.2, z }, volume = 0.5,
                      range = 80, pitch = w.missile and 1.4 or 1.0 }
   end
-  local killed = K.hit(target, w.damage)
+  local killed = K.hit(target, damage)
   if killed then d.target = nil end
   return killed
 end
@@ -98,6 +107,7 @@ function K.think(e, ticks)
   local u = D.unit(d.def)
   local w = u.weapon
   d.cd = math.max(0, d.cd - ticks)
+  if u.charge then d.run = prts.agent.info(e).moving and (d.run or 0) + ticks or 0 end
   local c = d.company and S.company(d.company)
   if c and not c.strength then c.strength = #c.members end
   local order = c and c.order or { kind = "idle" }
@@ -109,7 +119,7 @@ function K.think(e, ticks)
     end
     return "fleeing"
   end
-  if order.kind == "move" and prts.agent.info(e).moving then return "marching" end
+  if (order.kind == "move" or order.kind == "follow") and prts.agent.info(e).moving then return "marching" end
   local x, _, z = S.pos(e)
   -- keep a target while it lives and stays in sight; else look for one
   local t = d.target

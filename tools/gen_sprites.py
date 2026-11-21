@@ -30,12 +30,13 @@ def write_png(path, w, h, rgba):
 
 
 class Frame:
-    def __init__(self):
-        self.px = [[None] * FW for _ in range(FH)]
+    def __init__(self, w=FW, h=FH):
+        self.w, self.h = w, h
+        self.px = [[None] * w for _ in range(h)]
 
     def put(self, x, y, c):
         x, y = int(round(x)), int(round(y))
-        if 0 <= x < FW and 0 <= y < FH:
+        if 0 <= x < self.w and 0 <= y < self.h:
             self.px[y][x] = c
 
     def rect(self, x0, y0, x1, y1, c):
@@ -51,13 +52,13 @@ class Frame:
 
     def outline(self, color):
         out = [row[:] for row in self.px]
-        for y in range(FH):
-            for x in range(FW):
+        for y in range(self.h):
+            for x in range(self.w):
                 if self.px[y][x] is not None:
                     continue
                 for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
                     xx, yy = x + dx, y + dy
-                    if 0 <= xx < FW and 0 <= yy < FH and self.px[yy][xx] is not None:
+                    if 0 <= xx < self.w and 0 <= yy < self.h and self.px[yy][xx] is not None:
                         out[y][x] = color
                         break
         self.px = out
@@ -184,6 +185,127 @@ def sheet(kind, side="crown"):
     return W, ROWS * FH, rgba
 
 
+# --- horses and riders: 64 x 64 frames ---------------------------------------------------------
+
+MW, MH = 64, 64
+COATS = {"crown": (122, 84, 52), "red": (52, 40, 34)}
+
+
+def mounted(d, step, rider, side="crown"):
+    """A horse seen from direction d (0 faces the viewer), walking (step 0..3) or standing,
+    with an optional rider ("knight" or "outrider") in the side's colours."""
+    f = Frame(MW, MH)
+    a = d * math.pi / 4.0
+    facing = -math.sin(a)   # -1 head to screen-left ... +1 screen-right
+    front = math.cos(a)     # 1: head towards the viewer
+    cx = 32
+    coat = COATS[side]
+    dark = shade(coat, 0.7)
+    mane = (40, 30, 22)
+    hoof = (34, 28, 24)
+    swing = 0 if step is None else (-1, 0, 1, 0)[step]
+    bob = 0 if step is None else (0, 1, 0, 1)[step]
+    half = 7 + 12 * abs(facing)          # half the body's length (or the chest's width) as seen
+    by = 34 + bob                        # the body's middle
+    # legs: four, at the body's ends, swinging in pairs
+    for i, (lx, phase) in enumerate(((-1, 1), (-0.6, -1), (0.6, 1), (1, -1))):
+        x = cx + lx * (half - 3) * (1 if abs(facing) > 0.3 else 0.4) + (0 if abs(facing) > 0.3 else (i - 1.5) * 2)
+        sw = swing * phase * 2 * abs(facing)
+        col = dark if i % 2 else coat
+        f.rect(x - 1.2 + sw * 0.5, by + 4, x + 1.2 + sw, 58, col)
+        f.rect(x - 1.5 + sw, 58, x + 1.5 + sw, 60, hoof)
+    # body
+    f.ellipse(cx, by, half + 2, 7.5, coat)
+    # tail at the back end
+    tx = cx - facing * (half + 2)
+    if abs(facing) > 0.3:
+        f.rect(tx - 1, by - 3, tx + 1, by + 12, mane)
+    elif front < 0:
+        f.rect(cx - 1.5, by - 2, cx + 1.5, by + 12, mane)
+    # neck and head at the front end
+    hx = cx + facing * (half + 1)
+    if abs(facing) > 0.3:
+        f.rect(hx - 3, by - 16, hx + 3, by - 2, coat)                  # neck
+        f.rect(hx - 3 - (1 if facing < 0 else 0), by - 18, hx + 3, by - 15, mane)
+        f.ellipse(hx + facing * 4, by - 15, 5, 3.2, coat)              # head
+        f.put(hx + facing * 3, by - 16, (20, 16, 12))                  # eye
+        f.rect(hx - 1, by - 21, hx + 1, by - 18, dark)                  # ears
+    if rider:
+        body, trim = SIDES[side]
+        if rider == "knight":
+            body, trim = (196, 200, 210), SIDES[side][0]                 # plate and a surcoat stripe
+        rx = cx - facing * 2
+        ry = by - 9
+        w = 4 + 2 * abs(front)
+        f.rect(rx - w, ry - 13, rx + w, ry, body)                         # torso
+        f.rect(rx - 1, ry - 13, rx + 1, ry, trim)
+        f.rect(rx - 2, ry - 1, rx + 2, ry + 5, shade(body, 0.8))          # leg over the flank
+        helm = (150, 156, 168) if rider == "knight" else (96, 70, 44)
+        f.ellipse(rx, ry - 18, 4.2, 5, helm)
+        if rider == "knight":
+            f.rect(rx - 4, ry - 18, rx + 4, ry - 17, (40, 40, 46))         # visor slit
+            f.rect(rx - 1, ry - 25, rx + 1, ry - 22, trim)                 # plume
+        else:
+            f.ellipse(rx + facing * 1.5, ry - 16, 2.8, 2.6, (214, 164, 124))
+        # the lance, held couched forward
+        lx = rx + facing * 2
+        wood = (128, 92, 52)
+        for t in range(0, 30):
+            x = lx + facing * t * 0.9
+            y = ry - 8 - t * (0.35 if abs(facing) > 0.3 else 0.9)
+            f.put(x, y, wood)
+        tipx = lx + facing * 29 * 0.9
+        tipy = ry - 8 - 29 * (0.35 if abs(facing) > 0.3 else 0.9)
+        f.rect(tipx - 1, tipy - 1, tipx + 1, tipy + 1, (196, 200, 210))
+        f.rect(lx + facing * 6, ry - 13, lx + facing * 10, ry - 10, trim)  # pennant
+    if abs(facing) <= 0.3 and front > 0:  # the head towards the viewer, in front of the rider
+        f.ellipse(cx, by - 7, 3.8, 8, coat)
+        f.rect(cx - 1, by - 12, cx + 1, by - 1, (230, 224, 210))       # blaze
+        f.rect(cx - 5, by - 16, cx - 3, by - 13, dark)                 # ears
+        f.rect(cx + 3, by - 16, cx + 5, by - 13, dark)
+        f.put(cx - 2.5, by - 9, (20, 16, 12))
+        f.put(cx + 2.5, by - 9, (20, 16, 12))
+    f.outline((22, 18, 16))
+    return f
+
+
+def mounted_sheet(rider, side):
+    rgba = [0] * (COLS * MW * ROWS * MH * 4)
+    W = COLS * MW
+    for row in range(ROWS):
+        d = row % 8
+        for col in range(COLS):
+            step = col if row >= 8 else None
+            fr = mounted(d, step, rider, side)
+            for y in range(MH):
+                for x in range(MW):
+                    c = fr.px[y][x]
+                    if c is None:
+                        continue
+                    i = ((row * MH + y) * W + col * MW + x) * 4
+                    rgba[i:i + 4] = [c[0], c[1], c[2], 255]
+    return W, ROWS * MH, rgba
+
+
+MOUNTED_META = """-- {title}: 8 directions, standing and a 4-frame walk. Generated by tools/gen_sprites.py.
+return {{
+  texture = "sprites/{name}.png",
+  frame = {{ 64, 64 }}, columns = 4, rows = 16,
+  height = {height}, directions = 8,
+  anims = {{
+    {{ name = "idle", first_row = 0, frames = 1, fps = 1 }},
+    {{ name = "walk", first_row = 8, frames = 4, fps = 8 }},
+  }},
+}}
+"""
+
+MOUNTED = (("horse", None, "crown", "Saddled horse", 2.4),
+           ("crown_knight", "knight", "crown", "Crown knight", 3.0),
+           ("red_knight", "knight", "red", "Rival knight", 3.0),
+           ("crown_rider", "outrider", "crown", "Crown outrider on horseback", 2.9),
+           ("red_rider", "outrider", "red", "Rival outrider on horseback", 2.9))
+
+
 META = """-- {title}: 8 directions, idle and a 4-frame walk. Generated by tools/gen_sprites.py.
 return {{
   texture = "sprites/{name}.png",
@@ -213,6 +335,11 @@ def main():
         write_png(os.path.join(OUT, name + ".png"), w, h, rgba)
         with open(os.path.join(OUT, name + ".lua"), "w") as f:
             f.write(META.format(title=title, name=name, height=height))
+    for name, rider, side, title, height in MOUNTED:
+        w, h, rgba = mounted_sheet(rider, side)
+        write_png(os.path.join(OUT, name + ".png"), w, h, rgba)
+        with open(os.path.join(OUT, name + ".lua"), "w") as f:
+            f.write(MOUNTED_META.format(title=title, name=name, height=height))
     print("wrote sprites to", os.path.normpath(OUT))
     return 0
 

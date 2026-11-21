@@ -166,3 +166,14 @@ is missing. References are C unit tests (`suite.case`), test files and scripts (
 | command-tools | Opening the field map | `tests/game/scenarios/field_map.lua` |
 | command-tools | Advance to my mark | `tests/game/scenarios/stone_and_staff.lua`, `tests/game/scenarios/rts_command_edges.lua` |
 | command-tools | The rally horn | `tests/game/scenarios/stone_and_staff.lua`, `tests/game/scenarios/rts_command_edges.lua` (the other signals) |
+| mounts-and-cavalry | Mounting and galloping | `tests/game/scenarios/ride_horse.lua` |
+| mounts-and-cavalry | Dismounting | `tests/game/scenarios/ride_horse.lua` |
+| mounts-and-cavalry | Knights charge | `tests/game/scenarios/knights_charge.lua` |
+| mounts-and-cavalry | Ride with your knights | `tests/game/scenarios/ride_with_knights.lua` |
+| vehicles-and-posts | Standing on a wagon | `tests/game/scenarios/wagon_ride.lua`, `engine/tests/test_input.c` (`commander.the_view_turns_with_a_turning_frame`) |
+| vehicles-and-posts | Driving the wagon | `tests/game/scenarios/wagon_ride.lua` |
+| vehicles-and-posts | Up the tower to the wall | `tests/game/scenarios/siege_tower.lua` |
+| vehicles-and-posts | Walking the galleries of a gold mine | `tests/game/scenarios/mine_galleries.lua` |
+| deck-plans-and-crews | A small plan | `data/base/scripts/tests/test_deckplan.lua`, `tests/game/scenarios/siege_tower.lua` (its stairs climbed) |
+| deck-plans-and-crews | Walking away from the siege tower | `tests/game/scenarios/crew_lod.lua` |
+| deck-plans-and-crews | The tower's push room is wrecked | `tests/game/scenarios/room_damage.lua` |

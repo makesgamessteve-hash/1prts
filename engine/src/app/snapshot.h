@@ -8,7 +8,8 @@
 
 typedef struct prts_engine prts_engine;
 
-#define PRTS_SNAPSHOT_FORMAT 3u /* 2: the commander's velocity, jump buffer and coyote time; 3: agents, navigation */
+#define PRTS_SNAPSHOT_FORMAT 4u /* 2: the commander's velocity, jump buffer and coyote time; 3: agents, navigation;
+                                  4: the frame the commander rides and its yaw */
 #define PRTS_REPLAY_FORMAT 2u
 
 /* A snapshot holds the simulation state on top of the booted map: every entity slot (parents,

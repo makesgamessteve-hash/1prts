@@ -43,6 +43,7 @@ M.actions = {
   { id = "mark", label = "Marking staff", keys = { "F" }, mouse_buttons = { 2 }, pad_buttons = { 10 },
     touch_buttons = { 7 } },
   { id = "horn", label = "War horn", keys = { "H" }, pad_buttons = { 9 }, touch_buttons = { 8 } },
+  { id = "mount", label = "Mount / dismount", keys = { "R" }, pad_buttons = { 11 }, touch_buttons = { 10 } },
   { id = "next_company", label = "Next company", keys = { "X" }, pad_buttons = { 14 }, touch_buttons = { 9 } },
   -- Teleport movement (XR): push the stick forward to aim with that hand's ray, let go to go.
   { id = "teleport", label = "Teleport (VR)", xr_axes = { { code = XR.LEFT_STICK_Y, scale = -1 } } },

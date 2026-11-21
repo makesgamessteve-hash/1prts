@@ -18,13 +18,14 @@ T.LAYOUT = {
     { id = "mark", label = "Mark", x = 0.82, y = 0.12, radius = 0.055 },
     { id = "horn", label = "Horn", x = 0.82, y = 0.29, radius = 0.055 },
     { id = "next_company", label = "Next", x = 0.70, y = 0.12, radius = 0.05 },
+    { id = "mount", label = "Ride", x = 0.70, y = 0.29, radius = 0.05 },
   },
 }
 
 function T.apply() return prts.input.touch_layout(T.LAYOUT) end
 
 -- Whether the commander leads a side in a running skirmish (the tools' buttons show then);
--- rts/tools.lua sets T.tools_active when it is loaded.
+-- rts/tools.lua sets T.tools_active when it is loaded; props/horse.lua sets T.can_ride.
 function T.in_match()
   return T.tools_active ~= nil and T.tools_active() == true
 end
@@ -37,6 +38,7 @@ function T.usable()
     use = playing and prts.commander.target() ~= nil,
     jump = playing, crouch = playing, run = playing,
     field_map = tools, stone = tools, mark = tools, horn = tools, next_company = tools,
+    mount = playing and T.can_ride ~= nil and T.can_ride() == true,
   }
 end
 

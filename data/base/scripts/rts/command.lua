@@ -12,8 +12,9 @@ local P = require("rts.picture")
 local Cmd = {}
 Cmd.PICK = 10        -- metres around a point in which a company or a sighting counts as picked
 Cmd.MARK_RANGE = 400 -- how far the marking staff reaches
-Cmd.SIGNALS = { "advance", "hold", "fall_back", "rally" }
-Cmd.SIGNAL_NAMES = { advance = "Advance", hold = "Hold", fall_back = "Fall back", rally = "Rally to me" }
+Cmd.SIGNALS = { "advance", "hold", "fall_back", "rally", "follow" }
+Cmd.SIGNAL_NAMES = { advance = "Advance", hold = "Hold", fall_back = "Fall back", rally = "Rally to me",
+                     follow = "Ride with me" }
 
 -- The commander's command state: { selected = company id | nil, mark = { x, z } | nil }.
 function Cmd.state()
@@ -146,8 +147,8 @@ function Cmd.mark_look()
 end
 
 -- The sending stone's orders for the selected company: "advance" (to the mark, ignoring the
--- enemy on the way), "attack" (the mark), "hold", "come" (to the commander), "fall_back" (to
--- the holdfast). Returns true if the order was sent, else false and why.
+-- enemy on the way), "attack" (the mark), "hold", "come" (to the commander), "follow" (ride
+-- with the commander), "fall_back" (to the holdfast). Returns true if the order was sent, else false and why.
 function Cmd.order(kind)
   local c = Cmd.selected()
   if not c then return false, "no company" end
@@ -158,6 +159,8 @@ function Cmd.order(kind)
     order = { kind = kind == "advance" and "move" or "attack", x = mark[1], z = mark[2] }
   elseif kind == "hold" then
     order = { kind = "hold" }
+  elseif kind == "follow" then
+    order = { kind = "follow" }
   elseif kind == "come" then
     local x, z = Cmd.here()
     if not x then return false, "no commander" end

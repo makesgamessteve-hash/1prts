@@ -97,6 +97,10 @@ Events sent by the engine:
 | `ui` | surface name, width, height | Every frame, once for each UI surface: the world surfaces (`prts.ui.surface`), then `"screen"`. Handlers draw with `prts.ui`. |
 | `input_scheme` | scheme name | The active input scheme changed (see `prts.input.scheme`). |
 
+When the commander stands on a moving entity (a lift, a wagon, a siege tower), that entity
+becomes their parent frame: they are carried, and their view turns by as much as the frame
+turns between ticks (not in XR, where the head is the view).
+
 The base game's scripts send events of their own the same way, for example `session_started`
 (map id, options) from `game/session.lua` once a map is loaded; the options are
 `{ prologue = true }` when the front-end menu asks for the map's prologue (unless the player
@@ -187,6 +191,7 @@ are held and begin from their start at that moment, so scripts can start the men
 | `prts.entity.local_pos(e)` | Position relative to the parent frame. |
 | `prts.entity.yaw(e)` | Yaw relative to the parent frame. |
 | `prts.entity.move_to(e, pos, speed)` | Moves the local position to `pos` at `speed` m/s; `move_done` fires on arrival. |
+| `prts.entity.place(e, pos [, yaw])` | Sets the local position (and yaw) at once, ending any move or turn under way without a `move_done`. For things driven a little every tick, such as wagons and the siege tower (`props/wagon.lua`), or held in front of the commander, such as the horse's head. Whoever stands on the entity's boxes is carried with it, and their view turns when it turns. |
 | `prts.entity.rotate_to(e, yaw, speed)` | Turns the local yaw to `yaw` at `speed` rad/s; `move_done` fires when done. |
 | `prts.entity.moving(e)` | `true` while a move or turn is under way. |
 | `prts.entity.set_solid(e, on)` | Enables or disables every collision box the entity owns. |
@@ -230,7 +235,8 @@ actions per scheme (`kbm`, `gamepad`, `touch`, `xr`); their overrides are kept i
 | Function | What it does |
 |---|---|
 | `prts.commander.spawn{ marker \| pos, yaw, walk_speed, run_speed, sprint_speed, crouch_speed, jump_speed, eye_stand, eye_crouch, step_height, reach, look_sensitivity }` | Creates (or re-creates) the commander, the player's first-person body, at a marker or position. Returns its entity. |
-| `prts.commander.tune([t])` | Changes the spawned commander's parameters given in `t` (the same names as `spawn`; speeds from 0 to 50 m/s) in place, keeping its position and view, and returns `{ walk_speed, run_speed, sprint_speed, crouch_speed }` as they are now. The parameters are saved with the game. The field map uses it to make the commander walk (`rts/tools.lua`). Errors before the commander is spawned. |
+| `prts.commander.tune([t])` | Changes the spawned commander's parameters given in `t` (the same names as `spawn`; speeds from 0 to 50 m/s) in place, keeping its position and view, and returns `{ walk_speed, run_speed, sprint_speed, crouch_speed, eye_stand, step_height }` as they are now. The parameters are saved with the game. The field map uses it to make the commander walk (`rts/tools.lua`). Errors before the commander is spawned. |
+| `prts.commander.place(pos [, yaw])` | Puts the commander's feet at a world position at once (a seat, a saddle) and stops them; the frame they then stand on carries them. With `yaw`, also turns the view. Errors before the commander is spawned. Posts use it (`lib/posts.lua`). |
 | `prts.commander.entity()` | The commander's entity, or nothing before it is spawned. |
 | `prts.commander.view()` | `yaw, pitch, eye_height, on_ground`. |
 | `prts.commander.feel()` | The body's feedback this tick: `{ steps, jumped, landed, speed, offset, pitch, trauma, motion, xr }`. `steps` counts footfalls (in time with the head bob; play a footstep when it goes up). `jumped` is `true` on the tick a jump starts. `landed` is the impact speed of a landing this tick (m/s, else 0). `speed` is the horizontal speed (m/s). `offset` and `pitch` are the view's own motion (m, rad). `trauma` is the shake (0..1). `motion` is the camera motion setting. `xr` is `true` in a headset, where the view never moves on its own. |
@@ -399,6 +405,19 @@ rest of the world stay as they are. A module whose new version fails keeps its o
 a reload the engine calls `on_reload(names)` if `scripts/main.lua` defines it, with the list of
 reloaded module names. `scripts/main.lua` itself is not re-run. Hot reload is on for interactive
 runs of developer builds and can be turned on for tests with `--hot-reload`.
+
+## Base-game modules for machines and mounts (M3)
+
+These are Lua modules of the base game (`data/base/scripts/`), not engine functions. Mods
+`require` them to build their own machines.
+
+| Module | What it offers |
+|---|---|
+| `lib.deckplan` | `compile{ entity, cell, origin, material, wall, stair_material, levels = { { y, height, rows } }, rooms, prefix, roof }` turns rows of tiles into floors, walls (`#`), windows (`W`), doorways (`D`), shafts (`H`), stairs (`s` rising towards +z, `S` towards -z) and rooms (other lower-case letters), in the entity's frame. It returns `{ rooms = { name = { min, max, level, cells } }, stairs, boxes }`. Also `room_at(plan, x, y, z)`, `room_centre(plan, name)`, and `to_frame(e, x, y, z)` / `to_world(e, x, y, z)` between the world and an entity's frame. |
+| `lib.posts` | `make{ name, parent, pos, kind, label, size, seat, machine }` makes a post (a usable place on a machine). `take(post)`, `leave()`, `held()` and `input()` (forward, turn) work the commander's post. Register `handlers[kind] = { take, tick(post, forward, turn), leave }` to drive the machine. While a post is held the commander's own speeds are 0; jump or use leaves it. Events `post_taken` and `post_left` (post name, kind). |
+| `lib.crew` | `new(e, { people = { { name, room, kind, slot } }, rooms = { name = hp } })`, `track(e)`, `living(e [, room])`, `count(e)`, `lod(e)` (`"embodied"`, `"rostered"`, `"aggregated"`), `figures(e)`, `hurt_room(e, room, n)` and `damage(e, room, amount [, wrecked])`. Events `crew_lod` (frame name, level) and `room_wrecked` (frame name, room). |
+| `props.horse` | `make{ name, pos, yaw }` (horses named `horse.<n>` are found by the `mount` action), `mount(horse)`, `dismount()`, `mounted()`. Events `mounted` and `dismounted` (horse name). |
+| `props.wagon`, `props.siege_tower`, `props.mine` | The wagon on its road with a driver's seat; the siege tower with push bar, bridge lever, crew and rooms (`damage(e, room, n)`, `push_speed(e)`, `lower_bridge(e)`); the gold mine's galleries and lift cage. Events `siege_push`, `siege_halt`, `siege_tower_at_wall` and `siege_bridge_lowered` (tower name). |
 
 ## Scenario tests (`t`)
 

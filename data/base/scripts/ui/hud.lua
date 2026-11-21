@@ -13,6 +13,8 @@ H.PROMPTS = {
     return lift.current == #lift.floors and "Pull the lever: down" or "Pull the lever: up"
   end,
   lift_call = "Call the lift",
+  horse = "Mount the horse",
+  post = function(data) return data.taken and ("Leave the " .. data.label) or ("Take the " .. data.label) end,
   npc = function(data) return "Talk to " .. data.person end,
   portcullis_winch = function(data)
     return prts.entity.data(data.grille).open and "Lower the portcullis" or "Raise the portcullis"

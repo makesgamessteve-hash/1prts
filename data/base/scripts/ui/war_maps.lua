@@ -147,9 +147,9 @@ local function last_dispatches(side, n)
 end
 
 W.TRAIN = { { "crown.serf", "Serf" }, { "crown.men_at_arms", "Foot" }, { "crown.crossbowmen", "Bows" },
-            { "crown.outrider", "Rider" } }
-W.BUILD = { { "crown.farmstead", "Farm" }, { "crown.barracks", "Barracks" }, { "crown.watchtower", "Tower" },
-            { "crown.sawmill", "Sawmill" } }
+            { "crown.knight", "Knights" } }
+W.BUILD = { { "crown.farmstead", "Farm" }, { "crown.barracks", "Barr." }, { "crown.watchtower", "Tower" },
+            { "crown.sawmill", "Saw" }, { "crown.stables", "Stable" } }
 
 W.TABLE_MAP = { 7, 14, 316, 172 } -- the picture's rectangle on the war table's surface
 
@@ -181,14 +181,14 @@ function W.draw_table(w, h, ptr)
   prts.ui.draw_text(status_line(side), 7, 3, { color = COL.ink })
   prts.ui.draw_text(selected_line(), w - 7, 3, { align = "right", color = COL.ink })
   local result = point_picture(ptr, mx, my, mw, mh)
-  local bw = 38
+  local bw = 37
   for i, t in ipairs(W.TRAIN) do
     if W.button("war_table", "train:" .. t[1], t[2], 7 + (i - 1) * (bw + 2), 190, bw, 13, ptr) then
       result = Cmd.train(t[1]) and "trained" or "refused"
     end
   end
   for i, b in ipairs(W.BUILD) do
-    if W.button("war_table", "build:" .. b[1], b[2], 171 + (i - 1) * (bw + 2), 190, bw, 13, ptr) then
+    if W.button("war_table", "build:" .. b[1], b[2], 165 + (i - 1) * 33, 190, 31, 13, ptr) then
       result = Cmd.build(b[1]) and "placed" or "refused"
     end
   end
@@ -213,7 +213,8 @@ function W.draw_map(w, h, ptr)
 end
 
 W.STONE = { { "advance", "Advance to mark" }, { "attack", "Attack the mark" }, { "hold", "Hold" },
-            { "come", "Come to me" }, { "fall_back", "Fall back" }, { "next", "Next company" } }
+            { "come", "Come to me" }, { "follow", "Ride with me" }, { "fall_back", "Fall back" },
+            { "next", "Next company" } }
 
 -- A ring of choices around the board's middle; returns the id of the one pressed.
 local function ring(w, h, ptr, choices)

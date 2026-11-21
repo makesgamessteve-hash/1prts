@@ -47,6 +47,8 @@ void prts_world_each(const prts_world *w, prts_world_each_fn fn, void *user);
 
 /* Transform relative to the parent frame (rotation is yaw only in M1). */
 void prts_world_set_local(prts_world *w, prts_entity e, prts_dvec3 pos, float yaw);
+/* Ends a move or turn under way, where the entity is now (no move_done). */
+void prts_world_stop(prts_world *w, prts_entity e);
 prts_dvec3 prts_world_local_pos(const prts_world *w, prts_entity e);
 float prts_world_local_yaw(const prts_world *w, prts_entity e);
 /* World transform, resolved through every parent frame in double precision. */

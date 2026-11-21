@@ -20,7 +20,7 @@ return {
     t.place("gate")
     t.ticks(2)
     t.expect(table.concat(D.trained_at("crown.barracks"), ","), "the barracks trains")
-      .equals("crown.crossbowmen,crown.men_at_arms,crown.outrider")
+      .equals("crown.crossbowmen,crown.men_at_arms")
     -- nothing chosen, nothing marked
     t.expect(Cmd.next_company(), "no companies yet").equals(nil)
     t.expect(select(2, Cmd.order("hold")), "no company").equals("no company")

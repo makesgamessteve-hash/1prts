@@ -395,7 +395,7 @@ UTEST(snapshot, damaged_sections_are_named)
     prts_cworld_destroy(e->cworld);
     e->cworld = saved;
     /* script data section: rebuilt by hand after the commander */
-    size_t edata_at = boxes_at + 4u + prts_cworld_box_count(e->cworld) + 1u + 8u + 17u * 4u + 8u * 4u + 1u + 2u;
+    size_t edata_at = boxes_at + 4u + prts_cworld_box_count(e->cworld) + 1u + 8u + 17u * 4u + 8u * 4u + 1u + 2u + 8u + 4u;
     const unsigned char tails[][14] = {
         {1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 2},    /* one entity whose data is `true` */
         {5, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 6, 0}, /* five entities, data cut short */

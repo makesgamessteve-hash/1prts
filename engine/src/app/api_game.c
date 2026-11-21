@@ -590,6 +590,19 @@ static int l_entity_move_to(lua_State *L)
     return 0;
 }
 
+/* prts.entity.place(e, pos [, yaw]): sets the local position (and yaw) at once, ending any move
+ * or turn under way. Vehicles driven each tick and things held by the commander use it. */
+static int l_entity_place(lua_State *L)
+{
+    prts_engine *e = prts_engine_from_lua(L);
+    prts_entity ent = prts_engine_check_entity(L, 1);
+    prts_vec3 pos = check_vec3(L, 2, NULL);
+    float yaw = lua_isnoneornil(L, 3) ? prts_world_yaw(e->world, ent) : (float)luaL_checknumber(L, 3);
+    prts_world_stop(e->world, ent);
+    prts_world_set_local(e->world, ent, prts_dv3_from_v3(pos), yaw);
+    return 0;
+}
+
 static int l_entity_rotate_to(lua_State *L)
 {
     prts_engine *e = prts_engine_from_lua(L);
@@ -756,7 +769,7 @@ static int l_commander_tune(lua_State *L)
         }
         *p = n;
     }
-    lua_createtable(L, 0, 4);
+    lua_createtable(L, 0, 6);
     lua_pushnumber(L, p->walk_speed);
     lua_setfield(L, -2, "walk_speed");
     lua_pushnumber(L, p->run_speed);
@@ -765,7 +778,28 @@ static int l_commander_tune(lua_State *L)
     lua_setfield(L, -2, "sprint_speed");
     lua_pushnumber(L, p->crouch_speed);
     lua_setfield(L, -2, "crouch_speed");
+    lua_pushnumber(L, p->eye_stand);
+    lua_setfield(L, -2, "eye_stand");
+    lua_pushnumber(L, p->step_height);
+    lua_setfield(L, -2, "step_height");
     return 1;
+}
+
+/* prts.commander.place(pos [, yaw]): puts the commander's feet at a world position at once (a
+ * seat, a saddle), keeping the view's pitch; the frame they then stand on carries them. */
+static int l_commander_place(lua_State *L)
+{
+    prts_engine *e = prts_engine_from_lua(L);
+    if (!e->has_commander) return luaL_error(L, "prts.commander.place: no commander");
+    prts_vec3 pos = check_vec3(L, 1, NULL);
+    prts_world_set_parent(e->world, e->commander.entity, PRTS_ENTITY_NONE);
+    prts_world_set_pos(e->world, e->commander.entity, prts_dv3_from_v3(pos));
+    prts_world_skip_interp(e->world, e->commander.entity);
+    e->commander.ride_frame = PRTS_ENTITY_NONE;
+    if (!lua_isnoneornil(L, 2)) e->commander.yaw = (float)luaL_checknumber(L, 2);
+    e->commander.vel = prts_v3(0, 0, 0);
+    e->commander.vertical_speed = 0.0f;
+    return 0;
 }
 
 static int l_commander_entity(lua_State *L)
@@ -890,14 +924,14 @@ void prts_engine_open_game_api(prts_engine *e)
         {NULL, NULL}};
     static const prts_script_fn entity[] = {
         {"spawn", l_entity_spawn},   {"pos", l_entity_pos},         {"local_pos", l_entity_local_pos},
-        {"yaw", l_entity_yaw},       {"move_to", l_entity_move_to}, {"rotate_to", l_entity_rotate_to},
+        {"yaw", l_entity_yaw},       {"move_to", l_entity_move_to}, {"place", l_entity_place}, {"rotate_to", l_entity_rotate_to},
         {"moving", l_entity_moving}, {"set_solid", l_entity_set_solid}, {"name", l_entity_name},
         {"find", l_entity_find},     {"alive", l_entity_alive},     {"despawn", l_entity_despawn},
         {"data", l_entity_data},     {NULL, NULL}};
     static const prts_script_fn input[] = {
         {"action", l_input_action}, {"value", l_input_value}, {"down", l_input_down}, {"scheme", l_input_scheme}, {NULL, NULL}};
     static const prts_script_fn commander[] = {
-        {"spawn", l_commander_spawn}, {"tune", l_commander_tune}, {"entity", l_commander_entity}, {"view", l_commander_view},
+        {"spawn", l_commander_spawn}, {"tune", l_commander_tune}, {"place", l_commander_place}, {"entity", l_commander_entity}, {"view", l_commander_view},
         {"feel", l_commander_feel},   {"impulse", l_commander_impulse}, {"set_feel", l_commander_set_feel},
         {NULL, NULL}};
     static const prts_script_fn render[] = {{"settings", l_render_settings}, {NULL, NULL}};

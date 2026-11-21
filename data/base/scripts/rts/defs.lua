@@ -1,4 +1,4 @@
--- The Crown's tier 1 for the skirmish (M2): units and structures as definitions, so mods can
+-- The Crown's tier 1 for the skirmish (M2) and its horse (M3): units and structures as definitions, so mods can
 -- change any number. Sizes are scaled down from the concept for the small Ashford Vale map.
 -- Speeds in m/s, times in seconds, ranges in metres, costs in gold and timber. MIT License.
 local D = {}
@@ -13,9 +13,13 @@ D.UNITS = {
   { id = "crown.crossbowmen", name = "Crossbowmen", sprite = "crossbow", squad = 8, hp = 40, armor = 0, speed = 1.5,
     radius = 0.4, sight = 40, weapon = { damage = 10, range = 32, cooldown = 3.0, missile = true }, cost = { gold = 120, timber = 60 },
     folk = 8, train = 25, at = "crown.barracks", company = "Bows" },
-  { id = "crown.outrider", name = "Outrider", sprite = "outrider", squad = 1, hp = 50, armor = 1, speed = 5.5, radius = 0.45,
-    sight = 60, weapon = { damage = 6, range = 1.8, cooldown = 1.2 }, cost = { gold = 80 }, folk = 1, train = 14,
-    at = "crown.barracks", company = "Outrider" },
+  { id = "crown.outrider", name = "Outrider", sprite = "rider", squad = 1, hp = 50, armor = 1, speed = 5.5, radius = 0.6,
+    sight = 60, weapon = { damage = 6, range = 2.2, cooldown = 1.2 }, cost = { gold = 80 }, folk = 1, train = 14,
+    at = "crown.stables", company = "Outrider", mounted = true, charge = 2 },
+  -- M3: heavy horse. A charge doubles the first strike after riding (rts/combat.lua).
+  { id = "crown.knight", name = "Knights", sprite = "knight", squad = 4, hp = 140, armor = 3, speed = 4.8, radius = 0.7,
+    sight = 34, weapon = { damage = 14, range = 2.6, cooldown = 1.5 }, cost = { gold = 240, timber = 40 }, folk = 4,
+    train = 30, at = "crown.stables", company = "Knights", mounted = true, charge = 2 },
 }
 
 D.STRUCTURES = {
@@ -27,6 +31,8 @@ D.STRUCTURES = {
     sight = 20 },
   { id = "crown.sawmill", name = "Sawmill", size = { 14, 10 }, hp = 800, cost = { gold = 50, timber = 60 }, build = 30,
     deposit = { timber = true }, sight = 18 },
+  { id = "crown.stables", name = "Stables", size = { 18, 12 }, hp = 1200, cost = { gold = 120, timber = 160 }, build = 40,
+    sight = 20 },
   { id = "crown.watchtower", name = "Watchtower", size = { 6, 6 }, hp = 800, cost = { gold = 60, timber = 80 }, build = 30,
     hub = true, sight = 70, weapon = { damage = 8, range = 34, cooldown = 2.0, missile = true } },
 }

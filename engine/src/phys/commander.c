@@ -151,6 +151,7 @@ static void teleport(prts_commander *c, prts_world *w, const prts_cworld *cw, co
     prts_dvec3 target;
     if (!was || c->aiming || !prts_commander_teleport_target(c, w, cw, &target)) return;
     prts_world_set_parent(w, c->entity, PRTS_ENTITY_NONE);
+    c->ride_frame = PRTS_ENTITY_NONE;
     prts_world_set_pos(w, c->entity, target);
     prts_world_skip_interp(w, c->entity); /* no slide: the view is there at once */
     c->vertical_speed = 0.0f;
@@ -159,6 +160,13 @@ static void teleport(prts_commander *c, prts_world *w, const prts_cworld *cw, co
 void prts_commander_tick(prts_commander *c, prts_world *w, const prts_cworld *cw, const prts_input *in, float dt)
 {
     c->eye_prev = c->eye;
+    /* riding a frame that turns (a wagon on a bend, a ship coming about) turns the view with it;
+     * frames are moved by movers and by scripts, before or after this tick, so the turn is measured
+     * from the frame's yaw at the end of the commander's last tick */
+    prts_entity frame = prts_world_parent(w, c->entity);
+    if (frame != PRTS_ENTITY_NONE && frame == c->ride_frame && !c->xr.active) {
+        c->yaw = prts_wrap_angle(c->yaw + prts_wrap_angle(prts_world_yaw(w, frame) - c->ride_yaw));
+    }
     follow_head(c, w, cw);
     teleport(c, w, cw, in);
     /* crouch: stand up only if there is room */
@@ -257,6 +265,8 @@ void prts_commander_tick(prts_commander *c, prts_world *w, const prts_cworld *cw
     prts_entity ground = res.on_ground ? prts_cworld_owner(cw, res.ground_box) : PRTS_ENTITY_NONE;
     if (res.on_ground) prts_world_set_parent(w, c->entity, ground);
     prts_world_set_pos(w, c->entity, feet);
+    c->ride_frame = prts_world_parent(w, c->entity);
+    c->ride_yaw = c->ride_frame != PRTS_ENTITY_NONE ? prts_world_yaw(w, c->ride_frame) : 0.0f;
     prts_world_set_velocity(w, c->entity, prts_v3(c->vel.x, c->vertical_speed, c->vel.z));
     float impact = !was_on_ground && res.on_ground && falling < 0.0f ? -falling : 0.0f;
     feel_tick(c, impact, sqrtf(c->vel.x * c->vel.x + c->vel.z * c->vel.z), dt);

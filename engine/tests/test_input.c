@@ -322,6 +322,50 @@ UTEST(commander, jump_ceiling_and_look)
     prts_world_destroy(w);
 }
 
+UTEST(commander, the_view_turns_with_a_turning_frame)
+{
+    /* Spec (vehicles-and-posts): Standing on a wagon */
+    prts_world *w = prts_world_create();
+    prts_cworld *cw = prts_cworld_create();
+    prts_cworld_add_box(cw, prts_aabb_make(prts_v3(-50, -1, -50), prts_v3(50, 0, 50)), PRTS_ENTITY_NONE);
+    prts_entity cart = prts_world_spawn(w, "cart");
+    prts_world_set_local(w, cart, prts_dv3(0, 0, 0), 0.0f);
+    prts_cworld_add_box(cw, prts_aabb_make(prts_v3(-2, 0, -2), prts_v3(2, 0.5f, 2)), cart);
+    prts_cworld_sync(cw, w);
+    prts_input *in = commander_input();
+    prts_commander_params p;
+    prts_commander_params_default(&p);
+    prts_commander c;
+    prts_commander_init(&c, prts_world_spawn(w, "commander"), &p);
+    prts_world_set_local(w, c.entity, prts_dv3(1, 0.8, 0), 0.0f);
+    c.yaw = 0.3f;
+    run_ticks(&c, w, cw, in, 10);
+    ASSERT_EQ(cart, prts_world_parent(w, c.entity));
+    ASSERT_NEAR(0.3, c.yaw, 1e-5);
+    /* the cart turns a quarter round, set by a script between ticks (as wagons are driven) */
+    for (int i = 1; i <= 30; i++) {
+        prts_world_set_local(w, cart, prts_dv3(0, 0, 0), (float)PRTS_PI / 2.0f * (float)i / 30.0f);
+        run_ticks(&c, w, cw, in, 1);
+    }
+    ASSERT_EQ(cart, prts_world_parent(w, c.entity));
+    ASSERT_NEAR(0.3 + PRTS_PI / 2.0, c.yaw, 1e-3);
+    prts_dvec3 pos = prts_world_pos(w, c.entity);
+    ASSERT_NEAR(0.0, pos.x, 0.05); /* carried round with it: (1, 0) turned a quarter is (0, -1) */
+    ASSERT_NEAR(-1.0, pos.z, 0.05);
+    /* stepping off onto still ground: the view keeps still */
+    prts_world_set_parent(w, c.entity, PRTS_ENTITY_NONE);
+    prts_world_set_local(w, c.entity, prts_dv3(10, 0.1, 10), 0.0f);
+    c.ride_frame = PRTS_ENTITY_NONE;
+    run_ticks(&c, w, cw, in, 5);
+    prts_world_set_local(w, cart, prts_dv3(0, 0, 0), 0.0f);
+    run_ticks(&c, w, cw, in, 5);
+    ASSERT_NEAR(0.3 + PRTS_PI / 2.0, c.yaw, 1e-3);
+    ASSERT_EQ(PRTS_ENTITY_NONE, c.ride_frame);
+    prts_input_destroy(in);
+    prts_cworld_destroy(cw);
+    prts_world_destroy(w);
+}
+
 UTEST(commander, rides_a_moving_platform_and_uses_things)
 {
     /* Spec: Riding the keep's hoist lift; Walking during movement */

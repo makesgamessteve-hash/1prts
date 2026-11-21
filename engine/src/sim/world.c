@@ -145,6 +145,12 @@ void prts_world_set_local(prts_world *w, prts_entity e, prts_dvec3 pos, float ya
     s->yaw = yaw;
 }
 
+void prts_world_stop(prts_world *w, prts_entity e)
+{
+    slot *s = get(w, e);
+    if (s) s->moving_pos = s->moving_yaw = false;
+}
+
 prts_dvec3 prts_world_local_pos(const prts_world *w, prts_entity e)
 {
     slot *s = get(w, e);

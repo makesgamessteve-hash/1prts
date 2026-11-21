@@ -7,6 +7,7 @@ local S = { current = nil }
 S.maps = {
   { id = "proving_ground", name = "Harrowmark" },
   { id = "ashford_vale", name = "Skirmish: Ashford Vale" },
+  { id = "greyfen_march", name = "Ride Out: Greyfen March" },
 }
 
 -- Starts map `id` (scripts/maps/<id>.lua). Only one map per run in M1: returns false if a

@@ -363,7 +363,13 @@ static int l_events_emit(lua_State *L)
     const char *event = luaL_checkstring(L, 1);
     char *name = prts_strdup(event);
     lua_remove(L, 1);
-    int failed = prts_script_emit(s, name, lua_gettop(L));
+    int n = lua_gettop(L);
+    /* handlers run on the main state; a caller in a coroutine (a scenario) moves its arguments there */
+    if (L != s->L) {
+        luaL_checkstack(s->L, n + 8, "too many event arguments");
+        lua_xmove(L, s->L, n);
+    }
+    int failed = prts_script_emit(s, name, n);
     prts_free(name);
     lua_pushinteger(L, failed);
     return 1;

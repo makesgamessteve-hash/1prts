@@ -77,6 +77,8 @@ typedef struct prts_commander {
     prts_commander_xr xr; /* XR input for the next tick */
     prts_vec3 followed;   /* how far the body followed the head in the last tick (world axes) */
     bool aiming;          /* teleport locomotion: the "teleport" action is held (aiming) */
+    prts_entity ride_frame; /* the frame stood on at the end of the last tick, and its yaw then: */
+    float ride_yaw;         /* the view turns by how much that frame turned since */
 } prts_commander;
 
 void prts_commander_params_default(prts_commander_params *p);
