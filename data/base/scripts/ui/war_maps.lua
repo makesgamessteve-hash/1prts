@@ -81,7 +81,7 @@ function W.picture(side, x, y, w, h, opts)
     rect(x0, y0, math.max(2, x1 - x0), math.max(2, y1 - y0), d.built and COL.own or COL.reach)
   end
   -- serfs as dots, companies as discs (the selected one ringed)
-  for _, e in ipairs(S.units(side, "crown.serf")) do
+  for _, e in ipairs(S.units(side, S.role(side, "worker"))) do
     local ex, _, ez = S.pos(e)
     local px, py = at(ex, ez)
     rect(px, py, 1, 1, COL.own)
@@ -125,7 +125,9 @@ end
 
 local function status_line(side)
   local sd = S.side(side)
-  return string.format("Gold %d  Timber %d  Folk %d/%d", sd.gold, sd.timber, S.folk(side), S.food(side))
+  local special = sd.faction == "wildborn" and string.format("Bone %d", sd.bone) or string.format("Powder %d", sd.powder)
+  return string.format("Gold %d  Timber %d  Aether %d  %s  Folk %d/%d  Tier %d", sd.gold, sd.timber, sd.aether, special,
+                       S.folk(side), S.food(side), require("rts.tiers").tier(side))
 end
 
 local function selected_line()
@@ -146,10 +148,30 @@ local function last_dispatches(side, n)
   return out
 end
 
-W.TRAIN = { { "crown.serf", "Serf" }, { "crown.men_at_arms", "Foot" }, { "crown.crossbowmen", "Bows" },
-            { "crown.knight", "Knights" } }
-W.BUILD = { { "crown.farmstead", "Farm" }, { "crown.barracks", "Barr." }, { "crown.watchtower", "Tower" },
-            { "crown.sawmill", "Saw" }, { "crown.stables", "Stable" } }
+-- The table's buttons per faction: training (at the right building), building at the staff's
+-- mark, and the work of the headquarters and workshops.
+W.TRAIN = {
+  crown = { { "crown.serf", "Serf" }, { "crown.men_at_arms", "Foot" }, { "crown.crossbowmen", "Bows" },
+            { "crown.knight", "Knights" } },
+  wildborn = { { "wildborn.kobb", "Kobb" }, { "wildborn.ghorr", "Brutes" }, { "wildborn.spearhurler", "Spears" },
+               { "wildborn.boar_rider", "Boars" } },
+}
+W.BUILD = {
+  crown = { { "crown.farmstead", "Farm" }, { "crown.barracks", "Barr." }, { "crown.watchtower", "Tower" },
+            { "crown.sawmill", "Saw" }, { "crown.stables", "Stable" } },
+  wildborn = { { "wildborn.herd_pen", "Pen" }, { "wildborn.war_pit", "Pit" }, { "wildborn.totem_watch", "Totem" },
+               { "wildborn.timber_camp", "Camp" }, { "wildborn.beast_den", "Den" } },
+}
+W.WORKS = {
+  crown = { { "hq_up", "Raise HQ" }, { "build:crown.aether_well", "Well" }, { "build:crown.smithy", "Smithy" },
+            { "build:crown.forgeworks", "Forge" }, { "research:crown.tempered_blades", "Blades" },
+            { "research:crown.fire_bolts", "Fire bolts" } },
+  wildborn = { { "hq_up", "Raise HQ" }, { "build:wildborn.aether_shrine", "Shrine" },
+               { "build:wildborn.bone_forge", "Forge" }, { "build:wildborn.giants_cairn", "Cairn" },
+               { "research:wildborn.bone_spears", "Spears+" }, { "research:wildborn.war_paint", "Paint" } },
+}
+
+local function faction(side) return S.side(side).faction end
 
 W.TABLE_MAP = { 7, 14, 316, 172 } -- the picture's rectangle on the war table's surface
 
@@ -182,18 +204,24 @@ function W.draw_table(w, h, ptr)
   prts.ui.draw_text(selected_line(), w - 7, 3, { align = "right", color = COL.ink })
   local result = point_picture(ptr, mx, my, mw, mh)
   local bw = 37
-  for i, t in ipairs(W.TRAIN) do
+  local f = faction(side)
+  for i, t in ipairs(W.TRAIN[f]) do
     if W.button("war_table", "train:" .. t[1], t[2], 7 + (i - 1) * (bw + 2), 190, bw, 13, ptr) then
       result = Cmd.train(t[1]) and "trained" or "refused"
     end
   end
-  for i, b in ipairs(W.BUILD) do
+  for i, b in ipairs(W.BUILD[f]) do
     if W.button("war_table", "build:" .. b[1], b[2], 165 + (i - 1) * 33, 190, 31, 13, ptr) then
       result = Cmd.build(b[1]) and "placed" or "refused"
     end
   end
-  for i, line in ipairs(last_dispatches(side, 3)) do
-    prts.ui.draw_text(line, 7, 196 + i * 11, { color = COL.ink })
+  for i, b in ipairs(W.WORKS[f]) do
+    if W.button("war_table", b[1], b[2], 7 + (i - 1) * 53, 205, 51, 13, ptr) then
+      result = Cmd.work(b[1]) and "ordered" or "refused"
+    end
+  end
+  for i, line in ipairs(last_dispatches(side, 2)) do
+    prts.ui.draw_text(line, 7, 210 + i * 11, { color = COL.ink })
   end
   W.last_result = result or W.last_result
   return true
@@ -268,7 +296,11 @@ local AWAY = { origin = { 0, -10000, 0 }, right = { 0.01, 0, 0 }, down = { 0, -0
 
 function W.on_ui(surface, w, h)
   if surface == Tools.TABLE.id then
-    if Tools.active() then W.draw_table(w, h, pointer()) end
+    if Tools.active() then
+      local host = Tools.table_host()
+      if host and D.structure(S.data(host).def).mobile then Tools.place_table_surface() end
+      W.draw_table(w, h, pointer())
+    end
   elseif surface == Tools.HAND.id then
     local held = Tools.active() and Tools.held()
     local q = held and Tools.hand_quad() or AWAY

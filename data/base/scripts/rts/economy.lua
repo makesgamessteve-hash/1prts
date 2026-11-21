@@ -38,14 +38,58 @@ function E.add_tree(x, z, scale)
   return e
 end
 
--- The nearest source of `res` ("gold" | "timber") within r of (x, z) that is not used up.
-function E.nearest_source(res, x, z, r)
-  local best, bd = nil, r or math.huge
-  local want = res == "gold" and "mine" or "tree"
+-- An aether spring: a glowing pool where a well or shrine can stand.
+function E.add_spring(x, z)
+  local m = S.match()
+  local y = prts.scene.height(x, z)
+  local e = prts.entity.spawn{ name = "spring." .. (#m.resources + 1), pos = { x, y, z } }
+  prts.scene.box{ min = { -2.2, -0.1, -2.2 }, max = { 2.2, 0.08, 2.2 }, material = "aether_glow", entity = e, solid = false }
+  S.data(e).kind = "spring"
+  m.resources[#m.resources + 1] = e
+  return e
+end
+
+-- Remains where units fell: bone for Kobb to gather, for a few minutes.
+function E.add_remains(x, z, bone)
+  local m = S.match()
+  local y = prts.scene.height(x, z)
+  local e = prts.entity.spawn{ name = "remains." .. (#m.resources + 1), pos = { x, y, z } }
+  prts.scene.box{ min = { -0.6, 0, -0.4 }, max = { 0.6, 0.25, 0.4 }, material = "bone", entity = e, solid = false }
+  local d = S.data(e)
+  d.kind, d.bone, d.until_tick = "remains", bone, prts.time.tick() + D.REMAINS.last * 30
+  m.resources[#m.resources + 1] = e
+  return e
+end
+
+-- Remains that have lain too long go (called every second).
+function E.decay(now)
+  local n = 0
   for _, e in ipairs(S.match().resources) do
     if S.alive(e) then
       local d = S.data(e)
-      if d.kind == want and (d.gold or d.timber or 0) > 0 then
+      if d.kind == "remains" and now >= d.until_tick then
+        prts.entity.despawn(e)
+        n = n + 1
+      end
+    end
+  end
+  if n > 0 then S.match().resources = S.compact(S.match().resources) end
+  return n
+end
+
+local SOURCE = { gold = "mine", timber = "tree", bone = "remains" }
+
+-- What is left in a source.
+function E.left(d) return d.gold or d.timber or d.bone or 0 end
+
+-- The nearest source of `res` ("gold" | "timber" | "bone") within r of (x, z) not used up.
+function E.nearest_source(res, x, z, r)
+  local best, bd = nil, r or math.huge
+  local want = SOURCE[res]
+  for _, e in ipairs(S.match().resources) do
+    if S.alive(e) then
+      local d = S.data(e)
+      if d.kind == want and E.left(d) > 0 then
         local sx, _, sz = S.pos(e)
         local dist = S.dist(x, z, sx, sz)
         if dist < bd then best, bd = e, dist end
@@ -91,6 +135,17 @@ function E.gather(serf, res, src)
   return true
 end
 
+-- Sends a worker to fight a fire at a structure of its side.
+function E.fight_fire(serf, site)
+  local d = S.data(serf)
+  d.task = { t = "fire", site = site }
+  local sd = S.data(site)
+  local x, _, z = S.pos(serf)
+  prts.agent.move(serf, math.max(sd.fp[1] - 1.5, math.min(x, sd.fp[3] + 1.5)),
+                  math.max(sd.fp[2] - 1.5, math.min(z, sd.fp[4] + 1.5)))
+  return true
+end
+
 -- Sends a serf to build a site.
 function E.build(serf, site)
   local d = S.data(serf)
@@ -118,6 +173,20 @@ function E.think(serf, seconds)
   if not task then return "idle" end
   local x, _, z = S.pos(serf)
   local side = S.side(d.side)
+  if task.t == "fire" then
+    if not S.alive(task.site) or (S.data(task.site).fire or 0) <= 0 then
+      d.task = nil
+      return "idle"
+    end
+    local sd = S.data(task.site)
+    if S.rect_dist(x, z, sd.fp) <= E.REACH then
+      if prts.agent.info(serf).moving then prts.agent.stop(serf) end
+      require("rts.fire").quench(task.site, seconds, serf)
+      return "firefighting"
+    end
+    if not prts.agent.info(serf).moving then E.fight_fire(serf, task.site) end
+    return "to_fire"
+  end
   if task.t == "build" then
     if not S.alive(task.site) then
       d.task = nil
@@ -129,7 +198,7 @@ function E.think(serf, seconds)
       return "built"
     end
     if S.rect_dist(x, z, sd.fp) <= E.REACH then
-      local done, fresh = B.work(task.site, seconds)
+      local done, fresh = B.work(task.site, seconds, serf)
       if done then
         d.task = nil
         prts.events.emit("rts_serf_built", serf, fresh)
@@ -142,7 +211,7 @@ function E.think(serf, seconds)
   end
   -- gathering
   if task.phase == "go" then
-    if not S.alive(task.src) or (S.data(task.src).gold or S.data(task.src).timber or 0) <= 0 then
+    if not S.alive(task.src) or E.left(S.data(task.src)) <= 0 then
       return E.gather(serf, task.res) and "go" or "idle"
     end
     local sx, sz = source_spot(task.src)
@@ -161,7 +230,7 @@ function E.think(serf, seconds)
       return E.gather(serf, task.res) and "go" or "idle"
     end
     local sd = S.data(task.src)
-    local key = task.res == "gold" and "gold" or "timber"
+    local key = task.res
     local u = D.unit(d.def)
     local amount = math.min(u.carry, sd[key] or 0)
     sd[key] = (sd[key] or 0) - amount
@@ -200,6 +269,9 @@ function E.exhausted(src)
     prts.entity.despawn(src)
     prts.nav.refresh{ min = { x - 1.5, z - 1.5 }, max = { x + 1.5, z + 1.5 } }
     return "felled"
+  elseif d.kind == "remains" then
+    prts.entity.despawn(src)
+    return "picked clean"
   end
   return "empty"
 end

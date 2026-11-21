@@ -59,6 +59,10 @@ end
 function K.die(e)
   local d = S.data(e)
   local x, y, z = S.pos(e)
+  local u = D.unit(d.def)
+  if u then -- remains where they fell, for bone
+    require("rts.economy").add_remains(x, z, math.min(D.REMAINS.max, D.REMAINS.per_folk * math.max(1, u.folk / u.squad)))
+  end
   if prts.audio then prts.audio.play{ sound = K.SOUNDS.death, at = { x, y + 1, z }, volume = 0.6, range = 120 } end
   prts.events.emit("rts_unit_died", e, d.side, d.def)
   prts.agent.remove(e)
@@ -70,8 +74,17 @@ K.CHARGE_RUN = 15 -- ticks of riding before a strike counts as a charge
 local function strike(e, d, w, target)
   d.cd = math.floor(w.cooldown * 30 + 0.5)
   local u = D.unit(d.def)
-  local damage = w.damage
-  if u.charge and (d.run or 0) >= K.CHARGE_RUN then
+  local Ti = require("rts.tiers")
+  local damage = w.damage + (u and Ti.damage_bonus(d.side, d.def) or 0)
+  local x0, _, z0 = S.pos(e)
+  if u and require("rts.presence").near(d.side, x0, z0) then damage = damage * require("rts.presence").STRIKE end
+  local td = S.alive(target) and S.data(target)
+  if td and td.kind == "structure" then
+    if w.structures then damage = damage * w.structures end
+    local fire = u and Ti.ignites(d.side, d.def) or 0
+    if fire > 0 then require("rts.fire").ignite(target, fire) end
+  end
+  if u and u.charge and (d.run or 0) >= K.CHARGE_RUN then
     damage = damage * u.charge
     prts.events.emit("rts_charge", e, damage)
   end
@@ -89,9 +102,12 @@ end
 -- A company breaks when it has lost half its men; it runs home and comes back to order later.
 function K.check_morale(c)
   if c.broken or not c.strength then return false end
-  if #C.members(c) * 2 > c.strength then return false end
+  local cx, cz = C.centre(c)
+  local Pr = require("rts.presence")
+  local breaks = (cx and Pr.near(c.side, cx, cz)) and Pr.BREAK or 2
+  if #C.members(c) * breaks > c.strength then return false end
   c.broken = true
-  local hold = S.structures(c.side, "crown.holdfast", true)[1]
+  local hold = S.hq(c.side)
   if hold then
     local hx, _, hz = S.pos(hold)
     C.order(c, { kind = "move", x = hx, z = hz + 20 })
@@ -121,6 +137,25 @@ function K.think(e, ticks)
   end
   if (order.kind == "move" or order.kind == "follow") and prts.agent.info(e).moving then return "marching" end
   local x, _, z = S.pos(e)
+  -- an enemy commander close by is the prize
+  local Su = require("rts.succession")
+  local cx, cz, cdist = Su.target_for(d.side, x, z)
+  if cx then
+    if cdist <= w.range + 0.6 then
+      if prts.agent.info(e).moving then prts.agent.stop(e) end
+      if d.cd == 0 then
+        d.cd = math.floor(w.cooldown * 30 + 0.5)
+        Su.hurt(w.damage + require("rts.tiers").damage_bonus(d.side, d.def))
+      end
+      return "at the commander"
+    end
+    local now = prts.time.tick()
+    if not d.chase or now - d.chase >= K.REPATH or not prts.agent.info(e).moving then
+      d.chase = now
+      prts.agent.move(e, cx, cz)
+    end
+    return "hunting"
+  end
   -- keep a target while it lives and stays in sight; else look for one
   local t = d.target
   if t and (not S.alive(t) or K.reach(x, z, t) > u.sight * 1.3) then t = nil end

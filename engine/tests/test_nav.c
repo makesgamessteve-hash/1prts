@@ -265,6 +265,32 @@ UTEST(agents, eight_soldiers_reach_one_point_apart)
     prts_cworld_destroy(cw);
 }
 
+UTEST(agents, walk_out_of_a_building_put_down_around_them)
+{
+    prts_cworld *cw = walled();
+    prts_nav *n = prts_nav_build(cw, -30, -30, 30, 30, 1.0f);
+    prts_world *w = prts_world_create();
+    prts_agents *a = prts_agents_create();
+    prts_entity e = prts_world_spawn(w, "serf");
+    prts_world_set_local(w, e, prts_dv3(-15, 0, 15), 0.0f);
+    ASSERT_TRUE(prts_agents_add(a, e, 2.0f, 0.35f));
+    ASSERT_GT(prts_nav_block(n, -18, 12, -12, 18, 1), 0); /* a building put down around the serf */
+    ASSERT_FALSE(prts_nav_walkable(n, -15, 15));
+    float p[512];
+    int count = prts_nav_path(n, -15, 15, -15, 22, p, 256);
+    ASSERT_GT(count, 0);
+    ASSERT_TRUE(prts_agents_follow(a, e, p, count));
+    int arrived = 0;
+    run(a, w, n, 30 * 10, &arrived);
+    ASSERT_EQ(1, arrived);
+    prts_dvec3 at = prts_world_pos(w, e);
+    ASSERT_NEAR(22.0, at.z, 0.5);
+    prts_agents_destroy(a);
+    prts_world_destroy(w);
+    prts_nav_destroy(n);
+    prts_cworld_destroy(cw);
+}
+
 UTEST(agents, queries_speed_removal_and_saves)
 {
     prts_world *w = prts_world_create();

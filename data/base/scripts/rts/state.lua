@@ -46,13 +46,45 @@ function S.reset()
   return m
 end
 
--- cfg = { id, name, color ("crown" | "red"), ai = bool, gold, timber, enemy = id }
+S.RESOURCES = { "gold", "timber", "aether", "powder", "bone" }
+
+-- cfg = { id, name, faction ("crown" | "wildborn"), color ("crown" | "red"), ai = bool, gold,
+-- timber, aether, powder, bone, enemy = id }
 function S.add_side(cfg)
   local m = S.match()
-  m.sides[cfg.id] = { id = cfg.id, name = cfg.name, color = cfg.color or "crown", ai = cfg.ai == true,
-                      gold = cfg.gold or 0, timber = cfg.timber or 0, enemy = cfg.enemy,
-                      picture = {}, wave = 0, lost = false }
-  return m.sides[cfg.id]
+  local side = { id = cfg.id, name = cfg.name, faction = cfg.faction or "crown", color = cfg.color or "crown",
+                 ai = cfg.ai == true, enemy = cfg.enemy, picture = {}, wave = 0, lost = false, tier = 1,
+                 upgrades = {}, mandates = {} }
+  for _, r in ipairs(S.RESOURCES) do side[r] = cfg[r] or 0 end
+  m.sides[cfg.id] = side
+  return side
+end
+
+-- The definition that fills a role for a side's faction ("worker", "food", "foot", ...).
+function S.role(side_id, role)
+  local D = require("rts.defs")
+  local f = D.FACTIONS[S.side(side_id).faction]
+  return f and f[role]
+end
+
+-- The side's headquarters: its finished HQ of the highest stage (the oldest of those); a moving
+-- one (a behemoth) counts as its stage. nil if none stands.
+function S.hq(side_id)
+  local best, bt
+  for _, e in ipairs(S.structures(side_id, nil, true)) do
+    local t = D.structure(S.data(e).def).hq
+    if t and (not bt or t > bt) then best, bt = e, t end
+  end
+  return best
+end
+
+-- Every finished headquarters of a side (for "a side without one has lost").
+function S.hqs(side_id)
+  local out = {}
+  for _, e in ipairs(S.structures(side_id, nil, true)) do
+    if D.structure(S.data(e).def).hq then out[#out + 1] = e end
+  end
+  return out
 end
 
 function S.side(id) return S.match().sides[id] end
@@ -84,16 +116,23 @@ function S.compact(list)
   return out
 end
 
--- Can the side pay? (cost = { gold, timber })
+-- Can the side pay? (cost = { gold, timber, aether, powder, bone })
 function S.can_pay(side, cost)
-  return side.gold >= (cost.gold or 0) and side.timber >= (cost.timber or 0)
+  for _, r in ipairs(S.RESOURCES) do
+    if (side[r] or 0) < (cost[r] or 0) then return false end
+  end
+  return true
 end
 
 function S.pay(side, cost)
   if not S.can_pay(side, cost) then return false end
-  side.gold = side.gold - (cost.gold or 0)
-  side.timber = side.timber - (cost.timber or 0)
+  for _, r in ipairs(S.RESOURCES) do side[r] = (side[r] or 0) - (cost[r] or 0) end
   return true
+end
+
+-- Gives back a cost (a cancelled order).
+function S.refund(side, cost)
+  for _, r in ipairs(S.RESOURCES) do side[r] = (side[r] or 0) + (cost[r] or 0) end
 end
 
 -- Food from finished structures, folk in use by living and queued units.
@@ -117,8 +156,8 @@ function S.folk(side_id)
     local d = S.alive(e) and S.data(e)
     if d and d.side == side_id and d.queue then
       for _, id in ipairs(d.queue) do
-        local u = D.unit(id)
-        folk = folk + u.folk
+        local u = D.unit(id) -- the queue also holds upgrades and headquarters stages
+        if u then folk = folk + u.folk end
       end
     end
   end
@@ -126,6 +165,7 @@ function S.folk(side_id)
 end
 
 function S.sprite_for(side_id, unit_def)
+  if unit_def.sheet then return "sprites/" .. unit_def.sheet .. ".lua" end -- a faction's own look
   local side = S.side(side_id)
   return "sprites/" .. (side.color == "red" and "red_" or "crown_") .. unit_def.sprite .. ".lua"
 end

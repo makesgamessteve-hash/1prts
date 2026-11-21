@@ -91,6 +91,10 @@ local ANSWERS = { move = "aye, marching.", attack = "aye, we go in.", hold = "ho
 -- An order over the sending stones: it arrives after the stone delay, if the company is in
 -- reach. Returns true if it was sent.
 function C.send(c, order)
+  if require("rts.succession").silent(c.side) then
+    S.dispatch(c.side, c.name, "(no answer: the stones are silent)")
+    return false
+  end
   if not C.in_reach(c) then
     S.dispatch(c.side, c.name, "(no answer: out of the stones' reach)")
     prts.events.emit("rts_cut_off", c.id)
@@ -133,7 +137,7 @@ function C.horn(side_id, signal, x, z, tx, tz)
         if signal == "hold" then
           C.order(c, { kind = "hold" })
         elseif signal == "fall_back" then
-          local hold = S.structures(side_id, "crown.holdfast", true)[1]
+          local hold = S.hq(side_id)
           if hold then
             local hx, _, hz = S.pos(hold)
             C.order(c, { kind = "move", x = hx, z = hz + 20 })

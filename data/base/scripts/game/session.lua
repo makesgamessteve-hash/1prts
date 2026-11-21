@@ -8,6 +8,7 @@ S.maps = {
   { id = "proving_ground", name = "Harrowmark" },
   { id = "ashford_vale", name = "Skirmish: Ashford Vale" },
   { id = "greyfen_march", name = "Ride Out: Greyfen March" },
+  { id = "thornmere", name = "Skirmish: Thornmere (Crown against Wildborn)" },
 }
 
 -- Starts map `id` (scripts/maps/<id>.lua). Only one map per run in M1: returns false if a

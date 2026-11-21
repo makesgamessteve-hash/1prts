@@ -13,6 +13,9 @@ local C = require("rts.companies")
 local P = require("rts.picture")
 local A = require("rts.ai")
 local Cmd = require("rts.command")
+local Su = require("rts.succession")
+local Fi = require("rts.fire")
+local Be = require("props.behemoth")
 require("rts.tools")
 require("ui.war_maps")
 
@@ -29,11 +32,14 @@ function M.start(cfg)
   local a, b = cfg.sides[1], cfg.sides[2]
   a.enemy, b.enemy = b.id, a.id
   for _, sc in ipairs(cfg.sides) do
-    S.add_side{ id = sc.id, name = sc.name, color = sc.color, ai = sc.ai, gold = sc.gold or 300,
-                timber = sc.timber or 200, enemy = sc.enemy }
-    B.place(sc.id, "crown.holdfast", sc.x, sc.z, true)
+    S.add_side{ id = sc.id, name = sc.name, faction = sc.faction or "crown", color = sc.color, ai = sc.ai,
+                gold = sc.gold or 300, timber = sc.timber or 200, aether = sc.aether, powder = sc.powder, bone = sc.bone,
+                enemy = sc.enemy }
+    local hq = S.role(sc.id, "hq")[1]
+    B.place(sc.id, hq, sc.x, sc.z, true)
+    local hd = D.structure(hq).size[2] / 2
     for i = 1, cfg.serfs or 4 do
-      local serf = S.spawn_unit(sc.id, "crown.serf", sc.x - 6 + i * 2.4, sc.z + 16)
+      local serf = S.spawn_unit(sc.id, S.role(sc.id, "worker"), sc.x - 6 + i * 2.4, sc.z + hd + 4)
       if sc.ai then E.gather(serf, i % 3 == 0 and "timber" or "gold") end
     end
   end
@@ -47,6 +53,7 @@ function M.tick(now)
   local m = S.match()
   if not m.running then return false end
   C.deliver(now)
+  Su.tick(now)
   for _, e in ipairs(m.units) do
     if S.alive(e) and stagger(e, now, M.THINK) then
       local d = S.data(e)
@@ -65,6 +72,7 @@ function M.tick(now)
   end
   if now % 15 == 0 then
     C.follow_all()
+    Fi.tick(0.5)
     for id in prts.sorted_pairs(m.sides) do P.update(id, now) end
     for _, e in ipairs(m.structures) do
       if S.alive(e) then K.structure_think(e, 15) end
@@ -73,7 +81,10 @@ function M.tick(now)
   if now % 30 == 0 then
     for _, e in ipairs(m.structures) do
       if S.alive(e) then B.train_tick(e, 1) end
+      if S.alive(e) then B.produce(e, 1) end
     end
+    E.decay(now)
+    Be.tick_all(1)
     for _, c in prts.sorted_pairs(m.companies) do K.check_morale(c) end
     m.units = S.compact(m.units)
     m.structures = S.compact(m.structures)
@@ -93,7 +104,7 @@ end
 function M.check_end(now)
   local m = S.match()
   for id, side in prts.sorted_pairs(m.sides) do
-    if not side.lost and #S.structures(id, "crown.holdfast") == 0 then
+    if not side.lost and (#S.hqs(id) == 0 or side.defeated) then
       side.lost = true
       m.running = false
       m.winner = side.enemy

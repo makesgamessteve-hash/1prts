@@ -41,6 +41,7 @@ local function materials()
   m{ id = "table", texture = "textures/table_oak.png", uv_scale = 1.5 }
   m{ id = "war_table_map", surface = "war_table", emissive = true }
   m{ id = "hand_board", surface = "rts.hand", emissive = true }
+  require("rts.structures").materials()
   Horse.materials()
 end
 

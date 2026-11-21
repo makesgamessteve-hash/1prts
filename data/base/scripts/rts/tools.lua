@@ -5,6 +5,7 @@
 -- it was raised while the commander looks around it and points at it; the commander walks
 -- while holding the map. This file runs the tools each tick; ui/war_maps.lua draws them.
 -- MIT License.
+local D = require("rts.defs")
 local S = require("rts.state")
 local Cmd = require("rts.command")
 
@@ -134,29 +135,55 @@ function T.mark()
 end
 
 -- The war table in the war room of the commander's holdfast: oak with the map on top.
-function T.furnish(hold)
+-- `base` is where the table stands in its host's frame (the floor of the war room under it).
+function T.furnish(hold, base)
+  local hd = S.data(hold)
+  if hd.furnished then return false end
+  hd.furnished = true
+  if D.structure(hd.def).mobile and not base then return require("props.behemoth").furnish(hold) end
+  base = base or { 0, 0, 0 }
   local t = T.TABLE
-  prts.scene.box{ min = { -t.half_w - 0.05, 0, -t.half_d - 0.05 }, max = { t.half_w + 0.05, t.top, t.half_d + 0.05 },
-                  material = "table", entity = hold }
-  prts.scene.box{ min = { -t.half_w, t.top, -t.half_d }, max = { t.half_w, t.top + 0.01, t.half_d },
+  local bx, by, bz = base[1], base[2], base[3]
+  prts.scene.box{ min = { bx - t.half_w - 0.05, by, bz - t.half_d - 0.05 },
+                  max = { bx + t.half_w + 0.05, by + t.top, bz + t.half_d + 0.05 }, material = "table", entity = hold }
+  prts.scene.box{ min = { bx - t.half_w, by + t.top, bz - t.half_d }, max = { bx + t.half_w, by + t.top + 0.01, bz + t.half_d },
                   material = "war_table_map", entity = hold, solid = false, fit = true }
-  -- a lantern over the table: the war room has no windows
-  prts.scene.light{ pos = { 0, 3.2, 0.6 }, color = { 1.0, 0.82, 0.55 }, radius = 9, entity = hold }
-  local x, y, z = prts.entity.pos(hold)
-  prts.ui.surface{ id = t.id, width = t.px, height = t.py,
-                   origin = { x - t.half_w, y + t.top + 0.012, z - t.half_d },
-                   right = { 2 * t.half_w, 0, 0 }, down = { 0, 0, 2 * t.half_d } }
+  -- a lantern over the table: war rooms have few windows
+  prts.scene.light{ pos = { bx, by + 3.2, bz + 0.6 }, color = { 1.0, 0.82, 0.55 }, radius = 9, entity = hold }
+  Cmd.state().table = { host = hold, base = base }
+  T.place_table_surface()
   return true
 end
 
--- The centre of the war table's top in the world (for tests and the tutorial): x, y, z.
+-- The war table's host (the building or beast it stands in) and where it stands in that frame.
+function T.table_host()
+  local tb = Cmd.state().table
+  if tb and S.alive(tb.host) then return tb.host, tb.base end
+  return nil
+end
+
+-- A point of the table's top at fractions u, v (from its north-west corner as the map is drawn),
+-- in the world.
 function T.table_point(u, v)
-  local side = Cmd.side()
-  local hold = side and S.structures(side, "crown.holdfast", true)[1]
-  if not hold then return nil end
+  local host, base = T.table_host()
+  if not host then return nil end
   local t = T.TABLE
-  local x, y, z = prts.entity.pos(hold)
-  return x - t.half_w + (u or 0.5) * 2 * t.half_w, y + t.top + 0.01, z - t.half_d + (v or 0.5) * 2 * t.half_d
+  local Deck = require("lib.deckplan")
+  return Deck.to_world(host, base[1] - t.half_w + (u or 0.5) * 2 * t.half_w, base[2] + t.top + 0.01,
+                       base[3] - t.half_d + (v or 0.5) * 2 * t.half_d)
+end
+
+-- The table's UI surface follows its host (a behemoth walks); called when furnished and every frame.
+function T.place_table_surface()
+  local host = T.table_host()
+  if not host then return false end
+  local t = T.TABLE
+  local ox, oy, oz = T.table_point(0, 0)
+  local rx, ry, rz = T.table_point(1, 0)
+  local dx, dy, dz = T.table_point(0, 1)
+  prts.ui.surface{ id = t.id, width = t.px, height = t.py, origin = { ox, oy + 0.002, oz },
+                   right = { rx - ox, ry - oy, rz - oz }, down = { dx - ox, dy - oy, dz - oz } }
+  return true
 end
 
 -- Each tick: the tools' keys (pressed, not held), and the board kept up to date.
@@ -185,9 +212,14 @@ prts.events.on("tick", "rts.tools", function()
   if prts.entity.find(S.REGISTRY) then T.tick() end
 end)
 
+-- A new stage of the commander's headquarters is a new building: its war table again.
+prts.events.on("rts_hq_stage", "rts.tools", function(e, side_id)
+  if side_id == Cmd.side() and S.hq(side_id) == e then T.furnish(e) end
+end)
+
 prts.events.on("rts_match_started", "rts.tools", function()
   local side = Cmd.side()
-  local hold = side and S.structures(side, "crown.holdfast", true)[1]
+  local hold = side and S.hq(side)
   if hold then T.furnish(hold) end
   prts.ui.surface{ id = T.HAND.id, width = T.HAND.px, height = T.HAND.py }
 end)

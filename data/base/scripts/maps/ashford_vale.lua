@@ -32,6 +32,7 @@ local function materials()
   -- the commander's war table and held board show in-world UI surfaces (rts/tools.lua)
   m{ id = "war_table_map", surface = "war_table", emissive = true }
   m{ id = "hand_board", surface = "rts.hand", emissive = true }
+  require("rts.structures").materials()
 end
 
 -- A wood: trees in a band around (x, z), from a fixed seed.

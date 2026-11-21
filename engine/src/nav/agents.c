@@ -144,10 +144,12 @@ static int bucket_of(float x, float z, size_t buckets)
     return (int)(h % (uint32_t)buckets);
 }
 
-/* Moves (x, z) by (dx, dz) as far as the grid allows: whole, along x, along z, or not at all. */
+/* Moves (x, z) by (dx, dz) as far as the grid allows: whole, along x, along z, or not at all.
+ * An agent standing where the grid is closed (a building was put down around it) walks freely
+ * until it is out. */
 static void slide(const prts_nav *nav, float *x, float *z, float dx, float dz)
 {
-    if (!nav || prts_nav_walkable(nav, *x + dx, *z + dz)) {
+    if (!nav || prts_nav_walkable(nav, *x + dx, *z + dz) || !prts_nav_walkable(nav, *x, *z)) {
         *x += dx;
         *z += dz;
     } else if (prts_nav_walkable(nav, *x + dx, *z)) {

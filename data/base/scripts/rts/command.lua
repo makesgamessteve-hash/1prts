@@ -166,7 +166,7 @@ function Cmd.order(kind)
     if not x then return false, "no commander" end
     order = { kind = "move", x = x, z = z }
   elseif kind == "fall_back" then
-    local hold = S.structures(c.side, "crown.holdfast", true)[1]
+    local hold = S.hq(c.side)
     if not hold then return false, "no holdfast" end
     local hx, _, hz = S.pos(hold)
     order = { kind = "move", x = hx, z = hz + 20 }
@@ -199,11 +199,36 @@ function Cmd.train(unit_id)
   local u = D.unit(unit_id)
   if not side or not u then return false, "unknown unit" end
   local best
-  for _, e in ipairs(S.structures(side, u.at, true)) do
-    if not best or #S.data(e).queue < #S.data(best).queue then best = e end
+  for _, e in ipairs(S.structures(side, nil, true)) do
+    if D.trains(u, S.data(e).def) and (not best or #S.data(e).queue < #S.data(best).queue) then best = e end
   end
-  if not best then return false, "no " .. D.structure(u.at).name:lower() end
-  return B.order_unit(best, unit_id)
+  if not best then
+    local at = type(u.at) == "table" and u.at[1] or u.at
+    return false, "no " .. D.structure(at).name:lower()
+  end
+  return B.order(best, unit_id)
+end
+
+-- The work buttons of the war table: "hq_up" (the headquarters' next stage), "build:<id>" (at
+-- the mark), "research:<id>" (at a workshop that does it), "mandate:<id>".
+function Cmd.work(what)
+  local side = Cmd.side()
+  if not side then return false, "no side" end
+  if what == "hq_up" then
+    local hq = S.hq(side)
+    if not hq then return false, "no headquarters" end
+    return B.order(hq, "hq_up")
+  end
+  local kind, id = what:match("^(%a+):(.+)$")
+  if kind == "build" then return Cmd.build(id) ~= nil end
+  if kind == "mandate" then return require("rts.tiers").buy_mandate(side, id) end
+  if kind == "research" then
+    local up = D.upgrade(id)
+    local shop = up and S.structures(side, up.at, true)[1]
+    if not shop then return false, "no workshop" end
+    return B.order(shop, id)
+  end
+  return false, "unknown work"
 end
 
 -- Places a building at the mark and sends the two nearest serfs to build it.
@@ -217,7 +242,7 @@ function Cmd.build(def_id)
     S.dispatch(side, "Master builder", why == "no room" and "There is no room to build there." or "We cannot pay for it.")
     return nil, why
   end
-  local serfs = S.units(side, "crown.serf")
+  local serfs = S.units(side, S.role(side, "worker"))
   table.sort(serfs, function(a, b)
     local ax, _, az = S.pos(a)
     local bx, _, bz = S.pos(b)
@@ -240,7 +265,7 @@ function Cmd.idle_serfs()
     if not S.data(e).built then site = e break end
   end
   local n = 0
-  for _, e in ipairs(S.units(side, "crown.serf")) do
+  for _, e in ipairs(S.units(side, S.role(side, "worker"))) do
     local d = S.data(e)
     if not d.task and not (prts.agent.info(e) and prts.agent.info(e).moving) then
       if site then
