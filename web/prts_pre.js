@@ -38,6 +38,16 @@
     });
   });
 
+  // --- Direct start: ?start=<map id> skips the front-end menu (like --start on desktop) -----
+  try {
+    var start = new URLSearchParams(window.location.search).get('start');
+    if (start && /^[a-z0-9_]{1,40}$/.test(start)) {
+      Module['arguments'] = [].concat(Module['arguments'] || [], ['--start', start]);
+    }
+  } catch (e) {
+    /* no URL parameters: the front-end menu opens */
+  }
+
   // --- Start-up input scheme (design D12, spec "Phone browser") ---------------------------
   // A touch-first device (phone, tablet) starts with touch controls; the engine still switches
   // to keyboard and mouse as soon as those are used.

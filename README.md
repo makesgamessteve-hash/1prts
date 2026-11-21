@@ -90,7 +90,8 @@ xvfb-run -a ./build/dev/bin/1stprts --size 1920x1080 --scenario tests/game/scena
 Install the [Emscripten SDK](https://emscripten.org/docs/getting_started/downloads.html)
 (CI uses 7.0.0) and activate it, so `EMSDK` is set. The build produces `1stprts.html`, `.js`,
 `.wasm` and the game data as a separate `1stprts.data` (+ `1stprts.data.js`) in
-`build/web-release/bin/`; serve that folder over HTTP and open `1stprts.html`.
+`build/web-release/bin/`; serve that folder over HTTP and open `1stprts.html` (it opens the
+front-end menu; `1stprts.html?start=proving_ground` goes straight to the map, like `--start`).
 
 ```sh
 source "$EMSDK/emsdk_env.sh"
