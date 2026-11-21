@@ -126,3 +126,11 @@ is missing. References are C unit tests (`suite.case`), test files and scripts (
 | xr-presentation | Pulling the lift lever | `tests/game/scenarios/xr_lift_lever.lua`, `xr.recorded_frames_pull_the_lift_lever` (a recorded pose fixture, `engine/tests/fixtures/xr/lever_pull.txt`), `xr.controllers_drive_actions_by_hand`, `commander.xr_pointer_ray_uses_things_but_not_through_walls`, `tests/game/determinism/xr_walk.lua` |
 | xr-presentation | Teleport movement | `tests/game/scenarios/xr_teleport.lua`, `commander.xr_teleport_to_reachable_floor_only`, `web/tests/xr.test.js` (the setting saved in the user area, the mocked headset's stick and ray) |
 | xr-presentation | Comfort defaults | `tests/game/scenarios/xr_comfort.lua` (also the vignette, snap and smooth turning, the menu button), `web/tests/xr.test.js`, `data/base/scripts/tests/test_xr.lua` |
+| castle-content | Approaching the castle | `tests/golden/golden.lua` (approach views of Harrowmark from the road), `tests/game/scenarios/castle_gate.lua` (walks in through the King's Gate), `tests/game/scenarios/walk_speed.lua` (starts on the road) |
+| castle-content | Onto the wall-walk and into a tower | `tests/game/scenarios/castle_walls.lua`, `data/base/scripts/tests/test_castle.lua` |
+| castle-content | To the top of the great tower | `tests/game/scenarios/raven_tower.lua`, `shapes.towers_face_out_and_in_with_open_sides` |
+| castle-content | Closing the gate | `tests/game/scenarios/castle_gate.lua`, `data/base/scripts/tests/test_castle.lua` (portcullis states) |
+| storytelling | Front-end menu | `tests/game/scenarios/front_end_menu.lua`, `data/base/scripts/tests/test_story.lua` (title, map name) |
+| storytelling | Starting Harrowmark from the menu | `tests/game/scenarios/story_prologue.lua`, `data/base/scripts/tests/test_story.lua` (prologue only from the menu, option) |
+| storytelling | Talking to a guard | `tests/game/scenarios/npc_talk.lua`, `data/base/scripts/tests/test_story.lua`, `collide.use_boxes_stop_only_the_use_ray` |
+| storytelling | Reading the board | `tests/golden/golden.lua` (notice_board: the orders drawn on the board's surface), `data/base/scripts/tests/test_story.lua` (the board's text fits) |

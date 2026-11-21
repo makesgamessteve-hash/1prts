@@ -25,9 +25,10 @@ of them. The look is retro 3D: low-poly models, sprites and voxels.
 
 | | | |
 |---|---|---|
-| ![Great hall](docs/screenshots/12_hall_benches_braziers.png) | ![Forge](docs/screenshots/05_forge.png) | ![Stairs](docs/screenshots/06_stairs.png) |
-| ![Keep door](docs/screenshots/10_door_guard.png) | ![War table](docs/screenshots/08_war_table_illusion.png) | ![Battlements](docs/screenshots/09_battlements.png) |
-| ![Front-end menu](docs/screenshots/13_front_end_menu.png) | ![Touch controls](docs/screenshots/16_touch_controls.png) | ![Developer console](docs/screenshots/17_developer_console.png) |
+| ![Harrowmark from the road](docs/screenshots/02_harrowmark_from_afar.png) | ![The King's Gate](docs/screenshots/22_kings_gate.png) | ![The Outer Ward and the Lion Gate](docs/screenshots/18_outer_ward.png) |
+| ![On the wall-walk](docs/screenshots/19_wall_walk.png) | ![From the Raven Tower](docs/screenshots/20_raven_tower_view.png) | ![The Inner Ward and the Great Keep](docs/screenshots/21_inner_ward.png) |
+| ![The prologue](docs/screenshots/23_prologue.png) | ![The castellan](docs/screenshots/25_the_castellan.png) | ![The war table](docs/screenshots/08_war_table_illusion.png) |
+| ![Great hall](docs/screenshots/12_hall_benches_braziers.png) | ![Forge](docs/screenshots/05_forge.png) | ![Front-end menu](docs/screenshots/13_front_end_menu.png) |
 
 ## Read this first
 
@@ -35,7 +36,7 @@ of them. The look is retro 3D: low-poly models, sprites and voxels.
 |---|---|
 | 🎯 **Concept** | [`docs/concept/`](docs/concept/README.md): pitch, pillars, the commander, command and control, scale, units, economy, setting, art, controls, modding, roadmap, open questions, story |
 | 🏗️ **Architecture** | [`docs/architecture/`](docs/architecture/README.md): engine and script split, simulation, rendering, data and Lua API, quality and build |
-| 📐 **Specs** | [`openspec/`](openspec/): spec-driven development with [OpenSpec](https://github.com/Fission-AI/OpenSpec). The first change: [`add-engine-foundation`](openspec/changes/add-engine-foundation/proposal.md) |
+| 📐 **Specs** | [`openspec/`](openspec/): spec-driven development with [OpenSpec](https://github.com/Fission-AI/OpenSpec). Changes: [`add-engine-foundation`](openspec/changes/add-engine-foundation/proposal.md) (M1) and [`add-harrowmark-and-story`](openspec/changes/add-harrowmark-and-story/proposal.md) (the castle, the story and the title) |
 | ❓ **Open questions** | [`docs/concept/13-open-questions.md`](docs/concept/13-open-questions.md) |
 
 ## Key facts
