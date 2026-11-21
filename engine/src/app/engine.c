@@ -170,7 +170,10 @@ prts_engine *prts_engine_create(const prts_engine_config *cfg, char *err, size_t
         e->gfx = prts_gfx_create(NULL, e->vfs, false);
     }
 
+    e->audio = prts_audio_create(e->vfs, !cfg->headless, NULL);
+
     prts_engine_open_game_api(e);
+    prts_engine_open_audio_api(e);
     if (!prts_script_run_file(e->script, "scripts/main.lua")) {
         snprintf(err, err_size, "The boot script scripts/main.lua failed: %s", prts_script_last_error(e->script));
         prts_engine_destroy(e);
@@ -195,6 +198,7 @@ void prts_engine_destroy(prts_engine *e)
     if (e->cfg.lua_coverage && e->script) prts_script_write_coverage(e->script, e->cfg.lua_coverage);
     prts_script_destroy(e->script);
     prts_gfx_destroy(e->gfx);
+    prts_audio_destroy(e->audio);
     prts_platform_destroy(e->platform);
     prts_input_destroy(e->input);
     prts_scene_destroy(e->scene);
@@ -289,7 +293,9 @@ bool prts_engine_frame(prts_engine *e, double real_seconds)
     for (int i = 0; i < n && !e->quit; i++) prts_engine_tick(e);
     e->time = (double)e->clock.tick * e->clock.tick_seconds;
     if (e->cfg.ticks > 0 && e->clock.tick >= (uint64_t)e->cfg.ticks) e->quit = true;
-    render_frame(e, e->scenario_active ? 1.0 : prts_clock_alpha(&e->clock));
+    double alpha = e->scenario_active ? 1.0 : prts_clock_alpha(&e->clock);
+    render_frame(e, alpha);
+    prts_engine_audio_frame(e, real_seconds, alpha);
     return !e->quit;
 }
 

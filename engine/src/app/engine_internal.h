@@ -4,6 +4,7 @@
 
 #include <lua.h>
 
+#include "prts/prts_audio.h"
 #include "prts/prts_commander.h"
 #include "prts/prts_engine.h"
 #include "prts/prts_gfx.h"
@@ -30,6 +31,7 @@ struct prts_engine {
     bool has_commander;
     prts_platform *platform;
     prts_gfx *gfx;
+    prts_audio *audio;
     prts_input_state dev;
     prts_clock clock;
     prts_render_settings render;
@@ -52,6 +54,12 @@ void prts_engine_open_game_api(prts_engine *e);
 void prts_engine_tick(prts_engine *e);
 prts_engine *prts_engine_from_lua(lua_State *L);
 prts_entity prts_engine_check_entity(lua_State *L, int idx);
+
+/* api_audio.c */
+void prts_engine_open_audio_api(prts_engine *e);
+/* Moves the listener to the commander's eye, moves sounds with their entities and feeds
+ * the audio device. Called once per frame. */
+void prts_engine_audio_frame(prts_engine *e, double real_seconds, double alpha);
 
 /* testing.c */
 bool prts_engine_start_scenario(prts_engine *e, const char *real_path);
