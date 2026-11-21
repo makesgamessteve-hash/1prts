@@ -63,7 +63,8 @@ jobs:
             libxss-dev libxfixes-dev libxtst-dev libxkbcommon-dev libegl-dev libgl-dev libgles-dev \
             libasound2-dev libpulse-dev xvfb libgl1-mesa-dri
       - run: cmake --preset sanitize && cmake --build --preset sanitize
-      - run: xvfb-run -a -s "-screen 0 1280x720x24" ctest --preset sanitize
+      # the long AI matches (label "slow") run in the coverage job; under ASan they take an hour
+      - run: xvfb-run -a -s "-screen 0 1280x720x24" ctest --preset sanitize -LE slow
 
   windows:
     runs-on: windows-2022

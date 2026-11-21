@@ -2,6 +2,7 @@
 -- match ends when a side's holdfast falls. The AI plays a side that does nothing (its serfs only
 -- work): it must take that side's holdfast within 30 minutes of game time. (Two equal AI
 -- commanders on this mirrored map often fight to a standstill for an hour.) MIT License.
+-- ctest-labels: slow
 -- ctest-args: --start ashford_vale
 return {
   name = "the AI commander takes a holdfast",

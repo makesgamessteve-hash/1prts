@@ -1,6 +1,7 @@
 -- Spec (wildborn-clans): Crown against Wildborn. A Wildborn AI on Thornmere builds, reaches a
 -- higher tier, trains warriors and takes the headquarters of a Crown side whose serfs only
 -- gather. MIT License.
+-- ctest-labels: slow
 -- ctest-args: --start thornmere
 return {
   name = "the Wildborn take Thornmere",

@@ -1,4 +1,5 @@
 -- Spec (harbor-siege): Breaking the siege; The galleon lost. MIT License.
+-- ctest-labels: slow
 -- ctest-args: --start saltcoast
 return {
   name = "the Harbor Siege",

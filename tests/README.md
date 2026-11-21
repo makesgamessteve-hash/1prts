@@ -19,6 +19,7 @@ cmake --preset dev && cmake --build --preset dev
 ctest --preset dev                      # render_tour needs a display (CI uses xvfb-run)
 build/dev/bin/prts_tests --filter='replay.*'
 ctest --preset dev -L smoke            # the commander-is-there smoke set (walk, stairs, door, lift, war table)
+ctest --preset dev -LE slow            # everything but the long AI matches (label `slow`; CI's sanitizer job skips them)
 build/dev/bin/1stprts --headless --scenario tests/game/determinism/keep_walk.lua --record walk.rpl
 build/dev/bin/1stprts --headless --replay walk.rpl --junit replay.xml
 ```
