@@ -27,6 +27,27 @@ char *prts_arena_strdup(prts_arena *a, const char *s);
 void prts_arena_reset(prts_arena *a);
 void prts_arena_free(prts_arena *a);
 
+/* --- pool --------------------------------------------------------------------------
+ * Fixed-size objects from blocks of `per_block` items, recycled through a free list. Freed
+ * items are reused newest first, so allocation order is deterministic. Items are 16-byte
+ * aligned and zeroed when handed out. */
+
+typedef struct prts_pool {
+    size_t item_size; /* rounded up to PRTS_ARENA_ALIGN */
+    size_t per_block;
+    void *blocks;     /* linked list of blocks (first word links to the next) */
+    void *free_list;  /* linked list of free items */
+    size_t live;      /* items handed out and not yet freed */
+    size_t capacity;  /* items in all blocks */
+} prts_pool;
+
+/* per_block 0 picks a default (64 items). */
+void prts_pool_init(prts_pool *p, size_t item_size, size_t per_block);
+void *prts_pool_alloc(prts_pool *p);
+/* Returns an item to the pool (NULL is ignored). */
+void prts_pool_release(prts_pool *p, void *item);
+void prts_pool_free(prts_pool *p);
+
 /* --- string hash map ----------------------------------------------------------------
  * Maps NUL-terminated string keys (copied) to pointer values. Iteration follows insertion
  * order, never hash order, so it is deterministic. Setting an existing key keeps its

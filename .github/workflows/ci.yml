@@ -132,6 +132,8 @@ jobs:
         run: python3 -I tools/check_layering.py
       - name: Asset credits, references, formats and manifests
         run: python3 -I tools/validate_assets.py
+      - name: Third-party licenses (third_party/<lib>/LICENSE and README rows)
+        run: python3 -I tools/check_third_party_licenses.py
       - name: Scripting API documentation (every prts.* function in docs/modding/api-m1.md)
         run: python3 -I tools/check_api_docs.py
       - name: Spec scenarios linked to tests (tests/README.md)

@@ -2,22 +2,22 @@
 
 ## 1. Repository and build scaffolding
 
-- [ ] 1.1 Add the top-level `CMakeLists.txt`, `CMakePresets.json` (dev, release, coverage, sanitize, web-dev, web-release) and the folder layout from `docs/architecture/README.md §2`; verify `cmake --list-presets` shows all presets
-- [ ] 1.2 Fetch SDL3 through `FetchContent` pinned to a release tag, with a `PRTS_USE_SYSTEM_SDL3` option; verify a configure succeeds both ways on Linux
+- [x] 1.1 Add the top-level `CMakeLists.txt`, `CMakePresets.json` (dev, release, coverage, sanitize, web-dev, web-release) and the folder layout from `docs/architecture/README.md §2`; verify `cmake --list-presets` shows all presets
+- [x] 1.2 Fetch SDL3 through `FetchContent` pinned to a release tag, with a `PRTS_USE_SYSTEM_SDL3` option; verify a configure succeeds both ways on Linux
 - [ ] 1.3 Vendor Lua 5.4, cgltf, stb_image, stb_vorbis, ogt_vox, microui and utest.h under `third_party/<lib>/` with their license files; verify each builds with warnings off and `tools/check-third-party-licenses` finds a license per library
-- [ ] 1.4 Add strict warning flags for engine code (GCC/Clang/MSVC) and `.clang-format` / `.clang-tidy`; verify an empty `prts_core` library builds warning-free on all three compilers
+- [x] 1.4 Add strict warning flags for engine code (GCC/Clang/MSVC) and `.clang-format` / `.clang-tidy`; verify an empty `prts_core` library builds warning-free on all three compilers
 - [ ] 1.5 Add GitHub Actions workflows with jobs `linux-coverage`, `linux-sanitize`, `windows`, `macos`, `web`, `checks`, `package` (initially build-only); verify all jobs are green on a pull request
 
 ## 2. Core module and C unit tests
 
-- [ ] 2.1 Implement `core/`: arena and pool allocators, dynamic arrays, hash map with insertion-ordered iteration, strings and path helpers, log with levels and sinks; verify with utest suites in `engine/tests/core_*.c`
+- [x] 2.1 Implement `core/`: arena and pool allocators, dynamic arrays, hash map with insertion-ordered iteration, strings and path helpers, log with levels and sinks; verify with utest suites in `engine/tests/core_*.c`
 - [x] 2.2 Implement float and double math (vec, quat, mat4, `prts_dvec3`, camera-relative conversion); verify unit tests, including the 64 km precision case from the *Large-world precision* scenario
 - [x] 2.3 Implement PCG32 random streams and a 64-bit stable hash; verify fixed-seed sequence tests and hash vectors
 - [x] 2.4 Wire CTest to run all C unit tests and turn on the gcovr gate (`--fail-under-line 95`) in `linux-coverage`, with `tools/coverage/exclusions.txt` (initial list from design D17); verify the job fails on a deliberately uncovered function and passes once it is tested
 
 ## 3. Platform layer, launcher and web skeleton
 
-- [ ] 3.1 Implement `platform/` on SDL3 app callbacks: window, GL context creation (3.3 core / 4.1 core on macOS / WebGL 2), event pump, timers, base and preference paths, threads; verify a smoke test opens a window under Xvfb and closes cleanly
+- [x] 3.1 Implement `platform/` on SDL3 app callbacks: window, GL context creation (3.3 core / 4.1 core on macOS / WebGL 2), event pump, timers, base and preference paths, threads; verify a smoke test opens a window under Xvfb and closes cleanly
 - [x] 3.2 Show a readable error and exit non-zero when no suitable GL context can be created; verify by forcing an impossible context version in a test (spec *OpenGL context unavailable*)
 - [x] 3.3 Implement the launcher `apps/1stprts` with command-line options `--data`, `--mod`, `--user`, `--headless`, `--test`, `--test-lua`, `--lua-coverage`, `--ticks`, `--seed`; verify option-parsing unit tests and `1stprts --headless --ticks 1` exiting 0
 - [x] 3.4 Add the Emscripten build (`web-dev`, `web-release`) with a minimal shell page, a load-progress display and a WebGL 2 check; verify a Playwright smoke test in the `web` job sees the page reach the "engine started" state, and that a browser without WebGL 2 shows the requirement message (spec *Browser without WebGL 2*)

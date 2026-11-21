@@ -1,0 +1,19 @@
+# Static analysis for 1stPRTS engine code: clang-tidy -p build/dev engine/src/<file>.c
+# Third-party code (third_party/) is not checked.
+Checks: >
+  -*,
+  bugprone-*,
+  -bugprone-easily-swappable-parameters,
+  -bugprone-narrowing-conversions,
+  -bugprone-assignment-in-if-condition,
+  -bugprone-multi-level-implicit-pointer-conversion,
+  -bugprone-implicit-widening-of-multiplication-result,
+  clang-analyzer-*,
+  -clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling,
+  -clang-analyzer-security.insecureAPI.strcpy,
+  misc-redundant-expression,
+  performance-*,
+  readability-misleading-indentation,
+  readability-duplicate-include
+WarningsAsErrors: ''
+HeaderFilterRegex: 'engine/(include|src)/'

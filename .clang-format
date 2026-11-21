@@ -1,0 +1,19 @@
+# 1stPRTS C style (engine, tools and tests). Third-party code keeps its own style.
+BasedOnStyle: LLVM
+Language: Cpp
+IndentWidth: 4
+ColumnLimit: 120
+BreakBeforeBraces: Linux
+PointerAlignment: Right
+AllowShortFunctionsOnASingleLine: All
+AllowShortIfStatementsOnASingleLine: WithoutElse
+AllowShortLoopsOnASingleLine: true
+AllowShortBlocksOnASingleLine: Empty
+AllowShortCaseLabelsOnASingleLine: true
+IndentCaseLabels: false
+AlignAfterOpenBracket: Align
+AlignConsecutiveMacros: Consecutive
+AlignTrailingComments: true
+IncludeBlocks: Preserve
+SortIncludes: CaseSensitive
+SpaceAfterCStyleCast: false

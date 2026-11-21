@@ -57,6 +57,39 @@ UTEST(arena, alloc_alignment_growth_reset_free)
     prts_arena_free(&a);
 }
 
+UTEST(pool, alloc_reuse_alignment_and_growth)
+{
+    prts_pool p;
+    prts_pool_init(&p, 3, 4); /* tiny items still hold the free-list link */
+    ASSERT_EQ((size_t)PRTS_ARENA_ALIGN, p.item_size);
+    void *items[9];
+    for (int i = 0; i < 9; i++) {
+        items[i] = prts_pool_alloc(&p);
+        ASSERT_EQ((uintptr_t)0, (uintptr_t)items[i] % PRTS_ARENA_ALIGN);
+        memset(items[i], 0xab, 3);
+    }
+    ASSERT_EQ((size_t)9, p.live);
+    ASSERT_EQ((size_t)12, p.capacity); /* three blocks of four */
+    /* consecutive items of a block are handed out in address order */
+    ASSERT_EQ((uintptr_t)items[0] + p.item_size, (uintptr_t)items[1]);
+    /* the newest freed item is reused first, and comes back zeroed */
+    prts_pool_release(&p, items[2]);
+    prts_pool_release(&p, items[5]);
+    prts_pool_release(&p, NULL);
+    ASSERT_EQ((size_t)7, p.live);
+    unsigned char *again = prts_pool_alloc(&p);
+    ASSERT_EQ((void *)items[5], (void *)again);
+    ASSERT_EQ(0, again[0]);
+    ASSERT_EQ((void *)items[2], prts_pool_alloc(&p));
+    prts_pool_free(&p);
+    ASSERT_EQ((size_t)0, p.capacity);
+    prts_pool_init(&p, 100, 0);
+    ASSERT_EQ((size_t)112, p.item_size);
+    ASSERT_TRUE(prts_pool_alloc(&p) != NULL);
+    ASSERT_EQ((size_t)64, p.capacity);
+    prts_pool_free(&p);
+}
+
 UTEST(map, set_get_update_remove)
 {
     prts_map m;
