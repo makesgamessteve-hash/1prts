@@ -7,7 +7,7 @@
 
 #define MAX_LIGHTS 8
 #define FAR_LAYER_NEAR 25.0f
-#define FAR_LAYER_FAR 6000.0f
+#define FAR_LAYER_FAR 120000.0f /* spec: Wide depth range (>= 100 km) */
 #define NEAR_LAYER_NEAR 0.05f
 #define NEAR_LAYER_FAR 30.0f
 

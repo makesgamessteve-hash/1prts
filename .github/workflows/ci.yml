@@ -36,6 +36,13 @@ jobs:
         with:
           name: screenshots-linux
           path: build/coverage/screenshots/
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: golden-differences
+          path: |
+            build/coverage/golden-out/
+            build/coverage/golden-diff/
 
   linux-sanitize:
     runs-on: ubuntu-24.04

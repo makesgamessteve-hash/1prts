@@ -177,6 +177,20 @@ static int t_in_cell(lua_State *L)
     return 1;
 }
 
+/* t.drawn_cells(): set of the cell names drawn in the last rendered frame (empty headless). */
+static int t_drawn_cells(lua_State *L)
+{
+    prts_engine *e = E(L);
+    prts_cell_mask mask = prts_gfx_last_visible_cells(e->gfx);
+    lua_newtable(L);
+    for (size_t i = 0; i < e->scene->cells.len; i++) {
+        if (!(mask & PRTS_CELL_BIT(i))) continue;
+        lua_pushboolean(L, 1);
+        lua_setfield(L, -2, prts_scene_cell_name(e->scene, (int)i));
+    }
+    return 1;
+}
+
 static int t_target(lua_State *L)
 {
     prts_engine *e = E(L);
@@ -209,7 +223,7 @@ static int t_headless(lua_State *L)
 static const luaL_Reg T_FUNCS[] = {
     {"commander", t_commander}, {"ticks", t_ticks},   {"screenshot", t_screenshot}, {"_hold", t_hold},
     {"place", t_place},         {"look", t_look},     {"pos", t_pos},               {"parent", t_parent},
-    {"face", t_face},           {"in_cell", t_in_cell},
+    {"face", t_face},           {"in_cell", t_in_cell}, {"drawn_cells", t_drawn_cells},
     {"in_zone", t_in_zone},     {"target", t_target}, {"hash", t_hash},             {"tick", t_tick},
     {"headless", t_headless},   {NULL, NULL}};
 

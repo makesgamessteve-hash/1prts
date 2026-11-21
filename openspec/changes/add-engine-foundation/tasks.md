@@ -57,12 +57,12 @@
 - [x] 7.1 Implement the generated GL function loader, the gfx interface, the GL back end and the null back end; verify unit tests run against the null back end and a GL smoke test runs under Xvfb + llvmpipe
 - [x] 7.2 Implement shader loading from data with the per-platform prelude, compile-error reporting with file and line, and the fallback shader; verify tests with a broken shader file (spec *Broken shader*, *Mod changes the look*)
 - [x] 7.3 Implement textures (stb_image), the glTF 2.0 subset (cgltf) with marker nodes, and `.vox` greedy meshing (ogt_vox); verify loader unit tests on small fixture files, and a missing-model placeholder test (spec *Missing model*, *Voxel prop*)
-- [ ] 7.4 Implement the view list, camera-relative transforms, depth layers and the low-resolution scene target with nearest-neighbor integer upscale and the resolution presets; verify golden images for each preset and the near/far depth case (spec *Changing the preset*, *Field map and horizon in one view*, *Two views*)
-- [ ] 7.5 Implement per-vertex lighting, fog, vertex snapping, affine mapping, palette quantization with ordered dither and run-time toggles; verify golden images for each toggle state and the dusk preset (spec *Turning off dithering*, *Dusk lighting*)
-- [ ] 7.6 Implement 8-direction billboard sprites with animations and batching; verify a golden test from front, side and back angles (spec *Directional sprite*)
-- [ ] 7.7 Implement cells and portals, portal culling and the outside-in visibility rule; verify a unit test of the visible-cell set and a golden image of the closed and opened side-room door (spec *Closed door hides a room*)
-- [ ] 7.8 Implement offscreen views and render-target surfaces with the magic-surface material; verify a golden image of the war table surface (spec *Live war table*)
-- [ ] 7.9 Add render golden tests to `linux-coverage` with the 8-level / 0.5% tolerance, difference-image artifacts and `tools/golden/update`; verify a deliberate fog color change fails the test (spec *Visual regression*)
+- [x] 7.4 Implement the view list, camera-relative transforms, depth layers and the low-resolution scene target with nearest-neighbor integer upscale and the resolution presets; verify golden images for each preset and the near/far depth case (spec *Changing the preset*, *Field map and horizon in one view*, *Two views*)
+- [x] 7.5 Implement per-vertex lighting, fog, vertex snapping, affine mapping, palette quantization with ordered dither and run-time toggles; verify golden images for each toggle state and the dusk preset (spec *Turning off dithering*, *Dusk lighting*)
+- [x] 7.6 Implement 8-direction billboard sprites with animations and batching; verify a golden test from front, side and back angles (spec *Directional sprite*)
+- [x] 7.7 Implement cells and portals, portal culling and the outside-in visibility rule; verify a unit test of the visible-cell set and a golden image of the closed and opened side-room door (spec *Closed door hides a room*)
+- [x] 7.8 Implement offscreen views and render-target surfaces with the magic-surface material; verify a golden image of the war table surface (spec *Live war table*)
+- [x] 7.9 Add render golden tests to `linux-coverage` with the 8-level / 0.5% tolerance, difference-image artifacts and `tools/golden/update`; verify a deliberate fog color change fails the test (spec *Visual regression*)
 
 ## 8. Input
 
@@ -148,9 +148,9 @@ Partly done (still unchecked):
   is missing.
 - 7.3 Done. `.vox` files are read by a small C parser in `engine/src/scene/vox.c` instead of
   ogt_vox, whose header is C++ only (the engine is C11).
-- 7.4 Camera-relative rendering, two depth layers, the low-resolution target and presets work.
-  There is no multi-view list and there are no golden images yet.
-- 7.5 All effects and toggles work. Golden images are missing.
+- 7.4–7.9 Done. Golden images (`tests/golden/`) render at 640x360, so the `hd` and `native`
+  presets (540 lines and full size) both draw at the window size there; the three lower
+  presets have their own images. The far depth layer now reaches 120 km.
 - 8.4 The scheme is detected. Events to scripts and the web hint are missing.
 - 9.1 Collision queries use a flat list of boxes plus a terrain height grid. There is no BVH
   yet.

@@ -1,0 +1,45 @@
+#!/usr/bin/env python3
+"""Re-renders the golden images into tests/golden/ref/ (MIT License).
+
+Run after an intended visual change, look at every changed image, then commit them:
+    xvfb-run -a tools/golden/update [--exe build/dev/bin/1stprts]
+The references are rendered at 640x360 with the same scenario the render_golden test uses."""
+import argparse
+import os
+import shutil
+import subprocess
+import sys
+import tempfile
+
+ROOT = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".."))
+
+
+def main():
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("--exe", default=os.path.join(ROOT, "build", "dev", "bin", "1stprts"))
+    args = ap.parse_args()
+    ref = os.path.join(ROOT, "tests", "golden", "ref")
+    with tempfile.TemporaryDirectory() as tmp:
+        out, user = os.path.join(tmp, "out"), os.path.join(tmp, "user")
+        os.makedirs(out)
+        cmd = [args.exe, "--size", "640x360", "--scenario", os.path.join(ROOT, "tests", "golden", "golden.lua"),
+               "--out", out, "--user", user]
+        if subprocess.call(cmd) != 0:
+            print("the golden scenario failed; references unchanged", file=sys.stderr)
+            return 1
+        shots = sorted(f for f in os.listdir(out) if f.endswith(".png"))
+        if not shots:
+            print("no images were rendered (is there a display? try xvfb-run -a)", file=sys.stderr)
+            return 1
+        os.makedirs(ref, exist_ok=True)
+        for old in os.listdir(ref):
+            if old.endswith(".png"):
+                os.remove(os.path.join(ref, old))
+        for shot in shots:
+            shutil.copyfile(os.path.join(out, shot), os.path.join(ref, shot))
+    print("updated %d golden images in %s" % (len(shots), os.path.relpath(ref, ROOT)))
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

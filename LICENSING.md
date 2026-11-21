@@ -6,7 +6,7 @@
 |---|---|---|
 | **Code**: C engine sources, build scripts, tools, tests, Lua scripts, shader sources | MIT | [`LICENSE`](LICENSE) |
 | **Art and content**: models, textures, sprites, voxel models, sounds, music, fonts, maps, deck plans, written content in `data/` | Creative Commons Attribution 4.0 International (CC BY 4.0) | [`LICENSE-ASSETS`](LICENSE-ASSETS) |
-| **Screenshots** in `docs/screenshots/` | CC BY 4.0 (they show 1stPRTS art) | [`LICENSE-ASSETS`](LICENSE-ASSETS) |
+| **Screenshots** in `docs/screenshots/` and golden test images in `tests/golden/ref/` | CC BY 4.0 (they show 1stPRTS art) | [`LICENSE-ASSETS`](LICENSE-ASSETS) |
 | **Third-party code** in `third_party/` | The license that ships with each library | `third_party/<lib>/LICENSE*` |
 
 ## Where the line falls
