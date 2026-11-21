@@ -344,6 +344,37 @@ local function watchtower(x, z)
   B.box("flame", x - 0.15, y + 9.3, z - 0.15, x + 0.15, y + 9.8, z + 0.15, { solid = false })
 end
 
+-- Banners of the Crown on a gatehouse's outer face, and lights in its passage.
+local function dress_gate(gate, outer_z, outward, tower_radius, tower_height, passage_height)
+  -- a banner down the front of each drum tower
+  for _, sx in ipairs({ -1, 1 }) do
+    local tx = gate.x + sx * (gate.half - tower_radius * 0.6)
+    local z = outer_z + outward * (tower_radius + 0.08)
+    B.box("banner", tx - 0.9, tower_height - 8, math.min(z, z + outward * 0.06), tx + 0.9, tower_height - 1.5,
+          math.max(z, z + outward * 0.06), { solid = false })
+  end
+  prts.scene.light{ pos = { gate.x, passage_height - 1.0, outer_z - outward * 2 }, color = { 1.3, 0.75, 0.4 }, radius = 10 }
+  prts.scene.light{ pos = { gate.x, passage_height - 1.0, outer_z + outward * 3 }, color = { 1.3, 0.75, 0.4 }, radius = 9 }
+end
+
+-- The garrison: guards at the gates, at the Raven Tower and walking the inner wall-walk.
+local function garrison()
+  local I, O, R = M.INNER, M.OUTER, M.RAVEN
+  local guard = "sprites/crown_guard.lua"
+  local south = O.z1 + O.thick + 4  -- the King's Gate's outer face
+  local list = {
+    NPC.make{ name = "npc.kings_gate_left", sprite = guard, pos = { -3.6, 0, south + 1.2 }, yaw = math.pi },
+    NPC.make{ name = "npc.kings_gate_right", sprite = guard, pos = { 3.6, 0, south + 1.2 }, yaw = math.pi },
+    NPC.make{ name = "npc.lion_gate", sprite = guard, pos = { 3.4, 0, I.z1 + I.thick + 4.2 }, yaw = math.pi },
+    NPC.make{ name = "npc.raven_door", sprite = guard, pos = { R.x + 2.2, 0, R.z + R.radius + 1.2 }, yaw = math.pi },
+    NPC.make{ name = "npc.wall_patrol", sprite = guard, pos = { -34, I.height, I.z1 + 1.2 }, speed = 1.1,
+              patrol = { { -12, I.height, I.z1 + 1.2 }, { -34, I.height, I.z1 + 1.2 } } },
+    NPC.make{ name = "npc.outer_patrol", sprite = guard, pos = { -60, 0, 80 }, speed = 1.2,
+              patrol = { { 60, 0, 80 }, { 60, 0, -70 }, { -60, 0, -70 }, { -60, 0, 80 } } },
+  }
+  return #list
+end
+
 -- The Inner Ward: a 15 m curtain with corner and side towers, the Raven Tower on the north
 -- side (with a spiral stair to its top) and the Lion Gate on the south side.
 local function inner_ward()
@@ -368,6 +399,7 @@ local function inner_ward()
                                   half = M.LION_GATE.half, height = h, outward = 1, passage = { half = 2.5, height = 5.5 },
                                   tower = { radius = 4.5, height = 21 }, material = "stone", floor_material = "stone_floor" }
   -- stairs up to the wall-walk along the inner face of the south and north walls
+  dress_gate(M.LION_GATE, I.z1 + t + 3, 1, 4.5, 21, 5.5)
   Castle.wall_stair("stone", { axis = "x", sign = 1, start = -38, w0 = I.z1 - 1.8, w1 = I.z1, base = 0, top = h })
   Castle.wall_stair("stone", { axis = "x", sign = -1, start = 38, w0 = I.z0, w1 = I.z0 + 1.8, base = 0, top = h })
   -- the chapel, the kitchens and the well
@@ -399,6 +431,7 @@ local function outer_ward()
   M.kings_gate = Castle.gatehouse{ name = "harrowmark.kings_gate", x = M.KINGS_GATE.x, z0 = O.z1 - 3, z1 = O.z1 + t + 4,
                                    half = M.KINGS_GATE.half, height = h, outward = 1, passage = { half = 2.75, height = 6 },
                                    tower = { radius = 5, height = 16 }, material = "stone", floor_material = "stone_floor" }
+  dress_gate(M.KINGS_GATE, O.z1 + t + 4, 1, 5, 16, 6)
   Castle.wall_stair("stone", { axis = "x", sign = 1, start = 18, w0 = O.z1 - 1.8, w1 = O.z1, base = 0, top = h })
   Castle.wall_stair("stone", { axis = "x", sign = -1, start = -18, w0 = O.z0, w1 = O.z0 + 1.8, base = 0, top = h })
   Castle.hall{ x0 = -76, z0 = -30, x1 = -64, z1 = 0, height = 4.5, ridge = 3, material = "planks",
@@ -510,6 +543,7 @@ function M.build()
                       thickness = 0.16, material = "oak", portal = "keep.door" }
   inner_ward()
   outer_ward()
+  M.guards = garrison()
   M.trees = countryside()
   M.people = people()
   prts.scene.cells()

@@ -72,5 +72,8 @@ return {
     t.place(-32, 0, -34, math.atan(-32, -34), 0.12)
     t.ticks(3)
     t.screenshot("21_inner_ward")
+    t.place(-6, 0, 135, math.atan(6, 135 - 106), 0.14)
+    t.ticks(3)
+    t.screenshot("22_kings_gate")
   end,
 }
