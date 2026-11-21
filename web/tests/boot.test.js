@@ -96,7 +96,7 @@ module.exports = [
       expect(first.musicFade === 0, `the music's fade-in ran on before the click (${first.musicFade})`);
       await page.waitForTimeout(500);
       expect(last.mixed === 0 && last.musicFade === 0 && last.frames > first.frames,
-        'the held music moved on while waiting for the click');
+        `the held music moved on while waiting for the click (before ${JSON.stringify(first)}, after ${JSON.stringify(last)})`);
 
       const view = page.viewportSize();
       await page.mouse.click(view.width * 0.5, view.height * 0.9);
