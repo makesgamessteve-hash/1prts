@@ -13,6 +13,7 @@
 #include "prts/prts_jobs.h"
 #include "prts/prts_platform.h"
 #include "prts/prts_model.h"
+#include "prts/prts_nav.h"
 #include "prts/prts_scene.h"
 #include "prts/prts_script.h"
 #include "prts/prts_touch.h"
@@ -66,6 +67,8 @@ struct prts_engine {
     prts_commander commander;
     bool has_commander;
     float feel_motion; /* camera motion setting (0..1), given to the commander every tick */
+    prts_nav *nav;          /* the map's navigation grid (prts.nav.build), or NULL */
+    prts_agents *agents;    /* units walking the grid */
     prts_platform *platform;
     prts_gfx *gfx;
     prts_audio *audio;
@@ -153,6 +156,9 @@ void prts_engine_finish_scene(prts_engine *e);
 void prts_engine_open_ui_api(prts_engine *e);
 void prts_engine_open_app_api(prts_engine *e);
 void prts_engine_open_settings_api(prts_engine *e);
+/* api_nav.c: prts.nav and prts.agent */
+void prts_engine_open_nav_api(prts_engine *e);
+int prts_engine_tick_agents(prts_engine *e, float dt, prts_entity *arrived, int max);
 void prts_engine_load_settings(prts_engine *e);
 /* Binds an action from its default table at index t, then applies the player's overrides. */
 void prts_engine_apply_bindings(lua_State *L, prts_engine *e, const char *id, int t);

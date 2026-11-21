@@ -10,6 +10,7 @@
  *     state: yaw, pitch, vertical speed, eye, eye before, stamina, velocity x, velocity z
  *     flags: 1 on the ground, 2 crouched, 4 against a wall, 8 aiming a teleport, 16 in a jump
  *   u32 entities with script data { u64 entity, plain table }
+ *   agents (prts_agents_write)  u8 has_nav [ navigation blocks (prts_nav_write) ]
  *   u64 FNV-1a checksum of everything before it */
 #include "app/snapshot.h"
 
@@ -159,6 +160,9 @@ bool prts_engine_snapshot_write(prts_engine *e, prts_writer *w, char *err, size_
         w->len = start;
         return false;
     }
+    prts_agents_write(e->agents, w);
+    prts_w_u8(w, e->nav ? 1u : 0u);
+    if (e->nav) prts_nav_write(e->nav, w);
     prts_w_u64(w, prts_hash_bytes(w->data + start, w->len - start));
     return true;
 }
@@ -257,13 +261,31 @@ bool prts_engine_snapshot_read(prts_engine *e, const void *data, size_t size, bo
         if (!lua_istable(L, -1)) r.failed = true;
         lua_rawseti(L, top + 1, (lua_Integer)ent);
     }
-    if (r.failed || r.pos != r.len) {
+    if (r.failed) {
         lua_settop(L, top);
         return snap_fail(err, err_size, "the save is damaged (script data)");
     }
+    prts_agents *agents = prts_agents_create();
+    bool agents_ok = prts_agents_read(agents, &r);
+    bool has_nav = prts_r_u8(&r) != 0;
+    size_t nav_at = r.pos;
+    bool nav_ok = !has_nav || (e->nav && prts_nav_read(e->nav, &r, false));
+    if (!agents_ok || !nav_ok || r.failed || r.pos != r.len) {
+        lua_settop(L, top);
+        prts_agents_destroy(agents);
+        return snap_fail(err, err_size, nav_ok ? "the save is damaged (units)" : "the save does not match this map (navigation)");
+    }
     if (dry_run) {
         lua_settop(L, top);
+        prts_agents_destroy(agents);
         return true;
+    }
+    prts_agents_destroy(e->agents);
+    e->agents = agents;
+    if (has_nav) {
+        prts_reader nr = r;
+        nr.pos = nav_at;
+        prts_nav_read(e->nav, &nr, true);
     }
     lua_setfield(L, LUA_REGISTRYINDEX, PRTS_REG_EDATA);
     r.pos = world_at;

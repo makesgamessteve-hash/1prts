@@ -90,6 +90,7 @@ prts_engine *prts_engine_create(const prts_engine_config *cfg, char *err, size_t
 
     e->world = prts_world_create();
     e->cworld = prts_cworld_create();
+    e->agents = prts_agents_create();
     e->scene = prts_scene_create();
     e->input = prts_input_create(prts_platform_key_from_name);
     if (!cfg->headless) {
@@ -166,6 +167,8 @@ void prts_engine_destroy(prts_engine *e)
     prts_input_destroy(e->input);
     prts_scene_destroy(e->scene);
     prts_cworld_destroy(e->cworld);
+    prts_agents_destroy(e->agents);
+    prts_nav_destroy(e->nav);
     prts_world_destroy(e->world);
     prts_vfs_destroy(e->vfs);
     prts_array_free(&e->move_done);
@@ -221,6 +224,12 @@ void prts_engine_tick(prts_engine *e)
     }
     for (size_t i = 0; i < e->move_done.len; i++) {
         emit_entity_event(e, "move_done", *(prts_entity *)prts_array_at(&e->move_done, i));
+    }
+    /* units walking their paths; arrivals reach scripts as "agent_arrived" */
+    if (prts_agents_count(e->agents)) {
+        prts_entity arrived[256];
+        int n = prts_engine_tick_agents(e, dt, arrived, 256);
+        for (int i = 0; i < n; i++) emit_entity_event(e, "agent_arrived", arrived[i]);
     }
     e->clock.tick++;
     prts_script_set_time(e->script, e->clock.tick, e->clock.tick_seconds);
@@ -382,6 +391,8 @@ uint64_t prts_engine_hash(const prts_engine *e)
                                 ((uint64_t)c->jump_buffer << 8) | ((uint64_t)c->coyote << 16) |
                                 ((uint64_t)c->jumping << 24));
     }
+    prts_agents_hash(e->agents, &h);
+    if (e->nav) prts_nav_hash(e->nav, &h);
     prts_engine_hash_script_data(e, &h);
     return h.h;
 }

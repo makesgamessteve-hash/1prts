@@ -93,6 +93,7 @@ Events sent by the engine:
 | `tick` | tick number | After each simulation tick's systems ran. |
 | `use` | entity, entity name | The commander pressed `use` while looking at a usable entity within reach. |
 | `move_done` | entity, entity name | A move started with `prts.entity.move_to` or `rotate_to` finished. |
+| `agent_arrived` | entity, entity name | An agent reached the last point of its path (`prts.agent.move`, `follow`). |
 | `ui` | surface name, width, height | Every frame, once for each UI surface: the world surfaces (`prts.ui.surface`), then `"screen"`. Handlers draw with `prts.ui`. |
 | `input_scheme` | scheme name | The active input scheme changed (see `prts.input.scheme`). |
 
@@ -235,6 +236,37 @@ actions per scheme (`kbm`, `gamepad`, `touch`, `xr`); their overrides are kept i
 | `prts.commander.impulse{ dip, shake }` | Feedback for the view: `dip` kicks it down (m/s, 0..10) and `shake` adds trauma (0..1; the shake grows with its square and fades by itself). Presentation only: never moves the body or the use ray. Off in XR and with camera motion 0. |
 | `prts.commander.set_feel{ motion }` | How much the view moves on its own (head bob, dips, shake): 0 turns it off, 1 is full. Kept across spawns and loads; the "Camera motion" game option sets it. |
 | `prts.commander.target()` | `entity, name` of the usable entity in view within reach (in XR: on the pointer ray of the pointer hand), or nothing (also before the commander is spawned). The ray stops at the first box it hits, solid or `use_only`, and the entity owning that box counts if it is usable. |
+
+## `prts.nav` and `prts.agent`
+
+Navigation for units. The grid covers a rectangle of the map in square cells. A cell is walkable
+if a body fits on the lowest ground under it (terrain or the top of a box). Units walk at ground
+level, not on roofs or wall tops. Neighbouring cells are joined if the ground between them rises
+no more than 45 degrees. Paths are A* over 8 neighbours (no corner cutting), smoothed by line
+of sight. The same request always gives the same path.
+
+| Function | Description |
+|---|---|
+| `prts.nav.build{ min = {x, z}, max = {x, z}, cell = 2 }` | Builds the grid from the map's collision and terrain (call it after the map is finished). Returns `cols, rows`. |
+| `prts.nav.info()` | `{ cols, rows, cell }`, or nothing without a grid. |
+| `prts.nav.path(x0, z0, x1, z1)` | `{ {x, z}, ... }` (without the start), or `nil` if there is no way. A start or goal in a blocked cell moves to the nearest walkable one. |
+| `prts.nav.walkable(x, z)` | `true` on a walkable, unblocked cell. |
+| `prts.nav.height(x, z)` | The cell's ground height, or nothing. |
+| `prts.nav.clear_line(x0, z0, x1, z1)` | `true` if a straight walk stays on joined walkable cells. |
+| `prts.nav.block{ min, max }`, `prts.nav.unblock{ min, max }` | Blocks or frees the cells under a rectangle (a building). Blocks count, so overlapping buildings free cleanly. Returns the number of cells. Saved with the game. |
+| `prts.agent.add(e, { speed = 1.4, radius = 0.35 })` | Makes an entity an agent (or changes its speed and radius). Agents live in the world frame. |
+| `prts.agent.move(e, x, z)` | Finds a path and walks it (straight there without a grid). Returns `true` if there was a path. |
+| `prts.agent.follow(e, { {x, z}, ... })` | Walks the given points. |
+| `prts.agent.stop(e)`, `prts.agent.remove(e)` | Stops; stops being an agent (`remove` returns whether it was one). |
+| `prts.agent.info(e)` | `{ moving, speed, radius, tx, tz, left }`, or nothing. `tx, tz` is where it is heading, `left` the points left. |
+| `prts.agent.set_speed(e, s)` | Changes the speed (0..100 m/s). |
+| `prts.agent.near(x, z, r [, max = 64])` | Agents within `r`, nearest first (ties by handle). |
+| `prts.agent.count()` | How many agents there are. |
+
+Each tick the engine moves every agent along its path on the grid's ground, parts agents that
+overlap, turns them to face where they go, and fires `agent_arrived` at the end of a path.
+Agents of despawned entities are dropped. Agents and blocks are simulation state: they are in
+the state hash and in saves.
 
 ## `prts.xr`
 

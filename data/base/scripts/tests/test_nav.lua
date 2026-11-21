@@ -1,0 +1,71 @@
+-- Lua unit tests: prts.nav and prts.agent on the Proving Ground (the keep in the way).
+-- MIT License.
+
+T.case("agents without a grid walk straight; the grid's API needs a grid", function()
+  T.eq(prts.nav.info(), nil, "no grid yet")
+  T.fails(function() prts.nav.path(0, 0, 1, 1) end, "path without a grid")
+  T.fails(function() prts.nav.walkable(0, 0) end)
+  local e = prts.entity.spawn{ name = "test.walker", pos = { 40, 0, 40 } }
+  prts.agent.add(e)
+  T.eq(prts.agent.move(e, 45, 40), true, "straight there")
+  local info = prts.agent.info(e)
+  T.eq(info.moving, true)
+  T.eq(info.tx, 45)
+  T.near(info.speed, 1.4, 1e-6, "the default speed")
+  prts.agent.remove(e)
+  prts.entity.despawn(e)
+end)
+
+T.case("paths around the keep, blocking, and agents on the grid", function()
+  local cols, rows = prts.nav.build{ min = { -40, -40 }, max = { 40, 40 }, cell = 1 }
+  T.eq(cols, 80)
+  T.eq(rows, 80)
+  T.eq(prts.nav.info().cell, 1)
+  T.eq(prts.nav.walkable(0, 0), false, "inside the keep's walls")
+  T.eq(prts.nav.walkable(0, 30), true, "the inner ward")
+  T.is_true(prts.nav.height(0, 30) ~= nil)
+  T.eq(prts.nav.height(1000, 0), nil)
+  T.eq(prts.nav.clear_line(-25, 0, 25, 0), false, "through the keep")
+  local path = prts.nav.path(-25, 0, 25, 0)
+  T.is_true(#path > 1, "around it")
+  T.eq(path[#path][1], 25)
+  for _, p in ipairs(path) do T.eq(prts.nav.walkable(p[1], p[2]), true) end
+  T.eq(prts.nav.path(-25, 0, 2000, 0), nil, "outside the grid")
+  T.is_true(prts.nav.block{ min = { 20, -5 }, max = { 30, 5 } } > 0)
+  T.eq(prts.nav.walkable(25, 0), false, "blocked")
+  prts.nav.unblock{ min = { 20, -5 }, max = { 30, 5 } }
+  T.eq(prts.nav.walkable(25, 0), true, "free again")
+  T.fails(function() prts.nav.block{ min = { 1 } } end, "bad rectangle")
+  T.fails(function() prts.nav.block(5) end)
+  -- agents
+  local a = prts.entity.spawn{ name = "test.a", pos = { -25, 0, 0 } }
+  local b = prts.entity.spawn{ name = "test.b", pos = { -24, 0, 0 } }
+  prts.agent.add(a, { speed = 3, radius = 0.4 })
+  prts.agent.add(b, { speed = 2 })
+  T.eq(prts.agent.count() >= 2, true)
+  T.eq(prts.agent.move(a, 25, 0), true)
+  T.is_true(prts.agent.info(a).left > 1, "a path with turns")
+  T.eq(prts.agent.move(a, 2000, 0), false, "no path")
+  prts.agent.follow(b, { { -20, 5 }, { -15, 5 } })
+  T.eq(prts.agent.info(b).tx, -15)
+  T.fails(function() prts.agent.follow(b, { 5 }) end, "a point must be { x, z }")
+  prts.agent.stop(b)
+  T.eq(prts.agent.info(b).moving, false)
+  prts.agent.set_speed(b, 4)
+  T.eq(prts.agent.info(b).speed, 4)
+  T.fails(function() prts.agent.set_speed(b, -1) end)
+  T.fails(function() prts.agent.add(b, { speed = -1 }) end)
+  T.fails(function() prts.agent.add(b, { radius = 0 }) end)
+  local near = prts.agent.near(-25, 0, 3)
+  T.eq(near[1], a, "nearest first")
+  T.eq(near[2], b)
+  T.eq(#prts.agent.near(-25, 0, 3, 1), 1)
+  T.fails(function() prts.agent.near(0, 0, 1, 0) end, "max")
+  local plain = prts.entity.spawn{ name = "test.plain" }
+  T.fails(function() prts.agent.move(plain, 0, 0) end, "not an agent")
+  T.eq(prts.agent.info(plain), nil)
+  T.eq(prts.agent.remove(a), true)
+  T.eq(prts.agent.remove(a), false)
+  prts.agent.remove(b)
+  for _, e in ipairs({ a, b, plain }) do prts.entity.despawn(e) end
+end)

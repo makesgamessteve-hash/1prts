@@ -399,9 +399,12 @@ UTEST(snapshot, damaged_sections_are_named)
     const unsigned char tails[][14] = {
         {1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 2},    /* one entity whose data is `true` */
         {5, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 6, 0}, /* five entities, data cut short */
-        {0, 0, 0, 0, 7},                            /* trailing bytes */
+        {0, 0, 0, 0, 0, 0, 0, 0, 0, 7},             /* no data, no agents, no grid, then trailing bytes */
+        {0, 0, 0, 0, 1, 0, 0, 0, 5},                /* one agent, cut short */
+        {0, 0, 0, 0, 0, 0, 0, 0, 1, 9},             /* a navigation grid this map does not have */
     };
-    const size_t tail_sizes[] = {13, 14, 5};
+    const size_t tail_sizes[] = {13, 14, 10, 9, 10};
+    const char *why[] = {"(script data)", "(script data)", "(units)", "(units)", "(navigation)"};
     for (size_t i = 0; i < PRTS_ARRAY_COUNT(tails); i++) {
         edit.len = 0;
         prts_w_bytes(&edit, w.data, edata_at);
@@ -409,12 +412,14 @@ UTEST(snapshot, damaged_sections_are_named)
         prts_w_u64(&edit, 0);
         reseal(&edit);
         ASSERT_FALSE(load_bytes(e, edit.data, edit.len, err));
-        ASSERT_TRUE(strstr(err, "(script data)") != NULL);
+        ASSERT_TRUE(strstr(err, why[i]) != NULL);
     }
-    /* the untouched prefix with an empty script data section loads */
+    /* the untouched prefix with empty script data, no agents and no grid loads */
     edit.len = 0;
     prts_w_bytes(&edit, w.data, edata_at);
     prts_w_u32(&edit, 0);
+    prts_w_u32(&edit, 0);
+    prts_w_u8(&edit, 0);
     prts_w_u64(&edit, 0);
     reseal(&edit);
     ASSERT_TRUE(load_bytes(e, edit.data, edit.len, err));

@@ -137,6 +137,7 @@ void prts_engine_ui_create(prts_engine *e)
     prts_engine_open_settings_api(e);
     prts_engine_open_ui_api(e);
     prts_engine_open_app_api(e);
+    prts_engine_open_nav_api(e);
 }
 
 void prts_engine_ui_destroy(prts_engine *e)
