@@ -1,6 +1,8 @@
 -- Spec (commander-locomotion): Opening a door; the commander walks into the great hall.
+-- ctest-labels: smoke
 return {
   name = "commander opens the keep's door and enters the great hall",
+  final_cell = "keep.hall",
   run = function(t)
     local c = t.commander()
     t.place("keep_door")

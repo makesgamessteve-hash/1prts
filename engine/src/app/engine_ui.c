@@ -198,7 +198,10 @@ static void move_observer(prts_engine *e, float dt)
 static void set_platform_modes(prts_engine *e, bool console_open)
 {
     if (!e->platform) return;
-    bool relative = !e->cfg.scenario && !e->ui_modal && !console_open && (e->has_commander || e->observer.active);
+    /* the mouse is captured for looking, but never in the touch scheme: fingers need absolute
+     * positions, and browsers report touches under pointer lock at a fixed point */
+    bool relative = !e->cfg.scenario && !e->ui_modal && !console_open && (e->has_commander || e->observer.active) &&
+                    prts_input_scheme_active(e->input) != PRTS_SCHEME_TOUCH;
     if (relative != e->mouse_relative) {
         prts_platform_set_relative_mouse(e->platform, relative);
         e->mouse_relative = relative;

@@ -1,8 +1,10 @@
 -- Spec (commander-locomotion): Stairs. From the war room floor the commander walks into the
 -- keep's spiral stair and keeps moving forward (turning with it) until they come out on the
 -- roof through the hatch. MIT License.
+-- ctest-labels: smoke
 return {
   name = "the spiral stair leads from the war room floor to the roof",
+  final_cell = "outside",
   run = function(t)
     local map = require("maps.proving_ground")
     local sp, c = map.SPIRAL, t.commander()

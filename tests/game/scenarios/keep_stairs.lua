@@ -1,6 +1,8 @@
 -- Spec (commander-locomotion): Stairs. Two flights and a landing up to the second floor.
+-- ctest-labels: smoke
 return {
   name = "commander climbs the switchback stairs to the second floor",
+  final_cell = "keep.stairs",
   run = function(t)
     local c = t.commander()
     t.place("stair_base")

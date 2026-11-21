@@ -150,6 +150,11 @@ int prts_audio_device_queued(prts_audio_device *d);
 bool prts_audio_device_write(prts_audio_device *d, const float *stereo, int frames);
 /* Resumes a device the platform paused (browsers start audio suspended). */
 void prts_audio_device_resume(prts_audio_device *d);
+/* Pauses the device: it plays nothing until prts_audio_device_resume. */
+void prts_audio_device_pause(prts_audio_device *d);
+/* False while the device is paused or, in a browser, audio has not been unlocked by a user
+ * gesture yet (or the browser suspended it). */
+bool prts_audio_device_running(prts_audio_device *d);
 
 /* --- the audio system: mixer + device (or null device) + sound cache + music --------- */
 
@@ -174,11 +179,19 @@ bool prts_audio_is_placeholder(const prts_audio *a, prts_voice_id v);
 bool prts_audio_set_muffle(prts_audio *a, prts_voice_id v, float amount);
 void prts_audio_set_listener(prts_audio *a, prts_dvec3 pos, float yaw);
 /* Called once per frame: mixes ahead to keep the device fed, or advances the null device
- * by `real_seconds`. */
+ * by `real_seconds`. While the device is not running (paused, or a browser before the first
+ * user gesture) nothing is mixed: every voice keeps its place, so sounds and music started
+ * meanwhile are held and begin from their start once it runs (spec: Browser audio unlock). */
 void prts_audio_update(prts_audio *a, double real_seconds);
+/* True if the last update held the output because the device was not running. */
+bool prts_audio_held(const prts_audio *a);
+/* Frames mixed (played or queued for the device) since the start. */
+uint64_t prts_audio_frames_mixed(const prts_audio *a);
 /* Browser audio unlock: call from a user gesture. */
 void prts_audio_resume(prts_audio *a);
-/* RMS level of each output channel over the audio mixed by the last update. */
+/* Pauses the device until prts_audio_resume (start requests are held meanwhile). */
+void prts_audio_pause(prts_audio *a);
+/* RMS level of each output channel over the audio mixed by the last update (0 while held). */
 void prts_audio_levels(const prts_audio *a, float *left, float *right);
 
 #endif

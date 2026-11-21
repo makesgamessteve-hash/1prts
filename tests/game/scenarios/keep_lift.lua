@@ -1,8 +1,10 @@
 -- Spec (commander-locomotion): Riding the keep's hoist lift to the war room.
 -- Also covers simulation-core "Riding a moving frame" and xr "Pulling the lift lever"
 -- (the same use path an XR controller ray triggers).
+-- ctest-labels: smoke
 return {
   name = "commander rides the keep's hoist lift to the war room",
+  final_cell = "keep.floor3",
   max_seconds = 60,
   run = function(t)
     local c = t.commander()

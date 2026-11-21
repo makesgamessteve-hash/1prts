@@ -156,7 +156,9 @@ by an entity (`entity = e`) is in that entity's frame and moves with it.
 Sound effects and music from `sounds/` and `music/` (WAV or OGG Vorbis). Buses: `"master"`,
 `"effects"`, `"voice"`, `"music"`, `"ambience"`. Positional sounds fall off with distance, pan
 with the commander's head, and are muffled automatically when every portal between their cell
-and the commander's cell is closed. Audio never affects the simulation.
+and the commander's cell is closed. Audio never affects the simulation. In a browser nothing can
+be heard before the player's first click, tap or key press; sounds and music started before then
+are held and begin from their start at that moment, so scripts can start the menu music at boot.
 
 | Function | What it does |
 |---|---|
@@ -167,7 +169,7 @@ and the commander's cell is closed. Audio never affects the simulation.
 | `prts.audio.volume(bus)` | A bus volume. |
 | `prts.audio.muffle(h, amount)` | Muffles a sound by script (0..1: quieter and duller). The walls' own muffling (`occlusion`) still applies; the stronger one is heard. Returns `true` if the sound is playing. |
 | `prts.audio.voice(h)` | For tests and interfaces: `{ bus, volume, muffle, occlusion, fade, left, right, cutoff, loop, positional, stopping, placeholder }`, or `nil` if the sound is not playing. |
-| `prts.audio.info()` | For tests: `{ device = "sdl" or "null", rate, voices, left, right, music }` (`left`/`right`: the level of the last mixed block). |
+| `prts.audio.info()` | For tests: `{ device = "sdl" or "null", rate, voices, left, right, held, mixed, music }` (`left`/`right`: the level of the last mixed block; `held`: `true` while the device does not play yet, as in a browser before the first click, tap or key press; `mixed`: seconds of audio mixed so far). |
 
 ## `prts.entity`
 
@@ -334,8 +336,12 @@ runs of developer builds and can be turned on for tests with `--hot-reload`.
 ## Scenario tests (`t`)
 
 A scenario file (run with `1stprts --headless --scenario <file>`) returns
-`{ name = ..., max_seconds = ..., run = function(t) ... end }`. `run` is a coroutine that drives the
-game through the same actions as real input; `t` offers:
+`{ name = ..., max_seconds = ..., final_cell = ..., run = function(t) ... end }`. `run` is a
+coroutine that drives the game through the same actions as real input. When it ends, the runner
+reports the result with the commander's final cell and the state hash
+(`scenario PASSED (410 ticks, final cell 'keep.floor3', state hash ...)`); a scenario that names a
+`final_cell` fails when the commander ends in any other cell. A `-- ctest-labels: smoke` line puts
+a scenario into the commander-is-there smoke set, which also runs in the web build. `t` offers:
 
 | Function | What it does |
 |---|---|

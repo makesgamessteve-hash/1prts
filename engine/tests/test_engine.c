@@ -225,7 +225,8 @@ UTEST(engine, scenario_outcomes)
     char err[1024];
     const char *cases[][2] = {{FIX "/scenarios/helpers.lua", "0"},
                               {FIX "/scenarios/fails.lua", "1"},
-                              {FIX "/scenarios/timeout.lua", "1"}};
+                              {FIX "/scenarios/timeout.lua", "1"},
+                              {FIX "/scenarios/wrong_cell.lua", "1"}};
     for (size_t i = 0; i < PRTS_ARRAY_COUNT(cases); i++) {
         prts_engine *e = boot(PRTS_TEST_DATA, NULL, cases[i][0], true, err);
         ASSERT_TRUE(e != NULL);
@@ -235,6 +236,52 @@ UTEST(engine, scenario_outcomes)
         ASSERT_EQ(atoi(cases[i][1]), code);
         prts_engine_destroy(e);
     }
+}
+
+UTEST(engine, scenario_result_with_final_cell_and_hash)
+{
+    /* Spec: Same scenario result on desktop and web. Every run reports passed or failed, the
+     * commander's final cell and the state hash; the web launcher runs it a step at a time. */
+    char err[1024];
+    prts_engine *e = boot(PRTS_TEST_DATA, NULL, FIX "/scenarios/helpers.lua", true, err);
+    ASSERT_TRUE(e != NULL);
+    prts_engine_status s;
+    prts_engine_get_status(e, &s);
+    ASSERT_EQ((int)PRTS_SCENARIO_RUNNING, s.scenario);
+    ASSERT_STREQ("", s.scenario_cell);
+    ASSERT_EQ((uint64_t)0, s.scenario_hash);
+    int steps = 0;
+    while (prts_engine_run_step(e)) steps++;
+    ASSERT_FALSE(prts_engine_run_step(e)); /* stays over */
+    ASSERT_GT(steps, 1);
+    prts_engine_get_status(e, &s);
+    ASSERT_EQ((int)PRTS_SCENARIO_PASSED, s.scenario);
+    ASSERT_STREQ("outside", s.scenario_cell);
+    ASSERT_STREQ("", s.scenario_message);
+    ASSERT_EQ(prts_engine_hash(e), s.scenario_hash);
+    ASSERT_GT(s.scenario_ticks, (uint64_t)1);
+    ASSERT_TRUE(prts_engine_audio(e) == e->audio && prts_engine_ui(e) == e->ui);
+    prts_engine_destroy(e);
+
+    /* Spec: Failing scenario. A scenario naming its final cell fails with the expected and
+     * actual cell when the commander ends elsewhere. */
+    e = boot(PRTS_TEST_DATA, NULL, FIX "/scenarios/wrong_cell.lua", true, err);
+    ASSERT_TRUE(e != NULL);
+    prts_log_set_min_level(PRTS_LOG_ERROR + 1);
+    ASSERT_EQ(1, prts_engine_run(e));
+    prts_log_set_min_level(PRTS_LOG_INFO);
+    prts_engine_get_status(e, &s);
+    ASSERT_EQ((int)PRTS_SCENARIO_FAILED, s.scenario);
+    ASSERT_STREQ("outside", s.scenario_cell);
+    ASSERT_STREQ("expected the commander to end in cell 'keep.hall', but they are in 'outside'", s.scenario_message);
+    prts_engine_destroy(e);
+
+    /* not a scenario run: no result */
+    e = boot(PRTS_TEST_DATA, NULL, NULL, true, err);
+    ASSERT_TRUE(e != NULL);
+    prts_engine_get_status(e, &s);
+    ASSERT_EQ((int)PRTS_SCENARIO_NONE, s.scenario);
+    prts_engine_destroy(e);
 }
 
 UTEST(engine, lua_test_runner_reports_failures)

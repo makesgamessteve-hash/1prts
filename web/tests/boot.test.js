@@ -1,7 +1,7 @@
 /* 1stPRTS browser tests: desktop Chromium boot, keyboard input, audio unlock, no-XR control.
  * MIT License. */
 'use strict';
-const { expect, newPage, openGame, waitFor, distance } = require('./lib/harness');
+const { TestFailure, expect, newPage, openGame, waitFor, distance } = require('./lib/harness');
 
 module.exports = [
   {
@@ -55,6 +55,55 @@ module.exports = [
       expect(before === 0, `${before} gestures before any input`);
       await page.mouse.click(300, 200);
       await waitFor(page, () => window.prts_test.gestures() >= 1, null, 'the gesture to reach the engine');
+    },
+  },
+  {
+    // Spec "First click starts music" and requirement "Browser audio unlock" (task 11.5): the menu
+    // asks for its music at boot, before any click. The browser keeps audio suspended, so the
+    // engine mixes nothing and holds the music at its start (not lost, not running on silently);
+    // the first click unlocks audio and the same music starts, fading in from its beginning.
+    // Playwright's page.evaluate counts as a user gesture (and SDL resumes audio after one), so
+    // until the click the page reports its state itself, on the console.
+    name: 'before the first click audio is held; the click starts the menu music',
+    init: () => {
+      setInterval(() => {
+        const t = window.prts_test;
+        if (!t || t.state() !== 'running') return;
+        console.log('prts-audio ' + JSON.stringify({ ...t.audio(), frames: t.frames(), gestures: t.gestures(),
+          activated: navigator.userActivation.hasBeenActive }));
+      }, 100);
+    },
+    async run(env, context) {
+      const page = await newPage(context);
+      let last = null;
+      page.on('console', (msg) => {
+        if (msg.text().startsWith('prts-audio ')) last = JSON.parse(msg.text().slice(11));
+      });
+      const until = async (cond, what, timeout) => {
+        for (const t0 = Date.now(); !(last && cond(last)); await new Promise((r) => setTimeout(r, 50))) {
+          if (Date.now() - t0 > timeout) throw new TestFailure(`timed out waiting for ${what} (${JSON.stringify(last)})`);
+        }
+      };
+      await page.goto(env.server.url + '1stprts.html?test=1'); // the front-end menu
+      await until((a) => a.frames > 20, 'the menu to run for a while', 90000);
+      await page.waitForTimeout(500);
+      const first = last;
+      expect(!first.activated && first.gestures === 0, 'the page had a user gesture before the click');
+      expect(first.context === 'suspended', `the browser's audio is "${first.context}" before any click`);
+      expect(first.music, 'the menu did not ask for its music');
+      expect(first.held && first.mixed === 0, `audio was mixed before the click (held ${first.held}, ${first.mixed} s)`);
+      expect(first.left === 0 && first.right === 0, `levels ${first.left}, ${first.right} before the click`);
+      expect(first.musicFade === 0, `the music's fade-in ran on before the click (${first.musicFade})`);
+      await page.waitForTimeout(500);
+      expect(last.mixed === 0 && last.musicFade === 0 && last.frames > first.frames,
+        'the held music moved on while waiting for the click');
+
+      const view = page.viewportSize();
+      await page.mouse.click(view.width * 0.5, view.height * 0.9);
+      await until((a) => a.context === 'running' && !a.held && a.mixed > 0.5 && a.left > 0.001,
+        'the menu music to be heard after the click', 15000);
+      expect(last.gestures >= 1 && last.music && last.musicFade > 0, `the music is not fading in: ${JSON.stringify(last)}`);
+      expect(page.prtsErrors.length === 0, `errors on the page: ${page.prtsErrors.join(' | ')}`);
     },
   },
   {

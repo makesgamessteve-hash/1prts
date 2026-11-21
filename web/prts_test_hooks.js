@@ -8,6 +8,15 @@
 
   var SCHEMES = ['kbm', 'gamepad', 'touch', 'xr'];
   var STATES = ['booting', 'running', 'stopped'];
+  var SCENARIO_STATES = ['none', 'running', 'passed', 'failed'];
+
+  // ?scenario=<name> runs tests/game/scenarios/<name>.lua (packed into test builds' data at
+  // /tests/scenarios) headless, the way CTest does on desktop, a slice per browser frame.
+  var scenario = new URLSearchParams(window.location.search).get('scenario');
+  if (scenario && /^[a-z0-9_]{1,40}$/.test(scenario)) {
+    Module['arguments'] = [].concat(Module['arguments'] || [],
+      ['--headless', '--scenario', '/tests/scenarios/' + scenario + '.lua']);
+  }
 
   function ready() {
     return !!Module['prtsRuntimeReady'] && typeof Module['_prts_test_state'] === 'function';
@@ -53,6 +62,32 @@
       if (!ready()) return null;
       var p = Module['ccall']('prts_test_user_read', 'number', ['string'], [path]);
       return p ? Module['UTF8ToString'](p) : null;
+    },
+    // The scenario run (?scenario=<name>): state "none", "running", "passed" or "failed", and once
+    // it has ended the commander's final cell, the state hash and why it failed.
+    scenario: function () {
+      if (!ready()) return { state: 'none' };
+      var text = function (i) { return Module['UTF8ToString'](Module['_prts_test_scenario_text'](i)); };
+      return {
+        state: SCENARIO_STATES[Module['_prts_test_scenario'](0)] || 'none',
+        ticks: Module['_prts_test_scenario'](1),
+        cell: text(0), hash: text(1), message: text(2),
+      };
+    },
+    // Audio: held (nothing mixed yet: the browser has not unlocked audio), seconds mixed, output
+    // levels, voices, music playing and its fade-in, and the browser's AudioContext state.
+    audio: function () {
+      var f = function (i) { return ready() ? Module['_prts_test_audio'](i) : null; };
+      var sdl = Module['SDL3'];
+      return {
+        held: f(0) === 1, mixed: f(1), left: f(2), right: f(3), voices: f(4),
+        music: f(5) === 1, musicFade: num(f(6)),
+        context: sdl && sdl.audioContext ? sdl.audioContext.state : 'none',
+      };
+    },
+    // True if a text drawn on the screen in the last frame contains `text` (like t.ui_has).
+    uiHas: function (text) {
+      return ready() && Module['ccall']('prts_test_ui_has', 'number', ['string'], [String(text)]) === 1;
     },
     // Number of finished IndexedDB syncs, and whether one is still pending or running.
     userArea: function () {

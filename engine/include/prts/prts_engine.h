@@ -51,6 +51,18 @@ bool prts_engine_is_batch(const prts_engine *e);
 int prts_engine_exit_code(const prts_engine *e);
 uint64_t prts_engine_hash(const prts_engine *e);
 
+/* One run the batch way: a frame at the fixed tick length. Returns false once the run is
+ * over (prts_engine_run calls it until then; the web launcher calls it from the browser's
+ * frame loop, a slice at a time, so the page stays responsive). */
+bool prts_engine_run_step(prts_engine *e);
+
+typedef enum prts_scenario_state {
+    PRTS_SCENARIO_NONE = 0, /* not a scenario run */
+    PRTS_SCENARIO_RUNNING,
+    PRTS_SCENARIO_PASSED,
+    PRTS_SCENARIO_FAILED
+} prts_scenario_state;
+
 /* Read-only view of the running engine for tools and the browser test hooks (web/). */
 typedef struct prts_engine_status {
     uint64_t tick;        /* simulation ticks run */
@@ -59,9 +71,19 @@ typedef struct prts_engine_status {
     double commander[3];  /* world position of the commander's feet */
     float yaw, pitch;     /* radians */
     int scheme;           /* active prts_input_scheme */
+    /* scenario runs (--scenario): the result, filled in once the scenario has ended */
+    int scenario;                 /* prts_scenario_state */
+    uint64_t scenario_ticks;      /* ticks the scenario ran */
+    const char *scenario_cell;    /* the commander's cell at the end ("" before) */
+    const char *scenario_message; /* why it failed ("" otherwise) */
+    uint64_t scenario_hash;       /* the state hash at the end (0 before) */
 } prts_engine_status;
+/* The strings point into the engine and stay valid until it is destroyed. */
 void prts_engine_get_status(const prts_engine *e, prts_engine_status *out);
 /* The engine's virtual file system, including the user area. */
 prts_vfs *prts_engine_vfs(prts_engine *e);
+/* The engine's audio system and screen UI (read-only use by tools and the browser test hooks). */
+struct prts_audio *prts_engine_audio(prts_engine *e);
+struct prts_ui *prts_engine_ui(prts_engine *e);
 
 #endif

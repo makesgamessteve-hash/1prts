@@ -1,6 +1,7 @@
 /* 1stPRTS engine: the audio device on an SDL3 audio stream. MIT License. */
 #include <SDL3/SDL.h>
 
+#include "platform/web_glue.h"
 #include "prts/prts_audio.h"
 #include "prts/prts_log.h"
 
@@ -55,3 +56,18 @@ bool prts_audio_device_write(prts_audio_device *d, const float *stereo, int fram
 }
 
 void prts_audio_device_resume(prts_audio_device *d) { SDL_ResumeAudioStreamDevice(d->stream); }
+
+void prts_audio_device_pause(prts_audio_device *d) { SDL_PauseAudioStreamDevice(d->stream); }
+
+bool prts_audio_device_running(prts_audio_device *d)
+{
+    if (SDL_AudioStreamDevicePaused(d->stream)) return false;
+#if defined(__EMSCRIPTEN__)
+    /* Browsers keep the AudioContext suspended until the first user gesture. SDL then plays
+     * nothing but still takes queued audio from the stream at the real-time rate (and throws
+     * it away), so whatever is mixed before the unlock would be lost. */
+    return prts_web_audio_running() != 0;
+#else
+    return true;
+#endif
+}

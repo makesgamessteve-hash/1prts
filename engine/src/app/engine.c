@@ -171,6 +171,7 @@ void prts_engine_destroy(prts_engine *e)
     prts_vfs_destroy(e->vfs);
     prts_array_free(&e->move_done);
     for (size_t i = 0; i < PRTS_ARRAY_COUNT(e->mod_versions); i++) prts_free(e->mod_versions[i]);
+    prts_free(e->scenario_message);
     prts_free(e->data_dir);
     prts_free(e->user_dir);
     prts_free(e);
@@ -313,15 +314,20 @@ void prts_engine_event(prts_engine *e, const void *sdl_event)
 
 bool prts_engine_is_batch(const prts_engine *e) { return e->cfg.headless || e->cfg.test_lua; }
 
+bool prts_engine_run_step(prts_engine *e)
+{
+    if (e->quit) return false;
+    prts_platform_begin_frame(&e->dev);
+    if (e->platform && prts_platform_poll(e->platform, &e->dev)) e->quit = true;
+    if (!prts_engine_frame(e, e->clock.tick_seconds)) return false;
+    if (!e->cfg.scenario && !e->cfg.replay && e->cfg.ticks <= 0 && e->cfg.headless) e->quit = true;
+    return !e->quit;
+}
+
 int prts_engine_run(prts_engine *e)
 {
     if (e->cfg.test_lua) return prts_engine_run_lua_tests(e);
-    while (!e->quit) {
-        prts_platform_begin_frame(&e->dev);
-        if (e->platform && prts_platform_poll(e->platform, &e->dev)) e->quit = true;
-        if (!prts_engine_frame(e, e->clock.tick_seconds)) break;
-        if (!e->cfg.scenario && !e->cfg.replay && e->cfg.ticks <= 0 && e->cfg.headless) e->quit = true;
-    }
+    while (prts_engine_run_step(e)) {}
     return e->exit_code;
 }
 
@@ -333,6 +339,11 @@ void prts_engine_get_status(const prts_engine *e, prts_engine_status *out)
     out->tick = e->clock.tick;
     out->frames = e->frames;
     out->scheme = (int)prts_input_scheme_active(e->input);
+    out->scenario = e->scenario_state;
+    out->scenario_ticks = e->scenario_ticks;
+    out->scenario_cell = e->scenario_cell;
+    out->scenario_message = e->scenario_message ? e->scenario_message : "";
+    out->scenario_hash = e->scenario_hash;
     out->has_commander = e->has_commander;
     if (!e->has_commander) return;
     prts_dvec3 p = prts_world_pos(e->world, e->commander.entity);
@@ -344,6 +355,8 @@ void prts_engine_get_status(const prts_engine *e, prts_engine_status *out)
 }
 
 prts_vfs *prts_engine_vfs(prts_engine *e) { return e->vfs; }
+prts_audio *prts_engine_audio(prts_engine *e) { return e->audio; }
+prts_ui *prts_engine_ui(prts_engine *e) { return e->ui; }
 
 uint64_t prts_engine_hash(const prts_engine *e)
 {

@@ -730,6 +730,58 @@ UTEST(audio, sdl_device_smoke_test)
     prts_vfs_destroy(vfs);
 }
 
+UTEST(audio, start_requests_wait_until_the_device_runs)
+{
+    /* Spec: Browser audio unlock. A browser lets nothing play before the first user gesture,
+     * yet takes queued audio away meanwhile, so the audio system mixes nothing until the
+     * device runs: sounds and music started before then wait at their first sample. The
+     * paused SDL dummy device stands in for the browser's suspended AudioContext. */
+    prts_vfs *vfs = prts_vfs_create();
+    ASSERT_TRUE(prts_vfs_mount(vfs, AFIX, "fixtures"));
+    prts_audio *a = prts_audio_create(vfs, true, "dummy");
+    ASSERT_TRUE(prts_audio_has_device(a));
+    prts_mixer *m = prts_audio_mixer(a);
+    prts_audio_pause(a);
+    prts_voice_id music = prts_audio_music(a, "tone_440.ogg", 1.0f, 1.0f); /* the menu music, at boot */
+    prts_voice_params p;
+    prts_voice_params_default(&p);
+    prts_voice_id sound = prts_audio_play(a, "tone_16bit.wav", &p);
+    for (int i = 0; i < 60; i++) prts_audio_update(a, 1.0 / 30.0); /* two seconds before the click */
+    ASSERT_TRUE(prts_audio_held(a));
+    ASSERT_EQ((uint64_t)0, prts_audio_frames_mixed(a));
+    float l = 1.0f, r = 1.0f;
+    prts_audio_levels(a, &l, &r);
+    ASSERT_EQ(0.0f, l);
+    ASSERT_EQ(0.0f, r);
+    prts_voice_info info;
+    ASSERT_TRUE(prts_mixer_voice_info(m, music, &info));
+    ASSERT_EQ(0.0f, info.fade); /* the music's one-second fade-in has not begun */
+    ASSERT_TRUE(prts_mixer_playing(m, sound));
+
+    /* the first click: the device runs, and both start from their beginning */
+    prts_audio_resume(a);
+    prts_audio_update(a, 1.0 / 30.0);
+    ASSERT_FALSE(prts_audio_held(a));
+    uint64_t mixed = prts_audio_frames_mixed(a);
+    ASSERT_GT(mixed, (uint64_t)0);
+    ASSERT_LT(mixed, (uint64_t)PRTS_AUDIO_RATE / 4); /* about what the device keeps queued */
+    prts_audio_levels(a, &l, &r);
+    ASSERT_GT(l, 0.01f);
+    ASSERT_TRUE(prts_mixer_voice_info(m, music, &info));
+    ASSERT_GT(info.fade, 0.0f);
+    ASSERT_LT(info.fade, 0.5f);
+    prts_audio_destroy(a);
+
+    /* the null device (headless) is never held */
+    a = prts_audio_create(vfs, false, NULL);
+    prts_audio_pause(a);
+    prts_audio_update(a, 1.0 / 30.0);
+    ASSERT_FALSE(prts_audio_held(a));
+    ASSERT_EQ((uint64_t)(PRTS_AUDIO_RATE / 30), prts_audio_frames_mixed(a));
+    prts_audio_destroy(a);
+    prts_vfs_destroy(vfs);
+}
+
 /* --- the engine: listener on the commander, sounds following entities ------------------------- */
 
 static lua_Integer lua_int(prts_engine *e, const char *code)

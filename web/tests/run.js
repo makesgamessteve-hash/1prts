@@ -12,7 +12,7 @@ const fs = require('fs');
 const path = require('path');
 const { startEnvironment } = require('./lib/harness');
 
-const SUITES = ['boot', 'no_webgl2', 'mobile', 'persistence', 'xr'];
+const SUITES = ['boot', 'no_webgl2', 'mobile', 'persistence', 'xr', 'smoke'];
 
 async function main() {
   const filter = process.argv[2] || '';
