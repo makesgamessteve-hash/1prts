@@ -18,7 +18,7 @@ of them. The look is retro 3D: low-poly models, sprites and voxels.
 > live illusion table, and talk to the castle's people about the silent north
 > ([the story](docs/concept/15-story.md)). Along the way: people sprites, glTF and voxel props,
 > positional sound with muffling behind closed doors, music, subtitles, a front-end menu,
-> options, credits, saves and replays. See [`tasks.md`](openspec/changes/add-engine-foundation/tasks.md) for
+> options, credits, saves and replays. See [`tasks.md`](openspec/changes/archive/2026-11-21-add-engine-foundation/tasks.md) for
 > which M1 tasks are done and how each was verified.
 
 ![Harrowmark at dusk](docs/screenshots/01_approach_at_dusk.png)
@@ -37,7 +37,7 @@ of them. The look is retro 3D: low-poly models, sprites and voxels.
 |---|---|
 | 🎯 **Concept** | [`docs/concept/`](docs/concept/README.md): pitch, pillars, the commander, command and control, scale, units, economy, setting, art, controls, modding, roadmap, open questions, story |
 | 🏗️ **Architecture** | [`docs/architecture/`](docs/architecture/README.md): engine and script split, simulation, rendering, data and Lua API, quality and build |
-| 📐 **Specs** | [`openspec/`](openspec/): spec-driven development with [OpenSpec](https://github.com/Fission-AI/OpenSpec). Changes: [`add-engine-foundation`](openspec/changes/add-engine-foundation/proposal.md) (M1), [`add-harrowmark-and-story`](openspec/changes/add-harrowmark-and-story/proposal.md) (the castle, the story and the title) and [`improve-feel-and-goals`](openspec/changes/improve-feel-and-goals/proposal.md) (what the fun audit found: movement feel, feedback, goals, a blocked stair, load time) |
+| 📐 **Specs** | [`openspec/`](openspec/): spec-driven development with [OpenSpec](https://github.com/Fission-AI/OpenSpec). Changes: [`add-engine-foundation`](openspec/changes/archive/2026-11-21-add-engine-foundation/proposal.md) (M1), [`add-harrowmark-and-story`](openspec/changes/archive/2026-11-21-add-harrowmark-and-story/proposal.md) (the castle, the story and the title) and [`improve-feel-and-goals`](openspec/changes/archive/2026-11-21-improve-feel-and-goals/proposal.md) (what the fun audit found: movement feel, feedback, goals, a blocked stair, load time) |
 | 🎲 **Fun audit** | [`tools/fun/`](tools/fun/README.md): bots with human limits play Harrowmark and the six pillars of the game-fun-evaluator skill are scored. [Results](docs/fun-audit/README.md): 51.5 → 80.5 / 100 after the fixes it led to |
 | ❓ **Open questions** | [`docs/concept/13-open-questions.md`](docs/concept/13-open-questions.md) |
 
@@ -58,7 +58,7 @@ of them. The look is retro 3D: low-poly models, sprites and voxels.
 ```sh
 npm install                 # installs the pinned OpenSpec CLI (dev tool only)
 npx openspec list           # changes in progress
-npx openspec show add-engine-foundation
+npx openspec show commander-locomotion --type spec
 npx openspec validate --strict
 ```
 

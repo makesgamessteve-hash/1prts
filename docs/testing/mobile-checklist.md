@@ -26,7 +26,7 @@ Copy the result table at the end into the milestone review and fill it in.
 
 ## 2. Checks
 
-Each line names the requirement or scenario it covers (`openspec/changes/add-engine-foundation/specs/`).
+Each line names the requirement or scenario it covers (`openspec/changes/archive/2026-11-21-add-engine-foundation/specs/`).
 
 | # | Covers | Steps | Expected |
 |---|---|---|---|

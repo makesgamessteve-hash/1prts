@@ -40,16 +40,16 @@ is missing. References are C unit tests (`suite.case`), test files and scripts (
 
 | Capability | Scenario | Covered by |
 |---|---|---|
-| asset-filesystem | Changing an asset without rebuilding | `vfs.mod_overrides_and_case` (content is read from the data folder at run time), `gfx.windowed_engine_renders_and_recovers_from_broken_content` (a mod's files replace the base ones without a rebuild); a texture-swap restart test is pending (task 7.3) |
+| asset-filesystem | Changing an asset without rebuilding | `vfs.mod_overrides_and_case` (content is read from the data folder at run time), `gfx.windowed_engine_renders_and_recovers_from_broken_content` (a mod's files replace the base ones without a rebuild) |
 | asset-filesystem | Data folder missing | `engine.boot_errors` |
 | asset-filesystem | Mod overrides a base file | `vfs.mod_overrides_and_case`; `data/base/scripts/tests/test_audio.lua` (every door and lift sound path loads) |
 | asset-filesystem | Mod adds a new file | `vfs.merged_listing` |
 | asset-filesystem | Incompatible mod | `engine.mods_are_checked_and_mounted`, `mods.dependencies_and_load_order` |
 | asset-filesystem | Path escape attempt | `vfs.path_rules`, `script.vfs_api` |
 | asset-filesystem | Same behavior across platforms | `vfs.mod_overrides_and_case` |
-| asset-filesystem | Settings persist | `vfs.user_area` (storage); pending (task 12.4) |
+| asset-filesystem | Settings persist | `vfs.user_area` (storage), `settings.video_preset_survives_a_restart` |
 | asset-filesystem | Missing model | `model.missing_and_broken_models_show_a_placeholder`, `engine.game_api_from_scripts` (`prts.scene.model` with a missing path) |
-| asset-filesystem | Credits screen | pending (task 12.2) |
+| asset-filesystem | Credits screen | `tests/game/scenarios/front_end_menu.lua` (with the `credits_demo` mod) |
 | asset-filesystem | Uncredited asset detected | `tools/tests/test_validate_assets.py` |
 | audio-playback | Sound to the left | `audio.sound_to_the_left`, `tests/game/scenarios/audio_keep.lua` |
 | audio-playback | Cross-fade | `audio.cross_fade_between_streams` |
@@ -65,9 +65,9 @@ is missing. References are C unit tests (`suite.case`), test files and scripts (
 | automated-testing | Non-deterministic code is caught | `replay.nondeterministic_script_is_caught_at_the_first_differing_tick` |
 | automated-testing | Visual regression | `tests/golden/golden.lua` (CTest `render_golden`), `tests/golden/fog_changed.lua` (CTest `render_golden_catches_fog_change`) |
 | automated-testing | Emulated phone | `web/tests/mobile.test.js` (Pixel 7 profile: the touch controls are drawn and a right-half drag turns the view) |
-| automated-testing | Windows-only failure | `.github/workflows/ci.yml` (windows job); pending (task 1.5) |
-| commander-locomotion | Release build | pending (task 9.6) |
-| commander-locomotion | Developer observer camera | pending (task 9.6) |
+| automated-testing | Windows-only failure | `.github/workflows/ci.yml` (the windows job builds and runs every test on Windows and fails the run on its own) |
+| commander-locomotion | Release build | `console.release_builds_have_no_way_out_of_the_commanders_eyes`, `tests/game/scenarios/dev_console.lua` |
+| commander-locomotion | Developer observer camera | `tests/game/scenarios/dev_console.lua` |
 | commander-locomotion | Walking speed | `tests/game/scenarios/walk_speed.lua`, `commander.walking_speed_and_crouch` |
 | commander-locomotion | Crouching lowers the view | `commander.walking_speed_and_crouch` |
 | commander-locomotion | Stairs | `tests/game/scenarios/spiral_stair.lua` (the keep's spiral stair to the roof), `tests/game/scenarios/keep_stairs.lua` |
@@ -77,12 +77,12 @@ is missing. References are C unit tests (`suite.case`), test files and scripts (
 | commander-locomotion | Walking during movement | `commander.rides_a_moving_platform_and_uses_things` |
 | commander-locomotion | Reaching the war room | `tests/game/scenarios/keep_lift.lua`, `tests/game/scenarios/war_table.lua`, `tests/game/determinism/keep_walk.lua` |
 | input-actions | Mod adds an action | `engine.game_api_from_scripts`, `data/base/scripts/tests/test_input.lua` |
-| input-actions | Rebinding use | pending (task 8.3) |
+| input-actions | Rebinding use | `settings.rebinding_use_survives_a_restart` |
 | input-actions | Gamepad hot-plug | `platform.events_become_device_state` |
 | input-actions | Phone browser | `web/tests/mobile.test.js` (an emulated phone starts in the touch scheme with the overlay drawn), `engine.status_for_test_hooks_and_scheme_hint` |
 | input-actions | Tablet with a keyboard | `tests/game/scenarios/touch_controls.lua`, `web/tests/mobile.test.js` (a key switches an emulated phone to keyboard and mouse) |
 | input-actions | Touch movement and look | `touch.move_and_look_at_the_same_time`, `tests/game/scenarios/touch_controls.lua`, `web/tests/mobile.test.js` (browser touch events on both halves at once) |
-| input-actions | Prompt update | `input.schemes_and_overrides`; scheme events to scripts are pending (task 8.4) |
+| input-actions | Prompt update | `input.schemes_and_overrides`, `tests/game/scenarios/hud_prompt.lua` (the scheme-changed event and the gamepad prompt) |
 | lua-scripting | Replacing the boot script | `engine.mods_are_checked_and_mounted` |
 | lua-scripting | Stale entity handle | `data/base/scripts/tests/test_input.lua` |
 | lua-scripting | Blocked operating system access | `script.sandbox_blocks_os_access` |
@@ -91,14 +91,14 @@ is missing. References are C unit tests (`suite.case`), test files and scripts (
 | lua-scripting | Endless loop | `script.budget_interrupts_endless_loop` |
 | lua-scripting | Same seed, same random numbers | `script.deterministic_random_and_time` |
 | lua-scripting | Changing a door script while playing | `reload.changing_a_door_script_while_playing`, `reload.modules_are_rerun_in_place_and_on_reload_runs` |
-| lua-scripting | Running a command | pending (task 12.3) |
-| platform-targets | Build on each desktop platform | `.github/workflows/ci.yml` (linux, windows and macos jobs); pending (task 1.5) |
+| lua-scripting | Running a command | `console.commands_run_in_the_game_environment`, `tests/game/scenarios/dev_console.lua` |
+| platform-targets | Build on each desktop platform | `.github/workflows/ci.yml` (linux, windows and macos jobs) |
 | platform-targets | OpenGL context unavailable | `platform.impossible_gl_version_is_reported` |
 | platform-targets | Web bundle runs in a browser | `web/tests/boot.test.js` |
 | platform-targets | Browser without WebGL 2 | `web/tests/no_webgl2.test.js` |
 | platform-targets | Same scenario result on desktop and web | `web/tests/smoke.test.js` (the smoke set, `tests/game/scenarios/keep_lift.lua` among it, run in the browser must pass with the `final_cell` the desktop CTest run ends in: CTest `scenario_keep_lift`, label `smoke`), `engine.scenario_result_with_final_cell_and_hash` |
-| platform-targets | Extract and run | pending (task 14.1) |
-| platform-targets | Licenses included | pending (task 14.1) |
+| platform-targets | Extract and run | `tools/package_smoke.py` (CI `package` job on each desktop platform) |
+| platform-targets | Licenses included | `tools/package_smoke.py` (CI `package` job) |
 | retro-rendering | Changing the preset | `gfx.windowed_engine_renders_and_recovers_from_broken_content`, `tests/golden/golden.lua` (approach_authentic, approach_retro, approach_crisp) |
 | retro-rendering | Turning off dithering | `tests/golden/golden.lua` (hall_default, hall_no_dither, hall_affine, hall_no_snap) |
 | retro-rendering | Mod changes the look | `gfx.windowed_engine_renders_and_recovers_from_broken_content` |

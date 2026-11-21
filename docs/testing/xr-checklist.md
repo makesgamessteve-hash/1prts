@@ -3,7 +3,7 @@
 Run this list on real headsets for every milestone before the change is archived (task 13.7).
 CI enters and leaves a session with a mocked `navigator.xr` (`web/tests/xr.test.js`), which checks
 the glue and the frame-driver handoff but not tracking, optics, comfort or controllers. Every
-scenario of `openspec/changes/add-engine-foundation/specs/xr-presentation/spec.md` is covered
+scenario of `openspec/changes/archive/2026-11-21-add-engine-foundation/specs/xr-presentation/spec.md` is covered
 below.
 
 Headsets, at least:

@@ -33,7 +33,7 @@ virtual file system with mod mounting, Lua 5.4 scripting with a sandbox and hot 
 input with touch and XR, basic 3D audio, headless mode, test framework with coverage gates,
 automated game tests and CI on all platforms.
 
-Full specification: [`openspec/changes/add-engine-foundation/`](../../openspec/changes/add-engine-foundation/proposal.md).
+Full specification: [`openspec/changes/archive/2026-11-21-add-engine-foundation/`](../../openspec/changes/archive/2026-11-21-add-engine-foundation/proposal.md).
 
 ## M2 · First Command
 - Entity simulation at a fixed tick rate; units with movement, weapons, sight and morale.
