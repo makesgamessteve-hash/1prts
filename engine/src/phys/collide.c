@@ -2,6 +2,7 @@
 #include "prts/prts_collide.h"
 
 #include <math.h>
+#include <stdlib.h>
 #include <string.h>
 
 #define EPS 1e-4f
@@ -79,15 +80,47 @@ typedef struct cbox {
     bool enabled;
 } cbox;
 
+/* Static boxes (no owner) live in a bounding volume hierarchy, rebuilt when boxes are added;
+ * boxes owned by entities move every tick and are checked one by one. Queries collect the
+ * candidate ids in ascending order, so results do not depend on the tree's shape. */
+typedef struct bvh_node {
+    prts_aabb box;
+    int left, right;     /* children (inner nodes) */
+    size_t first, count; /* items (leaves: count > 0) */
+} bvh_node;
+
+typedef struct bvh_item {
+    int id;
+    prts_vec3 c; /* centre */
+} bvh_item;
+
+typedef struct bvh_state {
+    prts_array nodes;   /* bvh_node; 0 is the root */
+    prts_array items;   /* bvh_item, ordered by the tree */
+    prts_array dynamic; /* int: ids of owned boxes */
+    prts_array found;   /* int: candidates of the last query */
+    prts_array stack;   /* int */
+    bool dirty;
+} bvh_state;
+
 struct prts_cworld {
     prts_array boxes; /* cbox */
     const prts_heightfield *hf;
+    float slope_cos; /* terrain steeper than this (cosine of the angle) cannot be walked up */
+    bvh_state *bvh;  /* a cache: queries on a const world may rebuild it */
 };
 
 prts_cworld *prts_cworld_create(void)
 {
     prts_cworld *cw = prts_calloc(1, sizeof(*cw));
     prts_array_init(&cw->boxes, sizeof(cbox));
+    prts_cworld_set_max_slope(cw, (float)PRTS_PI / 4.0f);
+    cw->bvh = prts_calloc(1, sizeof(bvh_state));
+    prts_array_init(&cw->bvh->nodes, sizeof(bvh_node));
+    prts_array_init(&cw->bvh->items, sizeof(bvh_item));
+    prts_array_init(&cw->bvh->dynamic, sizeof(int));
+    prts_array_init(&cw->bvh->found, sizeof(int));
+    prts_array_init(&cw->bvh->stack, sizeof(int));
     return cw;
 }
 
@@ -95,6 +128,12 @@ void prts_cworld_destroy(prts_cworld *cw)
 {
     if (!cw) return;
     prts_array_free(&cw->boxes);
+    prts_array_free(&cw->bvh->nodes);
+    prts_array_free(&cw->bvh->items);
+    prts_array_free(&cw->bvh->dynamic);
+    prts_array_free(&cw->bvh->found);
+    prts_array_free(&cw->bvh->stack);
+    prts_free(cw->bvh);
     prts_free(cw);
 }
 
@@ -102,6 +141,7 @@ int prts_cworld_add_box(prts_cworld *cw, prts_aabb box, prts_entity owner)
 {
     cbox b = {box, box, owner, true};
     prts_array_push(&cw->boxes, &b);
+    cw->bvh->dirty = true;
     return (int)cw->boxes.len - 1;
 }
 
@@ -144,6 +184,8 @@ void prts_cworld_set_owner_enabled(prts_cworld *cw, prts_entity owner, bool enab
 
 void prts_cworld_set_heightfield(prts_cworld *cw, const prts_heightfield *hf) { cw->hf = hf; }
 
+void prts_cworld_set_max_slope(prts_cworld *cw, float radians) { cw->slope_cos = cosf(radians); }
+
 void prts_cworld_sync(prts_cworld *cw, const prts_world *w)
 {
     for (size_t i = 0; i < cw->boxes.len; i++) {
@@ -181,15 +223,143 @@ static bool overlap_axis(prts_aabb a, prts_aabb b, int axis)
     return comp(a.min, axis) < comp(b.max, axis) - EPS && comp(a.max, axis) > comp(b.min, axis) + EPS;
 }
 
+/* --- bounding volume hierarchy ------------------------------------------------------- */
+
+static bool touches(prts_aabb a, prts_aabb b)
+{
+    return a.min.x <= b.max.x && a.max.x >= b.min.x && a.min.y <= b.max.y && a.max.y >= b.min.y &&
+           a.min.z <= b.max.z && a.max.z >= b.min.z;
+}
+
+static prts_aabb merge(prts_aabb a, prts_aabb b)
+{
+    return prts_aabb_make(prts_v3(fminf(a.min.x, b.min.x), fminf(a.min.y, b.min.y), fminf(a.min.z, b.min.z)),
+                          prts_v3(fmaxf(a.max.x, b.max.x), fmaxf(a.max.y, b.max.y), fmaxf(a.max.z, b.max.z)));
+}
+
+static int cmp_items(const bvh_item *a, const bvh_item *b, float ca, float cb)
+{
+    if (ca != cb) return ca < cb ? -1 : 1;
+    return a->id < b->id ? -1 : (a->id > b->id ? 1 : 0);
+}
+static int cmp_x(const void *a, const void *b) { return cmp_items(a, b, ((const bvh_item *)a)->c.x, ((const bvh_item *)b)->c.x); }
+static int cmp_y(const void *a, const void *b) { return cmp_items(a, b, ((const bvh_item *)a)->c.y, ((const bvh_item *)b)->c.y); }
+static int cmp_z(const void *a, const void *b) { return cmp_items(a, b, ((const bvh_item *)a)->c.z, ((const bvh_item *)b)->c.z); }
+
+#define BVH_LEAF 4u
+
+static int build_node(const prts_cworld *cw, bvh_state *st, size_t first, size_t count)
+{
+    bvh_item *items = (bvh_item *)st->items.data;
+    prts_aabb bounds = ((cbox *)prts_array_at(&cw->boxes, (size_t)items[first].id))->world;
+    prts_aabb centres = prts_aabb_make(items[first].c, items[first].c);
+    for (size_t i = first + 1; i < first + count; i++) {
+        bounds = merge(bounds, ((cbox *)prts_array_at(&cw->boxes, (size_t)items[i].id))->world);
+        centres = merge(centres, prts_aabb_make(items[i].c, items[i].c));
+    }
+    int idx = (int)st->nodes.len;
+    bvh_node *n = prts_array_push(&st->nodes, NULL);
+    n->box = bounds;
+    n->left = n->right = -1;
+    if (count <= BVH_LEAF) {
+        n->first = first;
+        n->count = count;
+        return idx;
+    }
+    prts_vec3 ext = prts_v3_sub(centres.max, centres.min);
+    int (*cmp)(const void *, const void *) = ext.x >= ext.y && ext.x >= ext.z ? cmp_x : (ext.y >= ext.z ? cmp_y : cmp_z);
+    qsort(items + first, count, sizeof(bvh_item), cmp);
+    size_t half = count / 2;
+    int l = build_node(cw, st, first, half);
+    int r = build_node(cw, st, first + half, count - half);
+    n = prts_array_at(&st->nodes, (size_t)idx); /* the array may have moved */
+    n->left = l;
+    n->right = r;
+    return idx;
+}
+
+static void rebuild(const prts_cworld *cw)
+{
+    bvh_state *st = cw->bvh;
+    prts_array_clear(&st->nodes);
+    prts_array_clear(&st->items);
+    prts_array_clear(&st->dynamic);
+    for (size_t i = 0; i < cw->boxes.len; i++) {
+        const cbox *b = prts_array_at(&cw->boxes, i);
+        int id = (int)i;
+        if (b->owner != PRTS_ENTITY_NONE) {
+            prts_array_push(&st->dynamic, &id);
+            continue;
+        }
+        bvh_item it = {id, prts_v3_scale(prts_v3_add(b->world.min, b->world.max), 0.5f)};
+        prts_array_push(&st->items, &it);
+    }
+    if (st->items.len) build_node(cw, st, 0, st->items.len);
+    st->dirty = false;
+}
+
+static int by_id(const void *a, const void *b)
+{
+    int x = *(const int *)a, y = *(const int *)b;
+    return x < y ? -1 : (x > y ? 1 : 0);
+}
+
+/* Ids of enabled boxes touching q, ascending. The result stays valid until the next query. */
+static const prts_array *query(const prts_cworld *cw, prts_aabb q)
+{
+    bvh_state *st = cw->bvh;
+    if (st->dirty) rebuild(cw);
+    prts_array_clear(&st->found);
+    prts_array_clear(&st->stack);
+    if (st->nodes.len) {
+        int root = 0;
+        prts_array_push(&st->stack, &root);
+    }
+    while (st->stack.len) {
+        int ni = *(int *)prts_array_at(&st->stack, st->stack.len - 1);
+        st->stack.len--;
+        const bvh_node *n = prts_array_at(&st->nodes, (size_t)ni);
+        if (!touches(n->box, q)) continue;
+        if (n->count) {
+            for (size_t i = n->first; i < n->first + n->count; i++) {
+                int id = ((bvh_item *)prts_array_at(&st->items, i))->id;
+                const cbox *b = prts_array_at(&cw->boxes, (size_t)id);
+                if (b->enabled && touches(b->world, q)) prts_array_push(&st->found, &id);
+            }
+        } else {
+            prts_array_push(&st->stack, &n->left);
+            prts_array_push(&st->stack, &n->right);
+        }
+    }
+    for (size_t i = 0; i < st->dynamic.len; i++) {
+        int id = *(int *)prts_array_at(&st->dynamic, i);
+        const cbox *b = prts_array_at(&cw->boxes, (size_t)id);
+        if (b->enabled && touches(b->world, q)) prts_array_push(&st->found, &id);
+    }
+    qsort(st->found.data, st->found.len, sizeof(int), by_id);
+    return &st->found;
+}
+
+/* The bounds of the segment origin + dir * [0, max_dist] (dir normalized). */
+static prts_aabb segment_bounds(prts_vec3 o, prts_vec3 dir, float max_dist)
+{
+    prts_vec3 e = prts_v3_add(o, prts_v3_scale(dir, max_dist));
+    return prts_aabb_make(o, e);
+}
+
 /* Moves box along one axis by d, stopping at the first box in the way. */
 static float move_axis(const prts_cworld *cw, prts_aabb *box, int axis, float d, int *hit)
 {
     *hit = -1;
     if (d == 0.0f) return 0.0f;
     int o1 = (axis + 1) % 3, o2 = (axis + 2) % 3;
-    for (size_t i = 0; i < cw->boxes.len; i++) {
+    prts_aabb swept = *box;
+    set_comp(d > 0.0f ? &swept.max : &swept.min, axis, comp(d > 0.0f ? swept.max : swept.min, axis) + d);
+    const prts_array *found = query(cw, swept);
+    for (size_t k = 0; k < found->len; k++) {
+        size_t i = (size_t)*(const int *)prts_array_at(found, k);
         cbox *b = prts_array_at(&cw->boxes, i);
-        if (!b->enabled || !overlap_axis(*box, b->world, o1) || !overlap_axis(*box, b->world, o2)) continue;
+        if (!overlap_axis(*box, b->world, o1) || !overlap_axis(*box, b->world, o2)) continue;
         if (d > 0.0f && comp(b->world.min, axis) >= comp(box->max, axis) - EPS) {
             float allowed = comp(b->world.min, axis) - comp(box->max, axis);
             if (allowed < d) {
@@ -224,6 +394,29 @@ static bool clamp_terrain(const prts_cworld *cw, prts_aabb *box)
 
 static float horiz_len(prts_vec3 v) { return sqrtf(v.x * v.x + v.z * v.z); }
 
+/* Spec: slopes up to the limit can be walked up. On steeper terrain the part of the move that
+ * goes uphill is removed, so the mover slides along the slope instead of climbing it. */
+static bool limit_slope(const prts_cworld *cw, prts_aabb start, prts_aabb *box)
+{
+    if (!cw->hf) return false;
+    float sx = (start.min.x + start.max.x) * 0.5f, sz = (start.min.z + start.max.z) * 0.5f;
+    if (start.min.y > prts_heightfield_sample(cw->hf, sx, sz) + 0.05f) return false; /* not on the terrain */
+    float dx = box->min.x - start.min.x, dz = box->min.z - start.min.z;
+    if (dx * dx + dz * dz < 1e-12f) return false;
+    prts_vec3 n = prts_heightfield_normal(cw->hf, sx + dx, sz + dz);
+    if (n.y >= cw->slope_cos) return false;
+    float gl = sqrtf(n.x * n.x + n.z * n.z);
+    float ux = -n.x / gl, uz = -n.z / gl; /* uphill, along the ground */
+    float up = dx * ux + dz * uz;
+    if (up <= 0.0f) return false; /* across or down the slope is fine */
+    float cut_x = -up * ux, cut_z = -up * uz;
+    box->min.x += cut_x;
+    box->max.x += cut_x;
+    box->min.z += cut_z;
+    box->max.z += cut_z;
+    return true;
+}
+
 prts_vec3 prts_cworld_move(const prts_cworld *cw, prts_aabb *box, prts_vec3 delta, float step_height,
                            prts_move_result *result)
 {
@@ -249,6 +442,7 @@ prts_vec3 prts_cworld_move(const prts_cworld *cw, prts_aabb *box, prts_vec3 delt
     }
     res.hit_wall = blocked && !res.stepped;
     *box = best;
+    if (limit_slope(cw, start, box)) res.hit_wall = true;
     float my = move_axis(cw, box, 1, delta.y, &hit);
     if (delta.y < 0.0f && my > delta.y + EPS) {
         res.on_ground = true;
@@ -265,9 +459,10 @@ prts_vec3 prts_cworld_move(const prts_cworld *cw, prts_aabb *box, prts_vec3 delt
 
 bool prts_cworld_overlaps(const prts_cworld *cw, prts_aabb box)
 {
-    for (size_t i = 0; i < cw->boxes.len; i++) {
-        cbox *b = prts_array_at(&cw->boxes, i);
-        if (b->enabled && prts_aabb_overlaps(box, b->world)) return true;
+    const prts_array *found = query(cw, box);
+    for (size_t k = 0; k < found->len; k++) {
+        cbox *b = prts_array_at(&cw->boxes, (size_t)*(const int *)prts_array_at(found, k));
+        if (prts_aabb_overlaps(box, b->world)) return true;
     }
     return false;
 }
@@ -300,12 +495,14 @@ int prts_cworld_raycast(const prts_cworld *cw, prts_vec3 origin, prts_vec3 dir, 
     dir = prts_v3_normalize(dir);
     int best = -1;
     float best_t = max_dist;
-    for (size_t i = 0; i < cw->boxes.len; i++) {
-        cbox *b = prts_array_at(&cw->boxes, i);
+    const prts_array *found = query(cw, segment_bounds(origin, dir, max_dist));
+    for (size_t k = 0; k < found->len; k++) {
+        int i = *(const int *)prts_array_at(found, k);
+        cbox *b = prts_array_at(&cw->boxes, (size_t)i);
         float t = 0.0f;
-        if (b->enabled && ray_box(origin, dir, b->world, &t) && t <= best_t) {
+        if (ray_box(origin, dir, b->world, &t) && t <= best_t) {
             best_t = t;
-            best = (int)i;
+            best = i;
         }
     }
     if (cw->hf) {
@@ -325,10 +522,11 @@ int prts_cworld_raycast(const prts_cworld *cw, prts_vec3 origin, prts_vec3 dir, 
 bool prts_cworld_occluded(const prts_cworld *cw, prts_vec3 origin, prts_vec3 dir, float max_dist)
 {
     dir = prts_v3_normalize(dir);
-    for (size_t i = 0; i < cw->boxes.len; i++) {
-        cbox *b = prts_array_at(&cw->boxes, i);
+    const prts_array *found = query(cw, segment_bounds(origin, dir, max_dist));
+    for (size_t k = 0; k < found->len; k++) {
+        cbox *b = prts_array_at(&cw->boxes, (size_t)*(const int *)prts_array_at(found, k));
         float t = 0.0f;
-        if (b->enabled && ray_box(origin, dir, b->world, &t) && t <= max_dist) return true;
+        if (ray_box(origin, dir, b->world, &t) && t <= max_dist) return true;
     }
     if (cw->hf) {
         for (float t = 1.0f; t <= max_dist; t += 2.0f) {

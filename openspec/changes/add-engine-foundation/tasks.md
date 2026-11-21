@@ -74,8 +74,8 @@
 
 ## 9. Physics and commander
 
-- [ ] 9.1 Implement collision queries (BVH per static mesh, height-field terrain, ray and capsule sweeps); verify unit tests on fixture geometry
-- [ ] 9.2 Implement the capsule character controller (sub-stepped sweeps, slide, step-up 0.4 m, 45° slope limit, ground probe, platform velocity); verify unit tests and scenario tests for stairs and sprinting into a wall (spec *Stairs*, *Wall at sprint speed*)
+- [x] 9.1 Implement collision queries (BVH per static mesh, height-field terrain, ray and capsule sweeps); verify unit tests on fixture geometry
+- [x] 9.2 Implement the capsule character controller (sub-stepped sweeps, slide, step-up 0.4 m, 45° slope limit, ground probe, platform velocity); verify unit tests and scenario tests for stairs and sprinting into a wall (spec *Stairs*, *Wall at sprint speed*)
 - [x] 9.3 Implement commander movement and eye height in Lua-tunable parameters (walk, run, sprint with stamina, crouch, jump); verify scenario tests (spec *Walking speed*, *Crouching lowers the view*)
 - [x] 9.4 Implement the use/interaction system (look or pointer ray, reach, prompt, script callbacks) and doors (animation, collision update, portal state, sound); verify a scenario test (spec *Opening a door*)
 - [x] 9.5 Implement moving platforms and the scripted hoist lift in the keep (call levers, platform frame, gates per floor); verify scenario tests (spec *Riding the keep's hoist lift*, *Walking during movement*)
@@ -152,10 +152,11 @@ Partly done (still unchecked):
   presets (540 lines and full size) both draw at the window size there; the three lower
   presets have their own images. The far depth layer now reaches 120 km.
 - 8.4 The scheme is detected. Events to scripts and the web hint are missing.
-- 9.1 Collision queries use a flat list of boxes plus a terrain height grid. There is no BVH
-  yet.
-- 9.2 The character controller is a box (not a capsule), with sliding, step-up and riding
-  platforms. It has no slope limit on terrain.
+- 9.1 Done with boxes: static boxes are in one BVH for the whole map (not one per mesh), boxes
+  owned by entities are checked one by one, and the terrain is a height grid. Queries are box
+  sweeps and rays; there is no capsule (see 9.2).
+- 9.2 Done with a box controller (design D8 as built): sliding, step-up 0.4 m, riding platforms
+  and a 45-degree slope limit on terrain. `sprint_into_wall.lua` covers *Wall at sprint speed*.
 - 9.4 Use/interaction and doors work. The on-screen prompt, door sounds and portal state are
   missing.
 - 9.6 Release builds have no camera other than the commander's. The developer observer camera

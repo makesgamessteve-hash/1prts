@@ -42,6 +42,8 @@ bool prts_cworld_enabled(const prts_cworld *cw, int id);
 /* Enables or disables every box owned by an entity. */
 void prts_cworld_set_owner_enabled(prts_cworld *cw, prts_entity owner, bool enabled);
 void prts_cworld_set_heightfield(prts_cworld *cw, const prts_heightfield *hf);
+/* The steepest terrain a mover standing on it can walk up (default 45 degrees). */
+void prts_cworld_set_max_slope(prts_cworld *cw, float radians);
 /* Recomputes world-space boxes of owned boxes from their owners' transforms. */
 void prts_cworld_sync(prts_cworld *cw, const prts_world *w);
 
