@@ -6,7 +6,7 @@
 - [x] 1.2 Fetch SDL3 through `FetchContent` pinned to a release tag, with a `PRTS_USE_SYSTEM_SDL3` option; verify a configure succeeds both ways on Linux
 - [x] 1.3 Vendor Lua 5.4, cgltf, stb_image, stb_vorbis, ogt_vox, microui and utest.h under `third_party/<lib>/` with their license files; verify each builds with warnings off and `tools/check-third-party-licenses` finds a license per library
 - [x] 1.4 Add strict warning flags for engine code (GCC/Clang/MSVC) and `.clang-format` / `.clang-tidy`; verify an empty `prts_core` library builds warning-free on all three compilers
-- [ ] 1.5 Add GitHub Actions workflows with jobs `linux-coverage`, `linux-sanitize`, `windows`, `macos`, `web`, `checks`, `package` (initially build-only); verify all jobs are green on a pull request
+- [x] 1.5 Add GitHub Actions workflows with jobs `linux-coverage`, `linux-sanitize`, `windows`, `macos`, `web`, `checks`, `package` (initially build-only); verify all jobs are green on a pull request
 
 ## 2. Core module and C unit tests
 
@@ -134,8 +134,10 @@ Partly done (still unchecked):
 - 1.3 Lua 5.4.7, stb_image/stb_image_write, cgltf and utest.h are vendored. stb_vorbis and
   microui come with the tasks that use them. ogt_vox is not used (see 7.3).
 - 1.4 Strict warnings are on; `.clang-format` / `.clang-tidy` are missing.
-- 1.5 `.github/workflows/ci.yml` exists. The Linux jobs mirror what passes locally. The Windows
-  and macOS jobs have never run.
+- 1.5 Done. Every job (linux-coverage, linux-sanitize, windows, macos, web, checks, package on
+  three desktops, package-web) ran green on pushes to main; the repository does not use pull
+  requests yet, so "green on a pull request" was checked on the push that a pull request would
+  run.
 - 2.1 Arrays, strings and logging exist. Arena allocators and a hash map do not yet.
 - 3.1 Window, GL context, events, time and paths work. The job system and threads (3.5) don't
   exist yet.

@@ -8,18 +8,22 @@ size with real crews, and you can walk inside every one of them. Orders travel b
 sending stones, war horns, banners, messengers and face-to-face conversations. The look is retro
 3D: low-poly models, sprites and voxels.
 
-> **Status: M1 (engine foundation) in progress.** The C engine boots, loads all content
-> from `data/`, and renders the **Proving Ground** test map in first person on Linux (OpenGL 3.3).
-> You can walk around, open doors, climb the stairs and ride the hoist lift to the war room. 24 of
-> the 75 M1 tasks are done; web, touch, WebXR, audio and UI come next (see
-> [`tasks.md`](openspec/changes/add-engine-foundation/tasks.md)).
+> **Status: M1 (engine foundation) nearly done.** The C engine runs on Windows, Linux, macOS
+> and in the browser (WebGL 2, touch controls on phones, WebXR). It loads all content from
+> `data/` and plays the **Proving Ground** in first person. You can walk the keep, open doors,
+> climb the stairs (including a spiral stair to the roof) and ride the hoist lift to the war
+> room with its live illusion table. Along the way: people sprites, glTF and voxel props,
+> positional sound with muffling behind closed doors, music, a front-end menu, options, credits,
+> saves and replays. See [`tasks.md`](openspec/changes/add-engine-foundation/tasks.md) for
+> which M1 tasks are done and how each was verified.
 
 ![The Proving Ground at dusk](docs/screenshots/01_approach_at_dusk.png)
 
 | | | |
 |---|---|---|
-| ![Great hall](docs/screenshots/04_great_hall.png) | ![Forge](docs/screenshots/05_forge.png) | ![Stairs](docs/screenshots/06_stairs.png) |
-| ![Countryside](docs/screenshots/02_keep_and_cottages.png) | ![War table](docs/screenshots/08_war_table_illusion.png) | ![Battlements](docs/screenshots/09_battlements.png) |
+| ![Great hall](docs/screenshots/12_hall_benches_braziers.png) | ![Forge](docs/screenshots/05_forge.png) | ![Stairs](docs/screenshots/06_stairs.png) |
+| ![Keep door](docs/screenshots/10_door_guard.png) | ![War table](docs/screenshots/08_war_table_illusion.png) | ![Battlements](docs/screenshots/09_battlements.png) |
+| ![Front-end menu](docs/screenshots/13_front_end_menu.png) | ![Touch controls](docs/screenshots/16_touch_controls.png) | ![Developer console](docs/screenshots/17_developer_console.png) |
 
 ## Read this first
 
@@ -64,8 +68,11 @@ cmake --build --preset dev
 ./build/dev/bin/1stprts       # data/ is copied next to the executable
 ```
 
+The game opens with the front-end menu (`--start proving_ground` goes straight to the map).
 Controls: WASD to move, mouse to look, Shift to run, Alt to sprint, Ctrl to crouch, Space to
-jump, E to use (doors, lift levers), Esc to quit. `1stprts --help` lists the command-line options.
+jump, E to use (doors, lift levers), Esc for the menu (options, credits, quit); a gamepad works
+too, and every binding can be changed in Options. In developer builds the backquote key opens
+the developer console. `1stprts --help` lists the command-line options.
 
 ### Tests
 
