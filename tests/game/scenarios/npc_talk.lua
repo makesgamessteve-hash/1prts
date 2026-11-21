@@ -38,5 +38,16 @@ return {
     t.ticks(2)
     t.expect(t.ui_has("Edric Thorne, Castellan of Harrowmark: "), "the castellan speaks").is_true()
     t.screenshot("npc_talk_castellan")
+
+    -- a guard of the garrison, outside the King's Gate
+    local x, _, z = t.pos(prts.entity.find("npc.kings_gate_left"))
+    t.place(x, 0, z + 1.6)
+    t.face("npc.kings_gate_left", 0, 1.3, 0)
+    t.ticks(2)
+    t.expect(t.ui_has("[E] Talk to Oswin Tarrant"), "the gate guard").is_true()
+    t.input.press("use")
+    t.ticks(2)
+    t.expect(t.ui_has("Oswin Tarrant, guard of the King's Gate: "), "the gate guard speaks").is_true()
+    t.screenshot("npc_talk_kings_gate")
   end,
 }

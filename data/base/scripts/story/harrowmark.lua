@@ -8,17 +8,67 @@ local H = {}
 
 H.MAP = "proving_ground"
 
--- The Marshal rides in through the King's Gate; the gate captain speaks over the sending stone.
+-- The Marshal arrives on the road before the King's Gate; the gate captain speaks over the
+-- sending stone.
 H.PROLOGUE = {
-  { "Captain Ferrier (stone)", "The King's Gate is barred behind you, Marshal. Welcome to Harrowmark." },
+  { "Captain Ferrier (stone)", "The King's Gate stands open for you, Marshal. Welcome to Harrowmark." },
   { "Captain Ferrier (stone)", "Nine days since the Merewatch stones last spoke. Lord Marshal Ashby rode north to see why." },
   { "Captain Ferrier (stone)", "He has not come back. So the Crown sent us you." },
-  { "Captain Ferrier (stone)", "Castellan Thorne waits in the Great Keep, past the Lion Gate. The war room is at the top." },
+  { "Captain Ferrier (stone)", "The great tower over the walls is the Raven Tower. Its stone hears the whole march, and nothing from the north." },
+  { "Captain Ferrier (stone)", "Castellan Thorne waits in the Great Keep, through the Lion Gate. The war room is at the top." },
   { "Sending stone", "[A whisper from the north, too faint to make out. Then silence.]" },
 }
 
--- The people of Harrowmark, by the post they keep in the map.
+-- The people of Harrowmark, by the post they keep in the map (entity "npc.<post>").
 H.PEOPLE = {
+  kings_gate_left = {
+    name = "Oswin Tarrant", title = "guard of the King's Gate",
+    lines = {
+      "Halt, who goes - Marshal! Forgive me. Captain Ferrier said you'd be here by dusk.",
+      "The road's been quiet. Too quiet. Not one cart from the north since the stones went dumb.",
+      "We bar this gate at dusk. After that, nobody in or out without the Captain's word.",
+    },
+  },
+  kings_gate_right = {
+    name = "Hedda Marsh", title = "guard of the King's Gate",
+    lines = {
+      "Mind the portcullis, Marshal. It comes down a good deal faster than it goes up.",
+      "Fires on the ridge last night. Wildborn, watching us count our arrows.",
+      "Outer Ward, then the Lion Gate, then the keep. Harrowmark makes an enemy pay for every step.",
+    },
+  },
+  lion_gate = {
+    name = "Garrick Holt", title = "warden of the Lion Gate",
+    lines = {
+      "The Lion Gate, Marshal. Past it is the Inner Ward: the Great Keep and the Raven Tower.",
+      "If the Outer Ward falls, we drop the portcullis here and hold. We've drilled it twice since the stones went quiet.",
+      "The Castellan is in the great hall. He has been waiting for you since noon.",
+    },
+  },
+  raven_door = {
+    name = "Ida Fenn", title = "keeper of the Raven Tower's door",
+    lines = {
+      "The Raven Tower, Marshal. The great stone is at the top, and Magister Corve with it.",
+      "She listens to the stone day and night. All it gives her is a hum, she says, like a bell under water.",
+      "The ravens won't fly north any more. We send them out and they come straight back.",
+    },
+  },
+  wall_patrol = {
+    name = "Tobin Reed", title = "sentry of the inner wall-walk",
+    lines = {
+      "All quiet on the south wall, Marshal. From up here you can see the road all the way to the King's Gate.",
+      "At night you can see their fires on the ridge. Wildborn. Not many. Not yet.",
+      "A torch at every tower and a man on every stretch of wall after dark. Castellan's orders.",
+    },
+  },
+  outer_patrol = {
+    name = "Bryn Calloway", title = "patrol of the Outer Ward",
+    lines = {
+      "Outer Ward rounds, Marshal. Along the curtain, past the stables and stores, and back to the gate.",
+      "The farriers have shod every horse we have. The Castellan thinks we'll be riding north soon.",
+      "Half the serfs from the northern farms sleep in our barns now. They saw the smoke over the meres and ran.",
+    },
+  },
   door_guard = {
     name = "Pell Durran", title = "guard of the keep door",
     lines = {

@@ -357,20 +357,28 @@ local function dress_gate(gate, outer_z, outward, tower_radius, tower_height, pa
   prts.scene.light{ pos = { gate.x, passage_height - 1.0, outer_z + outward * 3 }, color = { 1.3, 0.75, 0.4 }, radius = 9 }
 end
 
--- The garrison: guards at the gates, at the Raven Tower and walking the inner wall-walk.
+-- The garrison: guards at the gates, at the Raven Tower and walking the inner wall-walk. Who
+-- they are and what they say is in story/harrowmark.lua (PEOPLE, by the name after "npc.").
 local function garrison()
   local I, O, R = M.INNER, M.OUTER, M.RAVEN
   local guard = "sprites/crown_guard.lua"
+  local who = require("story.harrowmark").PEOPLE
   local south = O.z1 + O.thick + 4  -- the King's Gate's outer face
+  -- the gate guards stand in the gate passages' mouths, between the drum towers: inside a tower's
+  -- footprint its wall boxes would hide them from the use ray
   local list = {
-    NPC.make{ name = "npc.kings_gate_left", sprite = guard, pos = { -3.6, 0, south + 1.2 }, yaw = math.pi },
-    NPC.make{ name = "npc.kings_gate_right", sprite = guard, pos = { 3.6, 0, south + 1.2 }, yaw = math.pi },
-    NPC.make{ name = "npc.lion_gate", sprite = guard, pos = { 3.4, 0, I.z1 + I.thick + 4.2 }, yaw = math.pi },
-    NPC.make{ name = "npc.raven_door", sprite = guard, pos = { R.x + 2.2, 0, R.z + R.radius + 1.2 }, yaw = math.pi },
+    NPC.make{ name = "npc.kings_gate_left", sprite = guard, pos = { -1.6, 0, south + 1.2 }, yaw = math.pi,
+              person = who.kings_gate_left },
+    NPC.make{ name = "npc.kings_gate_right", sprite = guard, pos = { 1.6, 0, south + 1.2 }, yaw = math.pi,
+              person = who.kings_gate_right },
+    NPC.make{ name = "npc.lion_gate", sprite = guard, pos = { 1.5, 0, I.z1 + I.thick + 4.2 }, yaw = math.pi,
+              person = who.lion_gate },
+    NPC.make{ name = "npc.raven_door", sprite = guard, pos = { R.x + 2.2, 0, R.z + R.radius + 1.2 }, yaw = math.pi,
+              person = who.raven_door },
     NPC.make{ name = "npc.wall_patrol", sprite = guard, pos = { -34, I.height, I.z1 + 1.2 }, speed = 1.1,
-              patrol = { { -12, I.height, I.z1 + 1.2 }, { -34, I.height, I.z1 + 1.2 } } },
+              patrol = { { -12, I.height, I.z1 + 1.2 }, { -34, I.height, I.z1 + 1.2 } }, person = who.wall_patrol },
     NPC.make{ name = "npc.outer_patrol", sprite = guard, pos = { -60, 0, 80 }, speed = 1.2,
-              patrol = { { 60, 0, 80 }, { 60, 0, -70 }, { -60, 0, -70 }, { -60, 0, 80 } } },
+              patrol = { { 60, 0, 80 }, { 60, 0, -70 }, { -60, 0, -70 }, { -60, 0, 80 } }, person = who.outer_patrol },
   }
   return #list
 end

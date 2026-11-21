@@ -53,12 +53,23 @@ a lord or a lady.
 |---|---|---|---|
 | **Ser Edric Thorne** | Castellan of Harrowmark | In the great hall, by his notice board | Old and steady. Has served three Marshals from that hall and kept the castle running between them. Writes the orders of the day. |
 | **Magister Ysolde Corve** | War-table scryer | (mentioned) Up in the Raven Tower | The Crown magister who keeps the war table's illusion and the great sending stone. Has not slept since the stones went silent; the first to suspect aether, not raiders. |
-| **Captain Maud Ferrier** | Captain of the King's Gate | Walking the road to the gate | Commands the gates and the outer walls. Blunt and watchful. Her voice over the sending stone is the first thing the new Marshal hears. |
+| **Captain Maud Ferrier** | Captain of the King's Gate | Walking the road to the Lion Gate | Commands the gates and the outer walls. Blunt and watchful. Her voice over the sending stone is the first thing the new Marshal hears. |
 | **Sergeant Brannoc Hale** | Sergeant of the Guard | Walking his rounds in the great hall | Practical; keeps the garrison busy so it does not brood. |
 | **Wenna Pryce** | Clerk of the War Room | At the desks in the war room | Copies every dispatch twice, in cipher, and keeps the ledger. Holds the last report from the Merewatch. |
 | **Ansel Brook** | The Marshal's banner bearer | In the war room, waiting | Carries your banner wherever you go. Ashby's banner bearer rode north with him. |
 | **Pell Durran** | Guard of the keep door | At the Great Keep's door | Young, from the north. His brother **Tam** keeps watch at the Merewatch. |
 | **Lord Marshal Corwin Ashby** | The Marshal before you | Missing | Rode north to the Merewatch with the Second Lance and has not come back. |
+
+The garrison, at the gates and on the walls:
+
+| Name | Post | Who they are |
+|---|---|---|
+| **Oswin Tarrant** | Guard of the King's Gate (west side) | Jumpy since the road from the north went empty. |
+| **Hedda Marsh** | Guard of the King's Gate (east side) | Has watched the Wildborn fires on the ridge; knows how Harrowmark makes an enemy pay for every step. |
+| **Garrick Holt** | Warden of the Lion Gate | Drills the inner portcullis; the Inner Ward holds if the Outer Ward falls. |
+| **Ida Fenn** | Keeper of the Raven Tower's door | Brings the scryer her meals; the ravens will not fly north any more. |
+| **Tobin Reed** | Sentry of the inner wall-walk | Walks the south wall; sees the road to the King's Gate and the fires on the ridge. |
+| **Bryn Calloway** | Patrol of the Outer Ward | Walks the outer curtain; the serfs of the northern farms have fled into the castle's barns. |
 
 Beyond the walls: **Huntlord Urgra Ashtusk**, who is gathering the Wildborn clans in the
 Ashpine; **High Delver Ilvane** of the Hollow Court, whose people sealed their gates at the
@@ -73,7 +84,7 @@ acts below are the main line; the other sides have their own missions on the sam
 
 | Act | Milestone | What happens |
 |---|---|---|
-| **Prologue: Harrowmark** | M1 Proving Ground | You ride in through the King's Gate. Walk the castle, meet the household, climb to the war room. The stones of the north stay silent. *(Playable now.)* |
+| **Prologue: Harrowmark** | M1 Proving Ground | You arrive on the road before the King's Gate. Walk through the Outer Ward and the Lion Gate, meet the household and the garrison, climb the Raven Tower and the Great Keep to the war room. The stones of the north stay silent. *(Playable now.)* |
 | **I · The Silent Watch** | M2 First Command | Your first commands from Harrowmark's war table: serfs, gold and timber, a beacon spire to reach past the silence, a company of men-at-arms. Wildborn raiders strike the mill at the ford. The castellan's proving is the Training mission. |
 | **II · The Border Marches** | M3 Ride Out | You ride north with the Lantern Knights. The first Merewatch tower is empty, its stone cracked from inside. A siege tower against a tower the Wildborn hold; you find Tam Durran alive, and learn that Ashby went down to the Caldmere. |
 | **III · Timber and Gold** | M4 Hold and Harvest | The clans gather under a behemoth and Huntlord Urgra besieges Harrowmark through the winter. Hold the castle, feed it, fight its fires; if you fall, your banner passes to your second. |
@@ -132,8 +143,8 @@ Nothing is shown from outside the commander's eyes.
 |---|---|
 | The title *Banner & Bastion* and its subtitle | Front-end menu, window title (from `data/base/mod.lua`), web page |
 | Harrowmark as the map's name in the menu (map id `proving_ground`) | `scripts/game/session.lua` |
-| The prologue: Captain Ferrier over the sending stone, then the silent north | `scripts/story/harrowmark.lua` (`PROLOGUE`), played by `ui/subtitles.lua` |
-| Six people to talk to: Pell Durran, Maud Ferrier, Edric Thorne, Brannoc Hale, Wenna Pryce, Ansel Brook | `scripts/story/harrowmark.lua` (`PEOPLE`), `props/npc.lua` |
+| The prologue on the road before the King's Gate: Captain Ferrier over the sending stone, then the silent north | `scripts/story/harrowmark.lua` (`PROLOGUE`), played by `ui/subtitles.lua` |
+| Twelve people to talk to: the household in the Great Keep and on the road (Pell Durran, Maud Ferrier, Edric Thorne, Brannoc Hale, Wenna Pryce, Ansel Brook) and the garrison (Oswin Tarrant, Hedda Marsh, Garrick Holt, Ida Fenn, Tobin Reed, Bryn Calloway) | `scripts/story/harrowmark.lua` (`PEOPLE`), `props/npc.lua`; placed by `people()` and `garrison()` in `scripts/maps/proving_ground.lua` |
 | The castellan's orders on the great hall's notice board | `scripts/story/harrowmark.lua` (`NOTICES`) |
 
 Story text is plain data in Lua, so mods can replace it like any other script. It is written in

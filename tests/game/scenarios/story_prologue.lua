@@ -16,7 +16,7 @@ return {
     t.ticks(2)
     t.expect(t.commander() ~= 0, "the map started").is_true()
     t.expect(t.ui_has("Captain Ferrier (stone): "), "the gate captain speaks over the stone").is_true()
-    t.expect(t.ui_has("The King's Gate is barred behind you"), "the first line").is_true()
+    t.expect(t.ui_has("The King's Gate stands open for you"), "the first line").is_true()
     t.expect(subtitles.current().text, "the whole line").equals(story.PROLOGUE[1][2])
     t.screenshot("story_prologue")
     -- the lines follow one another and the last one is the silent north

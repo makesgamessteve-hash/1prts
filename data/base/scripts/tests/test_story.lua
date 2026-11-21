@@ -108,6 +108,7 @@ T.case("looking at a person within reach shows the talk prompt", function()
 end)
 
 T.case("every person of Harrowmark has a name, a title and two to four lines", function()
+  T.eq(require("maps.proving_ground").guards, 6, "the garrison")
   local posts = 0
   for post, p in prts.sorted_pairs(story.PEOPLE) do
     posts = posts + 1
@@ -120,8 +121,33 @@ T.case("every person of Harrowmark has a name, a title and two to four lines", f
                 "three rows at most: " .. line)
     end
   end
-  T.eq(posts, 6)
+  T.eq(posts, 12, "the six of the keep and the garrison's six")
   for _, l in ipairs(story.PROLOGUE) do T.is_true(is_ascii(l[1] .. l[2]), l[2]) end
+end)
+
+-- Whether the commander, 1.6 m from the person on some side (front, left, back or right) and
+-- looking at them, has them as the use target: no wall hides them from the use ray.
+local function can_talk_to(name)
+  local e = prts.entity.find(name)
+  local x, y, z = prts.entity.pos(e)
+  for k = 0, 3 do
+    local a = prts.entity.yaw(e) + k * math.pi / 2 -- a yaw looks along (-sin a, -cos a)
+    prts.commander.spawn{ pos = { x - math.sin(a) * 1.6, y, z - math.cos(a) * 1.6 }, yaw = a + math.pi }
+    if select(2, prts.commander.target()) == name then return true end
+  end
+  return false
+end
+
+T.case("everyone standing at a post can be talked to", function()
+  local standing = 0
+  for post in prts.sorted_pairs(story.PEOPLE) do
+    if not prts.entity.data(prts.entity.find("npc." .. post)).patrol then
+      standing = standing + 1
+      T.is_true(can_talk_to("npc." .. post), post .. " can be talked to")
+    end
+  end
+  T.eq(standing, 8, "the four of the keep and the four at the gates and the Raven Tower")
+  prts.commander.spawn{ pos = { 0, 0, 40 }, yaw = 0 }
 end)
 
 T.case("the castellan's orders fit the notice board", function()

@@ -12,9 +12,10 @@ of them. The look is retro 3D: low-poly models, sprites and voxels.
 > **Status: M1 (engine foundation) nearly done.** The C engine runs on Windows, Linux, macOS
 > and in the browser (WebGL 2, touch controls on phones, WebXR). It loads all content from
 > `data/` and plays **Harrowmark** (the Proving Ground map), the Crown's border castle, in first
-> person. You arrive as its newly sworn Marshal: walk the keep, open doors, climb the stairs
-> (including a spiral stair to the roof), ride the hoist lift to the war room with its live
-> illusion table, and talk to the castle's people about the silent north
+> person. You arrive as its newly sworn Marshal on the road before the King's Gate: walk through
+> the gates and wards, up to the wall-walks and the Raven Tower, open doors, climb the keep's
+> stairs (including a spiral stair to the roof), ride the hoist lift to the war room with its
+> live illusion table, and talk to the castle's people about the silent north
 > ([the story](docs/concept/15-story.md)). Along the way: people sprites, glTF and voxel props,
 > positional sound with muffling behind closed doors, music, subtitles, a front-end menu,
 > options, credits, saves and replays. See [`tasks.md`](openspec/changes/add-engine-foundation/tasks.md) for

@@ -221,6 +221,33 @@ UTEST(script, vfs_api)
     prts_vfs_destroy(v);
 }
 
+/* Loads a data file from inside a script, as prts.scene.sprite does with a sprite sheet. */
+static int l_load_data(lua_State *L)
+{
+    prts_script *s = prts_script_from_lua(L);
+    bool ok = prts_script_eval_data(s, "local t = {} for i = 1, 20 do t[i] = i end return t", "=data.lua");
+    if (ok) lua_pop(L, 1);
+    lua_pushboolean(L, ok);
+    return 1;
+}
+
+UTEST(script, data_gets_its_own_budget_inside_a_long_script)
+{
+    /* a map script that has run a long time before it loads a sprite sheet: the sheet still has
+     * its whole data budget, and the script's own budget still applies */
+    prts_vfs *v;
+    prts_script *s = make(&v, false);
+    lua_register(prts_script_lua(s), "load_data", l_load_data);
+    ASSERT_STREQ("true", eval_str(s, "(function() local x = 0 for i = 1, 200000 do x = x + i end return load_data() end)()"));
+    prts_log_set_min_level(PRTS_LOG_ERROR + 1);
+    prts_script_set_budget(s, 300000);
+    ASSERT_FALSE(prts_script_run_string(s, "for i = 1, 100 do load_data() end while true do end", "=loop"));
+    ASSERT_TRUE(strstr(prts_script_last_error(s), "budget exceeded") != NULL);
+    prts_log_set_min_level(PRTS_LOG_INFO);
+    prts_script_destroy(s);
+    prts_vfs_destroy(v);
+}
+
 UTEST(script, data_only_eval_and_context)
 {
     prts_vfs *v;

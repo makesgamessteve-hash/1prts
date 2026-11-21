@@ -164,10 +164,14 @@ bool prts_script_eval_data(prts_script *s, const char *code, const char *chunk_n
     }
     lua_newtable(L); /* empty environment: data only */
     lua_setupvalue(L, -2, 1);
-    uint64_t saved = s->budget;
+    /* a data file gets its own small budget, however much the script loading it has run; its
+     * instructions still count towards the caller's budget afterwards */
+    uint64_t saved = s->budget, used = s->instructions;
     s->budget = PRTS_DATA_BUDGET;
+    s->instructions = 0;
     bool ok = prts_script_call(s, 0, 1);
     s->budget = saved;
+    s->instructions += used;
     return ok;
 }
 
