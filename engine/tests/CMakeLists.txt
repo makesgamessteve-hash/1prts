@@ -72,6 +72,7 @@ add_executable(prts_golden_compare ${CMAKE_SOURCE_DIR}/tools/golden/compare.c)
 target_link_libraries(prts_golden_compare PRIVATE prts)
 target_include_directories(prts_golden_compare PRIVATE ${CMAKE_SOURCE_DIR}/engine/src)
 prts_set_warnings(prts_golden_compare)
+prts_set_coverage(prts_golden_compare) # links the coverage runtime libprts needs in coverage builds
 set(PRTS_GOLDEN_ARGS -DEXE=$<TARGET_FILE:1stprts> -DCOMPARE=$<TARGET_FILE:prts_golden_compare>
     -DREF=${CMAKE_SOURCE_DIR}/tests/golden/ref)
 add_test(NAME render_golden
