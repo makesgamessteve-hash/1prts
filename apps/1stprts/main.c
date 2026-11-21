@@ -12,6 +12,23 @@ typedef struct app {
     uint64_t last_ns;
 } app;
 
+#if defined(__EMSCRIPTEN__)
+#include "web_hooks.h"
+
+/* Web: while a WebXR session runs, SDL's loop is paused and web/prts_xr.js calls this from
+ * XRSession.requestAnimationFrame instead (design D13). It does what SDL's loop does: hand the
+ * queued events to SDL_AppEvent, then run one SDL_AppIterate. */
+static app *g_web_app;
+void prts_frame(void);
+void prts_frame(void)
+{
+    if (!g_web_app) return;
+    SDL_Event ev;
+    while (SDL_PollEvent(&ev)) SDL_AppEvent(g_web_app, &ev);
+    SDL_AppIterate(g_web_app);
+}
+#endif
+
 SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[])
 {
     prts_engine_config cfg;
@@ -41,6 +58,10 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[])
     a->engine = e;
     a->last_ns = prts_platform_ticks_ns();
     *appstate = a;
+#if defined(__EMSCRIPTEN__)
+    g_web_app = a;
+    prts_web_hooks_attach(e);
+#endif
     return SDL_APP_CONTINUE;
 }
 
@@ -65,6 +86,10 @@ void SDL_AppQuit(void *appstate, SDL_AppResult result)
     (void)result;
     app *a = appstate;
     if (!a) return;
+#if defined(__EMSCRIPTEN__)
+    g_web_app = NULL;
+    prts_web_hooks_attach(NULL);
+#endif
     prts_engine_destroy(a->engine);
     SDL_free(a);
 }

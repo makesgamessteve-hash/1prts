@@ -85,6 +85,25 @@ screenshots:
 xvfb-run -a ./build/dev/bin/1stprts --size 1920x1080 --scenario tests/game/scenarios/tour.lua --out shots
 ```
 
+### Web build (Emscripten) and browser tests
+
+Install the [Emscripten SDK](https://emscripten.org/docs/getting_started/downloads.html)
+(CI uses 7.0.0) and activate it, so `EMSDK` is set. The build produces `1stprts.html`, `.js`,
+`.wasm` and the game data as a separate `1stprts.data` (+ `1stprts.data.js`) in
+`build/web-release/bin/`; serve that folder over HTTP and open `1stprts.html`.
+
+```sh
+source "$EMSDK/emsdk_env.sh"
+cmake --preset web-release -DPRTS_WEB_TEST_HOOKS=ON   # hooks only for tests; web-dev has them on
+cmake --build --preset web-release
+python3 -m http.server 8000 --directory build/web-release/bin   # http://localhost:8000/1stprts.html
+(cd web && npm ci && npx playwright install chromium) && node web/tests/run.js
+```
+
+The browser tests (`web/tests/`) cover boot, keyboard input, touch emulation, the missing-WebGL 2
+message, settings kept in IndexedDB across reloads and a WebXR session with a mocked headset.
+Real phones and headsets are checked by hand: [`docs/testing/`](docs/testing/).
+
 ## License
 
 - **Code** (C, Lua, GLSL, tools): [MIT](LICENSE)

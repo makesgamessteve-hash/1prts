@@ -35,7 +35,27 @@ bool prts_platform_poll(prts_platform *p, prts_input_state *state);
 /* SDL scancode for a key name such as "W", "Left Shift" or "Space"; 0 if unknown. */
 int prts_platform_key_from_name(const char *name);
 uint64_t prts_platform_ticks_ns(void);
-/* Shows a native error message box when a window system is available. */
+/* Shows a native error message box when a window system is available (on the web: a message
+ * on the page). */
 void prts_platform_error_box(const char *title, const char *message);
+
+/* --- Signals from the host page (web/ glue); see engine/src/platform/host.c ------------- */
+
+/* Suggests the input scheme for the next frame, for example touch on a touch-first phone or
+ * tablet (the web glue checks this at start-up). The engine applies it once; real device input
+ * switches the scheme as usual afterwards. */
+void prts_platform_hint_scheme(prts_input_scheme scheme);
+/* Takes the pending scheme hint. Returns false if there is none. */
+bool prts_platform_take_scheme_hint(prts_input_scheme *out);
+
+/* Browsers start audio only after a user gesture (click, tap or key press). The web glue
+ * reports every such gesture here; the audio module registers a handler that resumes its
+ * device. A handler registered after a gesture was already reported is called at once.
+ * Desktop platforms never report gestures. */
+typedef void (*prts_platform_gesture_fn)(void *user);
+void prts_platform_set_gesture_handler(prts_platform_gesture_fn fn, void *user);
+void prts_platform_user_gesture(void);
+/* Number of user gestures reported so far (tests and the browser test hooks). */
+unsigned prts_platform_gesture_count(void);
 
 #endif

@@ -1,0 +1,12 @@
+{
+  "name": "1stprts-web-tests",
+  "private": true,
+  "description": "Browser end-to-end tests for the 1stPRTS web build (Playwright + Chromium). Not part of the game runtime.",
+  "license": "MIT",
+  "scripts": {
+    "test": "node tests/run.js"
+  },
+  "devDependencies": {
+    "playwright": "1.63.0"
+  }
+}

@@ -7,6 +7,7 @@
 #include "prts/prts_fs.h"
 #include "prts/prts_log.h"
 #include "prts/prts_rng.h"
+#include "prts/prts_xr.h"
 
 static const char *ENGINE_KEY = "prts.engine";
 
@@ -166,6 +167,7 @@ prts_engine *prts_engine_create(const prts_engine_config *cfg, char *err, size_t
             return NULL;
         }
         prts_log_info("renderer: %s", prts_gfx_info(e->gfx));
+        prts_xr_detect(prts_xr_get());
     } else {
         e->gfx = prts_gfx_create(NULL, e->vfs, false);
     }
@@ -259,6 +261,9 @@ static void apply_look(prts_engine *e)
 static void render_frame(prts_engine *e, double alpha)
 {
     if (!e->platform) return;
+    /* TODO(renderer, WebXR): while an XR session runs (prts_xr_get()->active, prts_xr.h), draw
+     * each of xr->views into xr->framebuffer (viewport per view) with the multi-view renderer.
+     * Until that is connected, the flat camera below is drawn to the page canvas only. */
     int w = 0, h = 0;
     prts_platform_drawable_size(e->platform, &w, &h);
     prts_camera cam = {prts_dv3(0, 1.7, 0), 0.0f, 0.0f};
@@ -281,6 +286,9 @@ static void render_frame(prts_engine *e, double alpha)
 
 bool prts_engine_frame(prts_engine *e, double real_seconds)
 {
+    prts_input_scheme hint;
+    if (prts_platform_take_scheme_hint(&hint)) e->dev.last_device = (int)hint; /* web: touch-first device */
+    e->frames++;
     prts_input_update(e->input, &e->dev);
     apply_look(e);
     prts_platform_begin_frame(&e->dev);
@@ -296,7 +304,9 @@ bool prts_engine_frame(prts_engine *e, double real_seconds)
 void prts_engine_event(prts_engine *e, const void *sdl_event)
 {
     if (prts_platform_apply_event(e->platform, sdl_event, &e->dev)) e->quit = true;
+#if !defined(__EMSCRIPTEN__) /* a web page has nothing to quit to; there Escape releases the mouse */
     if (e->dev.keys[41 /* Escape */]) e->quit = true;
+#endif
 }
 
 bool prts_engine_is_batch(const prts_engine *e) { return e->cfg.headless || e->cfg.test_lua; }
@@ -314,6 +324,24 @@ int prts_engine_run(prts_engine *e)
 }
 
 int prts_engine_exit_code(const prts_engine *e) { return e->exit_code; }
+
+void prts_engine_get_status(const prts_engine *e, prts_engine_status *out)
+{
+    memset(out, 0, sizeof(*out));
+    out->tick = e->clock.tick;
+    out->frames = e->frames;
+    out->scheme = (int)prts_input_scheme_active(e->input);
+    out->has_commander = e->has_commander;
+    if (!e->has_commander) return;
+    prts_dvec3 p = prts_world_pos(e->world, e->commander.entity);
+    out->commander[0] = p.x;
+    out->commander[1] = p.y;
+    out->commander[2] = p.z;
+    out->yaw = e->commander.yaw;
+    out->pitch = e->commander.pitch;
+}
+
+prts_vfs *prts_engine_vfs(prts_engine *e) { return e->vfs; }
 
 uint64_t prts_engine_hash(const prts_engine *e)
 {

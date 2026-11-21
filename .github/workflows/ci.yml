@@ -72,6 +72,40 @@ jobs:
       - name: Unit, Lua and scenario tests (headless)
         run: ctest --test-dir build/release -E render_tour --output-on-failure
 
+  web:
+    runs-on: ubuntu-24.04
+    env:
+      EMSDK_VERSION: "7.0.0" # pinned; the version the web build was verified with
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install Emscripten and Ninja
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ninja-build
+          git clone --depth 1 https://github.com/emscripten-core/emsdk.git "$RUNNER_TEMP/emsdk"
+          "$RUNNER_TEMP/emsdk/emsdk" install "$EMSDK_VERSION"
+          "$RUNNER_TEMP/emsdk/emsdk" activate "$EMSDK_VERSION"
+      - name: Build web-release with browser test hooks
+        run: |
+          source "$RUNNER_TEMP/emsdk/emsdk_env.sh"
+          cmake --preset web-release -DPRTS_WEB_TEST_HOOKS=ON
+          cmake --build --preset web-release
+      - name: Install Playwright and Chromium
+        working-directory: web
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+      - name: Browser end-to-end tests (desktop, mobile emulation, no WebGL 2, IndexedDB, XR mock)
+        run: node web/tests/run.js
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: web-test-screenshots
+          path: build/web-tests/
+
   checks:
     runs-on: ubuntu-24.04
     steps:

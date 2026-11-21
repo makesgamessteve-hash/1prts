@@ -10,6 +10,7 @@ option(PRTS_BUILD_TESTS "Build the engine's unit tests" ON)
 option(PRTS_USE_SYSTEM_SDL3 "Use an installed SDL3 instead of fetching it" OFF)
 option(PRTS_COVERAGE "Instrument engine code for coverage (GCC/Clang)" OFF)
 option(PRTS_DEV "Developer features (source-tree data fallback, test hooks)" ON)
+option(PRTS_WEB_TEST_HOOKS "Web: browser test hooks (window.prts_test with ?test=1); off in shipped builds" OFF)
 set(PRTS_SDL3_TAG "release-3.4.18" CACHE STRING "SDL3 git tag to fetch")
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
@@ -34,12 +35,16 @@ else()
     GIT_SHALLOW TRUE
     SYSTEM)
   FetchContent_MakeAvailable(SDL3)
+  if(EMSCRIPTEN)
+    # SDL's Emscripten back end uses EM_ASM, which needs GNU C. Our own code stays strict C11.
+    set_target_properties(SDL3-static PROPERTIES C_EXTENSIONS ON)
+  endif()
 endif()
 
 add_subdirectory(engine)
 add_subdirectory(apps/1stprts)
 
-if(PRTS_BUILD_TESTS)
+if(PRTS_BUILD_TESTS AND NOT EMSCRIPTEN) # web builds are checked by the browser tests in web/tests
   enable_testing()
   add_subdirectory(engine/tests)
 endif()

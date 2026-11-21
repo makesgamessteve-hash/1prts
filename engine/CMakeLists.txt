@@ -1,5 +1,8 @@
 # libprts: the 1stPRTS core engine (C11). No game content is compiled in.
 file(GLOB_RECURSE PRTS_ENGINE_SOURCES CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/src/*.c)
+if(NOT EMSCRIPTEN) # browser-only glue (see tools/coverage/exclusions.txt)
+  list(FILTER PRTS_ENGINE_SOURCES EXCLUDE REGEX "/src/(platform/web_[^/]*|xr/xr_webxr)\\.c$")
+endif()
 add_library(prts STATIC ${PRTS_ENGINE_SOURCES})
 target_include_directories(prts PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_link_libraries(prts PUBLIC prts_lua prts_stb SDL3::SDL3)

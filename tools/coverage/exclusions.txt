@@ -1,3 +1,6 @@
 # Coverage exclusions (reviewed). One entry per line: <path> | <reason>
 # Adding an entry needs review. Third-party code (third_party/) is never measured.
 apps/1stprts/main.c | SDL3 app-callback entry point; exercised by every executable run but not linked into prts_tests
+apps/1stprts/web_hooks.c | Browser test hooks; Emscripten-only (PRTS_WEB_TEST_HOOKS), exercised by the Playwright tests in the web job
+engine/src/platform/web_platform.c | Emscripten-only entry points for web/prts_pre.js (two one-line forwards to host.c, which is measured); exercised by the Playwright tests
+engine/src/xr/xr_webxr.c | Emscripten-only WebXR glue for web/prts_xr.js (forwards to xr.c, which is measured); exercised by the Playwright XR-mock tests

@@ -3,6 +3,7 @@
 #define PRTS_ENGINE_H
 
 #include "prts_base.h"
+#include "prts_vfs.h"
 
 #define PRTS_MAX_MODS 16
 
@@ -42,5 +43,18 @@ int prts_engine_run(prts_engine *e);
 bool prts_engine_is_batch(const prts_engine *e);
 int prts_engine_exit_code(const prts_engine *e);
 uint64_t prts_engine_hash(const prts_engine *e);
+
+/* Read-only view of the running engine for tools and the browser test hooks (web/). */
+typedef struct prts_engine_status {
+    uint64_t tick;        /* simulation ticks run */
+    uint64_t frames;      /* frames run (prts_engine_frame calls) */
+    bool has_commander;
+    double commander[3];  /* world position of the commander's feet */
+    float yaw, pitch;     /* radians */
+    int scheme;           /* active prts_input_scheme */
+} prts_engine_status;
+void prts_engine_get_status(const prts_engine *e, prts_engine_status *out);
+/* The engine's virtual file system, including the user area. */
+prts_vfs *prts_engine_vfs(prts_engine *e);
 
 #endif

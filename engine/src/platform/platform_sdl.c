@@ -1,6 +1,7 @@
 /* 1stPRTS engine: window, GL context, events and time on SDL3. MIT License. */
 #include <SDL3/SDL.h>
 
+#include "platform/web_glue.h"
 #include "prts/prts_log.h"
 #include "prts/prts_platform.h"
 
@@ -12,6 +13,9 @@ struct prts_platform {
 
 prts_platform *prts_platform_create(const prts_platform_config *cfg)
 {
+    /* Touch and mouse stay separate devices, so the scheme follows the device really used (D12). */
+    SDL_SetHint(SDL_HINT_TOUCH_MOUSE_EVENTS, "0");
+    SDL_SetHint(SDL_HINT_MOUSE_TOUCH_EVENTS, "0");
     if (!SDL_InitSubSystem(SDL_INIT_VIDEO | SDL_INIT_GAMEPAD)) {
         prts_log_error("cannot start the video system: %s", SDL_GetError());
         return NULL;
@@ -154,7 +158,11 @@ uint64_t prts_platform_ticks_ns(void) { return SDL_GetTicksNS(); }
 
 void prts_platform_error_box(const char *title, const char *message)
 {
+#if defined(__EMSCRIPTEN__)
+    prts_web_show_error(title, message); /* on the page, not a blocking alert() */
+#else
     if (!SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, title, message, NULL)) {
         prts_log_error("%s: %s", title, message);
     }
+#endif
 }
