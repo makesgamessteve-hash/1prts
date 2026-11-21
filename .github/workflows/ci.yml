@@ -28,7 +28,8 @@ jobs:
       - name: Unit, Lua, scenario and rendered tests (Xvfb + Mesa llvmpipe)
         run: xvfb-run -a -s "-screen 0 1280x720x24" ctest --preset coverage
       - name: C coverage gate (>= 95% lines)
-        run: gcovr --root . --filter 'engine/src/' --object-directory build/coverage --fail-under-line 95 --txt
+        # long AI matches run hot loops billions of times; such counts are real, not corrupt data
+        run: gcovr --root . --filter 'engine/src/' --object-directory build/coverage --fail-under-line 95 --txt --gcov-ignore-parse-errors=suspicious_hits.warn_once_per_file
       - name: Lua coverage gate (>= 95% lines)
         run: python3 -I tools/coverage/lua_gate.py build/coverage/lua-coverage --min 95
       - uses: actions/upload-artifact@v4

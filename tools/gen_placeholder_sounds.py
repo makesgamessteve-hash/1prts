@@ -344,6 +344,64 @@ def discover_chime(rnd):
     return normalize(out, 0.5)
 
 
+def war_horn(rnd):
+    """A long low horn call: a rising first note, a held second one a fifth above."""
+    n = int(1.9 * RATE)
+    out = [0.0] * n
+    ph = 0.0
+    for i in range(n):
+        t = i / RATE
+        f = 146.8 if t < 0.7 else 220.0
+        f *= 1.0 - 0.03 * math.exp(-((t % 0.7) if t < 0.7 else (t - 0.7)) / 0.08)
+        ph += TAU * f / RATE
+        env = min(1.0, t / 0.08) * (1.0 if t < 1.6 else math.exp(-(t - 1.6) / 0.1))
+        if 0.66 < t < 0.74:
+            env *= 0.35  # the breath between the notes
+        tone = sum(a * math.sin(k * ph) for k, a in ((1, 1.0), (2, 0.55), (3, 0.4), (4, 0.22), (5, 0.12)))
+        out[i] = tone * env
+    breath = lowpass(noise(rnd, n), 2200)
+    mix_into(out, 0, [s * 0.05 for s in breath])
+    return normalize(lowpass(out, 3000), 0.8)
+
+
+def sword_clash(rnd):
+    """Steel on steel: a bright ringing hit with a scrape."""
+    n = int(0.45 * RATE)
+    out = [0.0] * n
+    burst = [math.exp(-i / 60.0) * rnd.uniform(-1, 1) for i in range(1200)]
+    mix_into(out, 0, highpass(burst, 1800), 1.6)
+    f0 = rnd.uniform(0.95, 1.05)
+    mix_into(out, 0, partials(n, [1830 * f0, 2970 * f0, 4410 * f0, 6120 * f0], [0.18, 0.12, 0.08, 0.05],
+                              [0.6, 0.45, 0.3, 0.2]))
+    return normalize(out, 0.7)
+
+
+def crossbow_shot(rnd):
+    """The string's twang and the bolt's hiss."""
+    n = int(0.4 * RATE)
+    out = [0.0] * n
+    mix_into(out, 0, thump(int(0.12 * RATE), 320, 180, 0.03), 0.8)
+    mix_into(out, 0, partials(int(0.2 * RATE), [410, 820], [0.05, 0.03], [0.5, 0.25]))
+    hiss = bandpass(noise(rnd, n), 3800, 1.5)
+    mix_into(out, int(0.02 * RATE), [s * math.exp(-i / (0.08 * RATE)) for i, s in enumerate(hiss)], 0.9)
+    return normalize(out, 0.6)
+
+
+def fall_cry(rnd):
+    """A soldier falls: a short dull grunt and the thud of a body and kit."""
+    n = int(0.6 * RATE)
+    out = [0.0] * n
+    ph = 0.0
+    for i in range(int(0.25 * RATE)):
+        t = i / RATE
+        ph += TAU * (180 - 160 * t) / RATE
+        out[i] += (math.sin(ph) + 0.4 * math.sin(2 * ph)) * math.exp(-t / 0.09) * 0.6
+    mix_into(out, int(0.18 * RATE), thump(int(0.35 * RATE), 110, 55, 0.07), 1.0)
+    rattle = bandpass(noise(rnd, int(0.2 * RATE)), 2400, 2)
+    mix_into(out, int(0.2 * RATE), [s * math.exp(-i / (0.04 * RATE)) for i, s in enumerate(rattle)], 0.6)
+    return normalize(out, 0.65)
+
+
 EFFECTS = [
     ("door_open", door_open),
     ("door_close", door_close),
@@ -358,6 +416,10 @@ EFFECTS = [
     ("portcullis_slam", portcullis_slam),
     ("talk_murmur", talk_murmur),
     ("discover_chime", discover_chime),
+    ("horn", war_horn),
+    ("sword_clash", sword_clash),
+    ("crossbow_shot", crossbow_shot),
+    ("fall_cry", fall_cry),
 ]
 
 

@@ -40,6 +40,7 @@ typedef struct surface {
     float last_x, last_y;
     unsigned prev_keys;
     bool hovered;
+    prts_ui_pointer_state ptr; /* the raw pointer of the last feed, for direct drawing */
 } surface;
 
 struct prts_ui {
@@ -282,6 +283,14 @@ bool prts_ui_surface_quad(const prts_ui *ui, int s, prts_ui_quad *out)
 
 /* --- input and frames ------------------------------------------------------------------ */
 
+bool prts_ui_pointer(const prts_ui *ui, int s, prts_ui_pointer_state *out)
+{
+    const surface *sf = (s >= 0 && s < PRTS_UI_MAX_SURFACES && ui->surfaces[s].used) ? &ui->surfaces[s] : NULL;
+    prts_ui_pointer_state none = {false, 0.0f, 0.0f, false, false};
+    *out = sf ? sf->ptr : none;
+    return out->present;
+}
+
 void prts_ui_feed(prts_ui *ui, int s, const prts_ui_input *in)
 {
     surface *sf = get_surface(ui, s);
@@ -303,6 +312,11 @@ void prts_ui_feed(prts_ui *ui, int s, const prts_ui_input *in)
     sf->last_x = px;
     sf->last_y = py;
     bool raw = in->has_pointer && in->down;
+    sf->ptr.present = in->has_pointer;
+    sf->ptr.x = in->has_pointer ? in->x : 0.0f;
+    sf->ptr.y = in->has_pointer ? in->y : 0.0f;
+    sf->ptr.down = raw;
+    sf->ptr.pressed = raw && !sf->raw_down;
     if (raw && !sf->raw_down) sf->pending = true;
     sf->raw_down = raw;
     int x = present ? (int)floorf(px) : -100000, y = present ? (int)floorf(py) : -100000;

@@ -35,6 +35,15 @@ M.actions = {
     xr_buttons = { XR.RIGHT_A } },
   { id = "use", label = "Use", keys = { "E" }, mouse_buttons = { 3 }, pad_buttons = { 2 }, touch_buttons = { 0, 1 },
     xr_buttons = { XR.RIGHT_TRIGGER, XR.LEFT_TRIGGER } },
+  -- The commander's tools in a skirmish (rts/tools.lua): the field map, the sending stone, the
+  -- marking staff, the war horn and picking the next company.
+  { id = "field_map", label = "Field map", keys = { "Tab", "M" }, pad_buttons = { 4 }, touch_buttons = { 5 },
+    xr_buttons = { XR.LEFT_Y } },
+  { id = "stone", label = "Sending stone", keys = { "Q" }, pad_buttons = { 3 }, touch_buttons = { 6 } },
+  { id = "mark", label = "Marking staff", keys = { "F" }, mouse_buttons = { 2 }, pad_buttons = { 10 },
+    touch_buttons = { 7 } },
+  { id = "horn", label = "War horn", keys = { "H" }, pad_buttons = { 9 }, touch_buttons = { 8 } },
+  { id = "next_company", label = "Next company", keys = { "X" }, pad_buttons = { 14 }, touch_buttons = { 9 } },
   -- Teleport movement (XR): push the stick forward to aim with that hand's ray, let go to go.
   { id = "teleport", label = "Teleport (VR)", xr_axes = { { code = XR.LEFT_STICK_Y, scale = -1 } } },
 }

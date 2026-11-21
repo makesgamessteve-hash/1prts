@@ -165,6 +165,7 @@ function C.merge_remnants(side_id)
           S.data(e).company = into.id
         end
         into.strength = #into.members
+        c.members = {}
         m.companies[id] = nil
         merged = merged + 1
       elseif n * 2 <= squad then

@@ -265,6 +265,22 @@ static int l_modal(lua_State *L)
     return 1;
 }
 
+/* prts.ui.pointer(): x, y, down, pressed of the pointer on the surface being drawn, or nothing
+ * when it is not over that surface. */
+static int l_pointer(lua_State *L)
+{
+    prts_ui *ui = UI(L);
+    int s = prts_ui_current(ui);
+    if (s < 0) return luaL_error(L, "prts.ui.pointer: only inside a ui handler");
+    prts_ui_pointer_state p;
+    if (!prts_ui_pointer(ui, s, &p)) return 0;
+    lua_pushnumber(L, p.x);
+    lua_pushnumber(L, p.y);
+    lua_pushboolean(L, p.down);
+    lua_pushboolean(L, p.pressed);
+    return 4;
+}
+
 static int l_hovered(lua_State *L)
 {
     lua_pushboolean(L, prts_ui_hovered(UI(L), PRTS_UI_SCREEN));
@@ -409,6 +425,7 @@ void prts_engine_open_ui_api(prts_engine *e)
         {"draw_text", l_draw_text}, {"draw_rect", l_draw_rect}, {"draw_icon", l_draw_icon},
         {"text_width", l_text_width}, {"size", l_size},         {"font", l_font},
         {"set_modal", l_set_modal}, {"modal", l_modal},         {"hovered", l_hovered},
+        {"pointer", l_pointer},
         {"surface", l_surface},     {NULL, NULL}};
     static const prts_script_fn input[] = {
         {"touch_layout", l_touch_layout}, {"touch_visible", l_touch_visible}, {"touch_state", l_touch_state},

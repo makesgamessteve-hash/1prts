@@ -102,6 +102,14 @@ void prts_ui_surface_set_quad(prts_ui *ui, int s, const prts_ui_quad *q);
 bool prts_ui_surface_quad(const prts_ui *ui, int s, prts_ui_quad *out);
 
 void prts_ui_feed(prts_ui *ui, int s, const prts_ui_input *in);
+/* The pointer of surface s as last fed, before microui sees it: for scripts that draw their
+ * own clickable pictures (the war table). pressed: the button went down in that feed. */
+typedef struct prts_ui_pointer_state {
+    bool present;
+    float x, y;
+    bool down, pressed;
+} prts_ui_pointer_state;
+bool prts_ui_pointer(const prts_ui *ui, int s, prts_ui_pointer_state *out);
 /* Starts building surface s. Widgets and drawing calls go to it until prts_ui_end. */
 void prts_ui_begin(prts_ui *ui, int s);
 /* Ends the frame and converts it into the surface's batch. Unbalanced windows and panels

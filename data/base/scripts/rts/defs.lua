@@ -4,7 +4,7 @@
 local D = {}
 
 D.UNITS = {
-  { id = "crown.serf", name = "Serf", sprite = "serf", squad = 1, hp = 30, armor = 0, speed = 1.7, radius = 0.35,
+  { id = "crown.serf", name = "Serf", sprite = "serf", squad = 1, hp = 30, armor = 0, speed = 2.6, radius = 0.35,
     sight = 22, weapon = { damage = 3, range = 1.6, cooldown = 1.5 }, cost = { gold = 50 }, folk = 1, train = 10,
     at = "crown.holdfast", carry = 20, worker = true },
   { id = "crown.men_at_arms", name = "Men-at-arms", sprite = "guard", squad = 8, hp = 60, armor = 2, speed = 1.5,

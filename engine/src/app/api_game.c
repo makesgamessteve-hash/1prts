@@ -352,8 +352,12 @@ static int load_sprite_def(lua_State *L, prts_engine *e, const char *path)
     if (found >= 0) return found;
     char *code = NULL;
     if (prts_vfs_read(e->vfs, path, &code, NULL) != PRTS_VFS_OK) return luaL_error(L, "cannot read sprite '%s'", path);
+    lua_State *main = prts_script_lua(e->script);
+    int base = lua_gettop(main);
     bool ok = prts_script_eval_data(e->script, code, path);
     prts_free(code);
+    /* the data is evaluated on the main state; a caller in a coroutine (a scenario) needs it on its own stack */
+    if (ok && main != L) lua_xmove(main, L, lua_gettop(main) - base);
     if (!ok || !lua_istable(L, -1)) return luaL_error(L, "sprite '%s' is not a data table", path);
     int t = lua_gettop(L);
     prts_sprite_def def;
@@ -736,6 +740,34 @@ static int l_commander_spawn(lua_State *L)
     return 1;
 }
 
+/* prts.commander.tune{ walk_speed, ... }: changes the spawned commander's parameters in place
+ * (kept in saves); returns the parameters as they are now. */
+static int l_commander_tune(lua_State *L)
+{
+    prts_engine *e = prts_engine_from_lua(L);
+    if (!e->has_commander) return luaL_error(L, "prts.commander.tune: no commander");
+    prts_commander_params *p = &e->commander.p;
+    if (lua_istable(L, 1)) {
+        prts_commander_params n = *p;
+        read_params(L, 1, &n);
+        const float speeds[] = {n.walk_speed, n.run_speed, n.sprint_speed, n.crouch_speed};
+        for (size_t i = 0; i < PRTS_ARRAY_COUNT(speeds); i++) {
+            if (!(speeds[i] >= 0.0f && speeds[i] <= 50.0f)) return luaL_error(L, "speeds must be between 0 and 50");
+        }
+        *p = n;
+    }
+    lua_createtable(L, 0, 4);
+    lua_pushnumber(L, p->walk_speed);
+    lua_setfield(L, -2, "walk_speed");
+    lua_pushnumber(L, p->run_speed);
+    lua_setfield(L, -2, "run_speed");
+    lua_pushnumber(L, p->sprint_speed);
+    lua_setfield(L, -2, "sprint_speed");
+    lua_pushnumber(L, p->crouch_speed);
+    lua_setfield(L, -2, "crouch_speed");
+    return 1;
+}
+
 static int l_commander_entity(lua_State *L)
 {
     prts_engine *e = prts_engine_from_lua(L);
@@ -865,7 +897,7 @@ void prts_engine_open_game_api(prts_engine *e)
     static const prts_script_fn input[] = {
         {"action", l_input_action}, {"value", l_input_value}, {"down", l_input_down}, {"scheme", l_input_scheme}, {NULL, NULL}};
     static const prts_script_fn commander[] = {
-        {"spawn", l_commander_spawn}, {"entity", l_commander_entity}, {"view", l_commander_view},
+        {"spawn", l_commander_spawn}, {"tune", l_commander_tune}, {"entity", l_commander_entity}, {"view", l_commander_view},
         {"feel", l_commander_feel},   {"impulse", l_commander_impulse}, {"set_feel", l_commander_set_feel},
         {NULL, NULL}};
     static const prts_script_fn render[] = {{"settings", l_render_settings}, {NULL, NULL}};

@@ -9,17 +9,21 @@ face-to-face orders. Keeps, mines, war galleons, siege towers, skyships, walking
 and floating citadels are built at real size with real crews, and you can walk inside every one
 of them. The look is retro 3D: low-poly models, sprites and voxels.
 
-> **Status: M1 (engine foundation) nearly done.** The C engine runs on Windows, Linux, macOS
+> **Status: M1 done, M2 (First Command) playable.** The C engine runs on Windows, Linux, macOS
 > and in the browser (WebGL 2, touch controls on phones, WebXR). It loads all content from
-> `data/` and plays **Harrowmark** (the Proving Ground map), the Crown's border castle, in first
-> person. You arrive as its newly sworn Marshal on the road before the King's Gate: walk through
-> the gates and wards, up to the wall-walks and the Raven Tower, open doors, climb the keep's
-> stairs (including a spiral stair to the roof), ride the hoist lift to the war room with its
-> live illusion table, and talk to the castle's people about the silent north
-> ([the story](docs/concept/15-story.md)). Along the way: people sprites, glTF and voxel props,
-> positional sound with muffling behind closed doors, music, subtitles, a front-end menu,
-> options, credits, saves and replays. See [`tasks.md`](openspec/changes/archive/2026-11-21-add-engine-foundation/tasks.md) for
-> which M1 tasks are done and how each was verified.
+> `data/` and plays two maps in first person. **Harrowmark**, the Crown's border castle, is the
+> story map ([the story](docs/concept/15-story.md)). **Ashford Vale** is the first skirmish. Serfs
+> mine gold and fell timber, and you build farmsteads, barracks and watchtowers. You train
+> men-at-arms, crossbowmen and outriders, and lead them against Lord Varric's host, an AI
+> commander. You lead from your own eyes:
+> - the war table in your holdfast's war room shows what your side has seen;
+> - the field map (Tab) slows you to a walk;
+> - the sending stone (Q) carries orders to companies within reach of your holdfast and towers;
+> - the marking staff (F) sets a mark;
+> - the war horn (H) calls every company within earshot.
+>
+> See the tasks of [`add-command-core`](openspec/changes/add-command-core/tasks.md) (M2) for
+> what is done and how each part was verified.
 
 ![Harrowmark at dusk](docs/screenshots/01_approach_at_dusk.png)
 
@@ -29,6 +33,8 @@ of them. The look is retro 3D: low-poly models, sprites and voxels.
 | ![On the wall-walk](docs/screenshots/19_wall_walk.png) | ![From the Raven Tower](docs/screenshots/20_raven_tower_view.png) | ![The Inner Ward and the Great Keep](docs/screenshots/21_inner_ward.png) |
 | ![The prologue](docs/screenshots/23_prologue.png) | ![The castellan](docs/screenshots/25_the_castellan.png) | ![The war table](docs/screenshots/08_war_table_illusion.png) |
 | ![A title card: the Inner Ward](docs/screenshots/26_inner_ward_card.png) | ![One of the castellan's orders done](docs/screenshots/27_order_done.png) | ![The guard at the keep door](docs/screenshots/10_door_guard.png) |
+| ![The war table in a skirmish](docs/screenshots/30_war_table_skirmish.png) | ![Serfs at the gold mine](docs/screenshots/31_serfs_at_the_mine.png) | ![The field map](docs/screenshots/32_field_map.png) |
+| ![A battle in Ashford Vale](docs/screenshots/33_battle_in_the_vale.png) | ![Lord Varric's holdfast](docs/screenshots/34_varrics_holdfast.png) | |
 | ![Great hall](docs/screenshots/12_hall_benches_braziers.png) | ![Forge](docs/screenshots/05_forge.png) | ![Front-end menu](docs/screenshots/13_front_end_menu.png) |
 
 ## Read this first

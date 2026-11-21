@@ -28,7 +28,11 @@ local function touch_button(code)
   if code == 0 then return "Tap" end
   local b = prts.input.touch_state().buttons[code]
   if not b then return "Button " .. code end
-  return b.id:sub(1, 1):upper() .. b.id:sub(2) .. " button"
+  local label = b.id
+  for _, l in ipairs(require("ui.touch").LAYOUT.buttons) do
+    if l.id == b.id then label = l.label or label end
+  end
+  return label:sub(1, 1):upper() .. label:sub(2) .. " button"
 end
 
 -- The name of one binding as returned by prts.input.bindings.

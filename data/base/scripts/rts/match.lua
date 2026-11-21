@@ -12,6 +12,9 @@ local K = require("rts.combat")
 local C = require("rts.companies")
 local P = require("rts.picture")
 local A = require("rts.ai")
+local Cmd = require("rts.command")
+require("rts.tools")
+require("ui.war_maps")
 
 local M = {}
 M.THINK = 6
@@ -76,6 +79,7 @@ function M.tick(now)
     for id, c in prts.sorted_pairs(m.companies) do
       if #C.members(c) == 0 then m.companies[id] = nil end
     end
+    Cmd.idle_serfs()
     M.check_end(now)
   end
   for id, side in prts.sorted_pairs(m.sides) do

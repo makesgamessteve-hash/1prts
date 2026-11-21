@@ -54,6 +54,6 @@ Each side SHALL know about enemies only through sightings made by its own people
 ### Requirement: An opponent
 A skirmish SHALL have an AI commander that gathers, builds, trains and attacks on its own, and a match SHALL end when a side's holdfast falls.
 
-#### Scenario: Two AI commanders play a match
-- **WHEN** two AI commanders play a skirmish on Ashford Vale
-- **THEN** within an hour of game time one holdfast falls and the match names the winner
+#### Scenario: The AI commander takes a holdfast
+- **WHEN** the AI commander plays a skirmish on Ashford Vale against a side whose serfs only gather
+- **THEN** it builds, trains and attacks, and within 30 minutes of game time the other side's holdfast falls and the match names the AI the winner

@@ -9,7 +9,7 @@ local B = require("rts.structures")
 local C = require("rts.companies")
 
 local K = {}
-K.SOUNDS = { melee = "sounds/lever_click.wav", missile = "sounds/jump_rustle.wav", death = "sounds/land_thud.wav" }
+K.SOUNDS = { melee = "sounds/sword_clash.wav", missile = "sounds/crossbow_shot.wav", death = "sounds/fall_cry.wav" }
 K.REPATH = 30 -- ticks between new paths towards a moving target
 
 local function enemy_of(d, od) return od.side ~= d.side end

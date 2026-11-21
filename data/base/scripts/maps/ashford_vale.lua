@@ -29,6 +29,9 @@ local function materials()
   m{ id = "rock", texture = "textures/rock.png", uv_scale = 2 }
   m{ id = "shadow", texture = "textures/iron.png", tint = { 0.12, 0.11, 0.1 }, uv_scale = 1 }
   m{ id = "table", texture = "textures/table_oak.png", uv_scale = 1.5 }
+  -- the commander's war table and held board show in-world UI surfaces (rts/tools.lua)
+  m{ id = "war_table_map", surface = "war_table", emissive = true }
+  m{ id = "hand_board", surface = "rts.hand", emissive = true }
 end
 
 -- A wood: trees in a band around (x, z), from a fixed seed.
@@ -56,8 +59,8 @@ function M.build()
   -- gold: two mines near each holdfast, two by the ford
   for _, base in ipairs({ M.WEST, M.EAST }) do
     local s = base.x < 0 and -1 or 1
-    E.add_mine(base.x - s * 40, base.z - 70)
-    E.add_mine(base.x + s * 10, base.z + 80)
+    E.add_mine(base.x - s * 30, base.z - 55)
+    E.add_mine(base.x + s * 12, base.z + 58)
   end
   E.add_mine(-20, -150)
   E.add_mine(25, 150)
@@ -74,7 +77,9 @@ function M.build()
     local y = prts.scene.height(x, 0)
     B.box("dirt", x - 3, y - 0.3, -4, x + 3, y + 0.04, 4, { solid = false })
   end
-  prts.scene.marker("start", { M.WEST.x, prts.scene.height(M.WEST.x, M.WEST.z + 30), M.WEST.z + 30 }, 0)
+  -- the commander starts in the war room of the west holdfast, at the war table's south edge
+  prts.scene.marker("start", { M.WEST.x, prts.scene.height(M.WEST.x, M.WEST.z) + 0.06, M.WEST.z + 2.6 }, 0)
+  prts.scene.marker("gate", { M.WEST.x, prts.scene.height(M.WEST.x, M.WEST.z + 16), M.WEST.z + 16 }, 0)
   return true
 end
 

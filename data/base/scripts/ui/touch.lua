@@ -12,17 +12,31 @@ T.LAYOUT = {
     { id = "jump", label = "Jump", x = 0.93, y = 0.74, radius = 0.07 },
     { id = "crouch", label = "Crouch", x = 0.81, y = 0.84, radius = 0.07 },
     { id = "run", label = "Run", x = 0.70, y = 0.89, radius = 0.06 },
+    -- the commander's tools, shown during a skirmish
+    { id = "field_map", label = "Map", x = 0.94, y = 0.12, radius = 0.055 },
+    { id = "stone", label = "Stone", x = 0.94, y = 0.29, radius = 0.055 },
+    { id = "mark", label = "Mark", x = 0.82, y = 0.12, radius = 0.055 },
+    { id = "horn", label = "Horn", x = 0.82, y = 0.29, radius = 0.055 },
+    { id = "next_company", label = "Next", x = 0.70, y = 0.12, radius = 0.05 },
   },
 }
 
 function T.apply() return prts.input.touch_layout(T.LAYOUT) end
 
+-- Whether the commander leads a side in a running skirmish (the tools' buttons show then);
+-- rts/tools.lua sets T.tools_active when it is loaded.
+function T.in_match()
+  return T.tools_active ~= nil and T.tools_active() == true
+end
+
 -- Which context buttons can be used right now.
 function T.usable()
   local playing = prts.commander.entity() ~= nil and not prts.ui.modal()
+  local tools = playing and T.in_match()
   return {
     use = playing and prts.commander.target() ~= nil,
     jump = playing, crouch = playing, run = playing,
+    field_map = tools, stone = tools, mark = tools, horn = tools, next_company = tools,
   }
 end
 

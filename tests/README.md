@@ -151,3 +151,18 @@ is missing. References are C unit tests (`suite.case`), test files and scripts (
 | storytelling | Coming through the King's Gate | `tests/game/scenarios/castellan_orders.lua`, `data/base/scripts/tests/test_feel.lua` |
 | storytelling | Doing the castellan's orders | `tests/game/scenarios/castellan_orders.lua`, `data/base/scripts/tests/test_feel.lua` |
 | storytelling | Talking to a guard turns them | `tests/game/scenarios/npc_talk.lua`, `data/base/scripts/tests/test_feel.lua` |
+| navigation | Around a wall | `engine/tests/test_nav.c` (`nav.paths_go_around_walls_and_buildings`), `data/base/scripts/tests/test_nav.lua` |
+| navigation | A building blocks the way | `engine/tests/test_nav.c` (`nav.paths_go_around_walls_and_buildings`, `nav.cliffs_islands_and_saved_blocks`), `tests/game/scenarios/rts_gather.lua` (a felled tree frees its ground) |
+| navigation | Eight soldiers to one point | `engine/tests/test_nav.c` (`agents.eight_soldiers_reach_one_point_apart`) |
+| rts-core | A serf brings gold home | `tests/game/scenarios/rts_gather.lua` |
+| rts-core | A barracks trains men-at-arms | `tests/game/scenarios/rts_train.lua` |
+| rts-core | No food, no soldiers | `tests/game/scenarios/rts_train.lua` |
+| rts-core | Crossbowmen against men-at-arms | `tests/game/scenarios/rts_battle.lua` |
+| rts-core | An order through the stones | `tests/game/scenarios/rts_orders.lua` |
+| rts-core | Out of range | `tests/game/scenarios/rts_orders.lua` |
+| rts-core | An enemy seen, then lost | `tests/game/scenarios/rts_picture.lua` |
+| rts-core | The AI commander takes a holdfast | `tests/game/scenarios/rts_ai_match.lua`, `tests/game/scenarios/rts_command_edges.lua` (the AI defends) |
+| command-tools | Ordering a company from the war table | `tests/game/scenarios/war_table_orders.lua` |
+| command-tools | Opening the field map | `tests/game/scenarios/field_map.lua` |
+| command-tools | Advance to my mark | `tests/game/scenarios/stone_and_staff.lua`, `tests/game/scenarios/rts_command_edges.lua` |
+| command-tools | The rally horn | `tests/game/scenarios/stone_and_staff.lua`, `tests/game/scenarios/rts_command_edges.lua` (the other signals) |
