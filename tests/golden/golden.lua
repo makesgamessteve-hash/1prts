@@ -71,6 +71,15 @@ return {
     t.ticks(3)
     t.screenshot("war_table")
 
+    -- An in-world UI surface: the notice board in the great hall
+    t.place(3.2, 0.2, -4.6)
+    t.face(5.38, 1.95, -4.6)
+    t.ticks(3)
+    if not t.headless() then
+      t.expect(t.ui_has("Orders of the day", "hall.notices"), "the board's title is drawn").is_true()
+    end
+    t.screenshot("notice_board")
+
     -- Spec: Field map and horizon in one view. A placeholder map held 0.4 m in front of the
     -- eyes, and a mountain ridge 20 km away, drawn in the same view without fog.
     t.place(0, 0, 60, math.pi, -0.35)

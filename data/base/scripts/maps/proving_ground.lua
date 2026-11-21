@@ -4,6 +4,7 @@ local B = require("lib.build")
 local Door = require("props.door")
 local Lift = require("props.lift")
 local NPC = require("props.npc")
+local Notice = require("props.notice_board")
 
 local M = {}
 
@@ -193,6 +194,10 @@ local function great_hall()
   for _, z in ipairs({ 2.1, 4.5 }) do                                 -- benches
     for _, x in ipairs({ -2.0, 0.0 }) do model("models/bench.glb", x, F[1], z, { solid = true }) end
   end
+  -- the orders of the day on the stairwell wall (an in-world UI surface)
+  M.notices = Notice.make{ id = "hall.notices", x = 5.38, y = F[1] + 1.75, z = -4.6, facing = "-x", width = 1.6,
+                           height = 1.0, title = "Orders of the day",
+                           lines = { "Muster at dawn", "Count the arrows", "Oil the lift", "Ride to the tower" } }
   for i, x in ipairs({ -3.2, 2.2 }) do                                -- braziers by the hearth
     local name = "hall.brazier" .. i
     model("models/brazier.glb", x, F[1], -1.0, { solid = true, name = name })

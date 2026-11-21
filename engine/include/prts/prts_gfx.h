@@ -75,6 +75,10 @@ void prts_gfx_render_views(prts_gfx *g, const prts_scene *scene, const prts_worl
 int prts_gfx_last_view_count(const prts_gfx *g);
 /* Number of surface textures (in-world displays) drawn in the last frame. */
 int prts_gfx_surfaces_drawn(const prts_gfx *g);
+/* A texture made outside the scene (an in-world UI surface) under a name: materials whose
+ * `surface` names no scene camera show it instead. 0 removes it. */
+void prts_gfx_set_named_texture(prts_gfx *g, const char *name, uint32_t tex);
+uint32_t prts_gfx_named_texture(const prts_gfx *g, const char *name);
 /* Number of sprites drawn in the last layer of the last view. */
 int prts_gfx_sprites_drawn(const prts_gfx *g);
 /* Cells that were visible in the last view drawn. */

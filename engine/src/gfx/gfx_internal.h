@@ -38,6 +38,11 @@ typedef struct gpu_lines {
     prts_cell_mask cells;
 } gpu_lines;
 
+typedef struct named_texture {
+    char name[PRTS_SCENE_NAME_MAX];
+    GLuint tex;
+} named_texture;
+
 typedef struct texture_entry {
     char path[PRTS_SCENE_PATH_MAX];
     GLuint tex;
@@ -60,6 +65,7 @@ struct prts_gfx {
     int last_views;
     prts_cell_mask last_visible; /* cells visible in the last view drawn */
     prts_array surface_targets;  /* prts_render_target, one per scene surface */
+    prts_array named_textures;   /* named_texture: textures made elsewhere (UI surfaces) */
     GLuint sprite_vao, sprite_vbo;
     prts_array sprite_verts;     /* prts_vertex scratch for billboards */
     int sprites_drawn;

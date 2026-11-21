@@ -261,7 +261,7 @@ during play belong on surfaces in the world.
 | `prts.ui.set_modal(on)` | Menu mode: while on, the pointer belongs to the menu, game actions read as released (except actions defined with `always = true`, such as `menu`) and world surfaces ignore the commander's view. |
 | `prts.ui.modal()` | `true` while menu mode is on. |
 | `prts.ui.hovered()` | `true` if the pointer was over a window on the screen in the last frame. |
-| `prts.ui.surface{ id, width, height, origin, right, down }` | Adds an in-world UI surface, or resizes the one with that `id`, and returns its slot. `width` and `height` are 8–1024 pixels (default 256); at most 7 surfaces; the id `"screen"` is taken. `origin` is the world position of the top-left corner, `right` and `down` the vectors along the top and left edges (meters). Within 4 m the commander's view (or a finger) points at it, and `use` or the left mouse button clicks. `ui` handlers draw it when `surface` is its id. In M1 it is rendered into a texture that no material shows yet. |
+| `prts.ui.surface{ id, width, height, origin, right, down }` | Adds an in-world UI surface, or resizes the one with that `id`, and returns its slot. `width` and `height` are 8–1024 pixels (default 256); at most 7 surfaces; the id `"screen"` is taken. `origin` is the world position of the top-left corner, `right` and `down` the vectors along the top and left edges (meters). Within 4 m the commander's view (or a finger) points at it, and `use` or the left mouse button clicks. `ui` handlers draw it when `surface` is its id. A material with `surface = <id>` shows it on an object (see `props/notice_board.lua`). |
 
 ## `prts.settings`
 

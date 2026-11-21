@@ -240,6 +240,7 @@ static void apply_look(prts_engine *e)
 static void render_frame(prts_engine *e, double alpha)
 {
     if (!e->platform) return;
+    prts_engine_ui_draw_surfaces(e); /* in-world UI surfaces, shown by materials in every view */
     const prts_xr *xr = prts_xr_get();
     if (xr->active && e->has_commander) {
         /* WebXR: both eyes into the session's framebuffer; the browser presents it */
@@ -261,7 +262,6 @@ static void render_frame(prts_engine *e, double alpha)
         cam.pitch = e->commander.pitch;
     }
     prts_engine_camera_override(e, &cam); /* developer observer camera */
-    prts_engine_ui_draw_surfaces(e);
     prts_gfx_render(e->gfx, e->scene, e->world, &cam, &e->render, w, h, alpha, e->time);
     prts_engine_ui_draw_overlay(e, w, h);
     if (e->want_shot) {

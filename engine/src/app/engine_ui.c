@@ -370,7 +370,11 @@ void prts_engine_ui_test_frame(prts_engine *e)
 void prts_engine_ui_draw_surfaces(prts_engine *e)
 {
     for (int s = 1; s < PRTS_UI_MAX_SURFACES; s++) {
-        if (prts_ui_surface_name(e->ui, s)) prts_gfx_ui_draw_surface(e->gfx_ui, s, prts_ui_batch_of(e->ui, s));
+        const char *name = prts_ui_surface_name(e->ui, s);
+        if (!name) continue;
+        prts_gfx_ui_draw_surface(e->gfx_ui, s, prts_ui_batch_of(e->ui, s));
+        /* materials with `surface = <id>` show it in the world */
+        prts_gfx_set_named_texture(e->gfx, name, prts_gfx_ui_surface_texture(e->gfx_ui, s));
     }
 }
 

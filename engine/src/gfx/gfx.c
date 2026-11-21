@@ -168,6 +168,7 @@ prts_gfx *prts_gfx_create(prts_gfx_getproc getproc, prts_vfs *vfs, bool gles)
     prts_array_init(&g->lines, sizeof(gpu_lines));
     prts_array_init(&g->textures, sizeof(texture_entry));
     prts_array_init(&g->surface_targets, sizeof(prts_render_target));
+    prts_array_init(&g->named_textures, sizeof(named_texture));
     prts_array_init(&g->sprite_verts, sizeof(prts_vertex));
     if (!getproc) {
         g->null = true;
@@ -230,6 +231,7 @@ void prts_gfx_destroy(prts_gfx *g)
     prts_array_free(&g->lines);
     prts_array_free(&g->textures);
     prts_array_free(&g->surface_targets);
+    prts_array_free(&g->named_textures);
     prts_array_free(&g->sprite_verts);
     prts_free(g);
 }
@@ -530,7 +532,10 @@ static void draw_meshes(prts_gfx *g, const frame_ctx *f, prts_mat4 view_proj)
         int surface = mat && mat->surface[0] ? prts_scene_find_surface(f->scene, mat->surface) : -1;
         if (surface >= 0 && surface == f->skip_surface) continue; /* no display inside its own picture */
         prts_render_target *rt = surface >= 0 ? prts_array_at(&g->surface_targets, (size_t)surface) : NULL;
-        g->gl.glBindTexture(GL_TEXTURE_2D, rt && rt->fbo ? rt->color : prts_gfx_texture(g, mat ? mat->texture : ""));
+        /* a surface name without a scene camera may name a texture made elsewhere (UI surfaces) */
+        GLuint named = surface < 0 && mat && mat->surface[0] ? (GLuint)prts_gfx_named_texture(g, mat->surface) : 0;
+        g->gl.glBindTexture(GL_TEXTURE_2D, rt && rt->fbo ? rt->color
+                                           : named ? named : prts_gfx_texture(g, mat ? mat->texture : ""));
         g->gl.glUniform1f(emissive_loc, mat && mat->emissive ? 1.0f : 0.0f);
         g->gl.glUniform1f(magic_loc, mat && mat->magic ? 1.0f : 0.0f);
         g->gl.glUniform1f(flip_loc, rt && rt->fbo ? 1.0f : 0.0f);
@@ -724,6 +729,31 @@ static void present_view(prts_gfx *g, const prts_view *v, const prts_render_targ
 }
 
 int prts_gfx_surfaces_drawn(const prts_gfx *g) { return g->surfaces_drawn; }
+
+void prts_gfx_set_named_texture(prts_gfx *g, const char *name, uint32_t tex)
+{
+    for (size_t i = 0; i < g->named_textures.len; i++) {
+        named_texture *n = prts_array_at(&g->named_textures, i);
+        if (strcmp(n->name, name) == 0) {
+            n->tex = (GLuint)tex;
+            return;
+        }
+    }
+    named_texture n;
+    memset(&n, 0, sizeof(n));
+    strncpy(n.name, name, sizeof(n.name) - 1);
+    n.tex = (GLuint)tex;
+    prts_array_push(&g->named_textures, &n);
+}
+
+uint32_t prts_gfx_named_texture(const prts_gfx *g, const char *name)
+{
+    for (size_t i = 0; i < g->named_textures.len; i++) {
+        const named_texture *n = prts_array_at(&g->named_textures, i);
+        if (strcmp(n->name, name) == 0) return n->tex;
+    }
+    return 0;
+}
 
 /* Renders every surface camera into its texture (in-world displays, before the views). */
 static void draw_surfaces(prts_gfx *g, const prts_scene *scene, const prts_world *world,

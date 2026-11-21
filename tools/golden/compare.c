@@ -118,8 +118,12 @@ int main(int argc, char **argv)
         return 1;
     }
     qsort(refs.list, (size_t)refs.count, sizeof(refs.list[0]), by_name);
-    int failed = 0;
-    for (int i = 0; i < refs.count; i++) failed += compare(ref, out, diff, refs.list[i]) == 1 ? 0 : 1;
+    int failed = 0, matched = 0;
+    for (int i = 0; i < refs.count; i++) {
+        bool ok = compare(ref, out, diff, refs.list[i]) == 1;
+        matched += ok ? 1 : 0;
+        failed += ok ? 0 : 1;
+    }
     names outs;
     outs.count = 0;
     prts_fs_enumerate(out, collect, &outs);
@@ -131,6 +135,6 @@ int main(int argc, char **argv)
             failed++;
         }
     }
-    printf("%d of %d golden images match\n", refs.count - failed < 0 ? 0 : refs.count - failed, refs.count);
+    printf("%d of %d golden images match\n", matched, refs.count);
     return failed ? 1 : 0;
 }
