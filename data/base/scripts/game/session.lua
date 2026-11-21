@@ -6,6 +6,7 @@ local S = { current = nil }
 -- (scripts/maps/<id>.lua) and the name the menu shows.
 S.maps = {
   { id = "proving_ground", name = "Harrowmark" },
+  { id = "ashford_vale", name = "Skirmish: Ashford Vale" },
 }
 
 -- Starts map `id` (scripts/maps/<id>.lua). Only one map per run in M1: returns false if a

@@ -34,6 +34,8 @@ T.case("paths around the keep, blocking, and agents on the grid", function()
   T.is_true(prts.nav.block{ min = { 20, -5 }, max = { 30, 5 } } > 0)
   T.eq(prts.nav.walkable(25, 0), false, "blocked")
   prts.nav.unblock{ min = { 20, -5 }, max = { 30, 5 } }
+  T.is_true(prts.nav.refresh{ min = { 20, -5 }, max = { 30, 5 } } > 0, "read again")
+  T.eq(prts.nav.walkable(25, 0), true)
   T.eq(prts.nav.walkable(25, 0), true, "free again")
   T.fails(function() prts.nav.block{ min = { 1 } } end, "bad rectangle")
   T.fails(function() prts.nav.block(5) end)

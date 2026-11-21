@@ -254,6 +254,7 @@ of sight. The same request always gives the same path.
 | `prts.nav.height(x, z)` | The cell's ground height, or nothing. |
 | `prts.nav.clear_line(x0, z0, x1, z1)` | `true` if a straight walk stays on joined walkable cells. |
 | `prts.nav.block{ min, max }`, `prts.nav.unblock{ min, max }` | Blocks or frees the cells under a rectangle (a building). Blocks count, so overlapping buildings free cleanly. Returns the number of cells. Saved with the game. |
+| `prts.nav.refresh{ min, max }` | Reads the world under a rectangle again (a tree felled, a wall knocked down); returns the number of cells. Scripts that change the world this way redo it after loading a save. |
 | `prts.agent.add(e, { speed = 1.4, radius = 0.35 })` | Makes an entity an agent (or changes its speed and radius). Agents live in the world frame. |
 | `prts.agent.move(e, x, z)` | Finds a path and walks it (straight there without a grid). Returns `true` if there was a path. |
 | `prts.agent.follow(e, { {x, z}, ... })` | Walks the given points. |

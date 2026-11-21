@@ -67,8 +67,13 @@ def shade(c, k):
     return tuple(max(0, min(255, int(v * k))) for v in c)
 
 
-def person(d, step, kind):
-    """d: direction 0..7, step: walk phase (None for idle, else 0..3)."""
+# Side colours for the skirmish: the Crown's blue and gold, the rival lord's red and black.
+SIDES = {"crown": ((44, 66, 150), (214, 172, 62)), "red": ((150, 40, 36), (40, 34, 30))}
+
+
+def person(d, step, kind, side="crown"):
+    """d: direction 0..7, step: walk phase (None for idle, else 0..3). kind: guard, clerk, serf,
+    crossbow or outrider; side picks the colours of soldiers and serfs."""
     f = Frame()
     a = d * math.pi / 4.0            # 0 = facing the viewer
     facing = -math.sin(a)            # -1: profile facing screen-left ... +1: screen-right
@@ -80,8 +85,16 @@ def person(d, step, kind):
 
     if kind == "guard":
         body, trim, legs, head_c = (44, 66, 150), (214, 172, 62), (92, 82, 70), (150, 156, 168)
-    else:
+        if side != "crown":
+            body, trim = SIDES[side]
+    elif kind == "clerk":
         body, trim, legs, head_c = (112, 74, 48), (190, 160, 110), (80, 60, 44), (70, 48, 30)
+    elif kind == "serf":  # a plain tunic, a hood in the side's colour
+        body, trim, legs, head_c = (120, 104, 76), SIDES[side][0], (86, 72, 54), SIDES[side][0]
+    elif kind == "crossbow":  # a padded coat in the side's colour, a kettle hat
+        body, trim, legs, head_c = SIDES[side][0], SIDES[side][1], (78, 70, 60), (120, 124, 134)
+    else:  # outrider: a long riding coat, a pennant
+        body, trim, legs, head_c = shade(SIDES[side][0], 1.2), SIDES[side][1], (60, 50, 40), (96, 70, 44)
     skin, boots, wood, steel = (214, 164, 124), (58, 40, 26), (128, 92, 52), (196, 200, 210)
 
     # legs and boots (walking moves them forward/back; seen from the side that spreads them)
@@ -92,7 +105,7 @@ def person(d, step, kind):
         f.rect(lx - 1.5, 39 + bob, lx + 1.5, ly, shade(legs, 0.9 if side < 0 else 1.0))
         f.rect(lx - 2, ly, lx + 2 + facing * 1.5, ly + 3, boots)
     # torso / tabard or robe
-    bottom = 41 if kind == "guard" else 54
+    bottom = {"guard": 41, "clerk": 54, "serf": 42, "crossbow": 44, "outrider": 48}[kind]
     f.rect(cx - width, 18 + bob, cx + width, bottom + bob, body)
     if front > 0.2 or (kind == "guard" and front < -0.2):
         stripe = cx + facing * 2.5
@@ -106,7 +119,7 @@ def person(d, step, kind):
         f.rect(ax - 1.2, 33 + bob + sw, ax + 1.2, 35 + bob + sw, skin)
     # head
     hy = 11 + bob
-    if kind == "guard":
+    if kind in ("guard", "crossbow"):
         f.ellipse(cx + facing * 0.8, hy, 5.2, 6.2, head_c)                  # helmet
         f.rect(cx - 6, hy + 0.5, cx + 6, hy + 1.2, shade(head_c, 0.75))     # brim
     else:
@@ -130,14 +143,28 @@ def person(d, step, kind):
                 continue
             f.put(sx, y + bob * 0, wood)
         f.rect(sx - 1, 0, sx + 1, 3, steel)
-    else:
+    elif kind == "clerk":
         sx = cx - math.cos(a) * (width + 1.0)
         f.rect(sx - 2, 28 + bob, sx + 2, 31 + bob, (230, 220, 190))         # scroll
+    elif kind == "serf":  # a pick over the shoulder
+        sx = cx - math.cos(a) * (width + 1.0)
+        for y in range(14, 34):
+            f.put(sx + (y - 14) * 0.15, y + bob, wood)
+        f.rect(sx - 3, 13 + bob, sx + 3, 15 + bob, steel)
+    elif kind == "crossbow":  # the crossbow held across the body
+        sx = cx - math.cos(a) * 2.0
+        f.rect(sx - 6 * max(abs(front), 0.3), 26 + bob, sx + 6 * max(abs(front), 0.3), 27 + bob, wood)
+        f.rect(sx - 1, 22 + bob, sx + 1, 32 + bob, shade(wood, 0.8))
+    else:  # outrider: a lance with a pennant in the side's colours
+        sx = cx - math.cos(a) * (width + 1.2) * 0.9
+        for y in range(1, 50):
+            f.put(sx, y, wood)
+        f.rect(sx + 1, 2, sx + 6, 6, trim)
     f.outline((22, 18, 16))
     return f
 
 
-def sheet(kind):
+def sheet(kind, side="crown"):
     rgba = [0] * (COLS * FW * ROWS * FH * 4)
     W = COLS * FW
     for row in range(ROWS):
@@ -146,7 +173,7 @@ def sheet(kind):
             step = None if row < 8 else col
             if row < 8 and col > 0:
                 step = None
-            fr = person(d, step, kind)
+            fr = person(d, step, kind, side)
             for y in range(FH):
                 for x in range(FW):
                     c = fr.px[y][x]
@@ -172,9 +199,17 @@ return {{
 
 def main():
     os.makedirs(OUT, exist_ok=True)
-    for name, kind, title, height in (("crown_guard", "guard", "Crown man-at-arms", 1.85),
-                                      ("crown_clerk", "clerk", "Crown war-room clerk", 1.75)):
-        w, h, rgba = sheet(kind)
+    for name, kind, side, title, height in (
+            ("crown_guard", "guard", "crown", "Crown man-at-arms", 1.85),
+            ("crown_clerk", "clerk", "crown", "Crown war-room clerk", 1.75),
+            ("crown_serf", "serf", "crown", "Crown serf", 1.7),
+            ("crown_crossbow", "crossbow", "crown", "Crown crossbowman", 1.8),
+            ("crown_outrider", "outrider", "crown", "Crown outrider", 1.8),
+            ("red_guard", "guard", "red", "Rival man-at-arms", 1.85),
+            ("red_serf", "serf", "red", "Rival serf", 1.7),
+            ("red_crossbow", "crossbow", "red", "Rival crossbowman", 1.8),
+            ("red_outrider", "outrider", "red", "Rival outrider", 1.8)):
+        w, h, rgba = sheet(kind, side)
         write_png(os.path.join(OUT, name + ".png"), w, h, rgba)
         with open(os.path.join(OUT, name + ".lua"), "w") as f:
             f.write(META.format(title=title, name=name, height=height))

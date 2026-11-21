@@ -61,6 +61,29 @@ static bool joined(const prts_nav *n, int a, int b, float dist)
     return fabsf(n->ground[a] - n->ground[b]) <= CLIMB * dist + 1e-4f;
 }
 
+/* Reads the world under one cell: its ground and whether a body fits there. */
+static void sample(prts_nav *n, const prts_cworld *cw, int cx, int cz)
+{
+    int i = idx(n, cx, cz);
+    float r = fminf(0.4f, n->cell * 0.45f);
+    /* the ground is the lowest surface under the cell: units walk at ground level, not on
+     * roofs and wall tops (those are for the commander and, later, garrisons) */
+    float x = centre_x(n, cx), z = centre_z(n, cz), h = 0.0f, y = PROBE_UP, found = 0.0f;
+    bool any = false;
+    for (int k = 0; k < 16 && prts_cworld_ground(cw, prts_v3(x, y, z), y + PROBE_UP, &found); k++) {
+        h = found;
+        any = true;
+        y = found - 0.05f;
+    }
+    n->ground[i] = h;
+    if (!any) {
+        n->solid[i] = 1;
+        return;
+    }
+    prts_aabb body = {prts_v3(x - r, h + BODY_LOW, z - r), prts_v3(x + r, h + BODY_HIGH, z + r)};
+    n->solid[i] = prts_cworld_overlaps(cw, body) ? 1 : 0;
+}
+
 prts_nav *prts_nav_build(const prts_cworld *cw, float min_x, float min_z, float max_x, float max_z, float cell)
 {
     if (!(cell > 0.05f) || !(max_x > min_x) || !(max_z > min_z)) return NULL;
@@ -80,27 +103,8 @@ prts_nav *prts_nav_build(const prts_cworld *cw, float min_x, float min_z, float 
     n->parent = prts_malloc(count * sizeof(int));
     n->stamp = prts_calloc(count, sizeof(uint32_t));
     n->block_hash = 0x9e3779b97f4a7c15ull;
-    float r = fminf(0.4f, cell * 0.45f);
     for (int cz = 0; cz < rows; cz++) {
-        for (int cx = 0; cx < cols; cx++) {
-            int i = idx(n, cx, cz);
-            /* the ground is the lowest surface under the cell: units walk at ground level, not on
-             * roofs and wall tops (those are for the commander and, later, garrisons) */
-            float x = centre_x(n, cx), z = centre_z(n, cz), h = 0.0f, y = PROBE_UP, found = 0.0f;
-            bool any = false;
-            for (int k = 0; k < 16 && prts_cworld_ground(cw, prts_v3(x, y, z), y + PROBE_UP, &found); k++) {
-                h = found;
-                any = true;
-                y = found - 0.05f;
-            }
-            if (!any) {
-                n->solid[i] = 1;
-                continue;
-            }
-            n->ground[i] = h;
-            prts_aabb body = {prts_v3(x - r, h + BODY_LOW, z - r), prts_v3(x + r, h + BODY_HIGH, z + r)};
-            n->solid[i] = prts_cworld_overlaps(cw, body) ? 1 : 0;
-        }
+        for (int cx = 0; cx < cols; cx++) sample(n, cw, cx, cz);
     }
     return n;
 }
@@ -134,6 +138,26 @@ bool prts_nav_height(const prts_nav *n, float x, float z, float *h)
     if (!cell_of(n, x, z, &cx, &cz) || n->solid[idx(n, cx, cz)]) return false;
     *h = n->ground[idx(n, cx, cz)];
     return true;
+}
+
+int prts_nav_refresh(prts_nav *n, const prts_cworld *cw, float min_x, float min_z, float max_x, float max_z)
+{
+    int changed = 0;
+    for (int cz = 0; cz < n->rows; cz++) {
+        float z = centre_z(n, cz);
+        if (z < min_z || z > max_z) continue;
+        for (int cx = 0; cx < n->cols; cx++) {
+            float x = centre_x(n, cx);
+            if (x < min_x || x > max_x) continue;
+            sample(n, cw, cx, cz);
+            changed++;
+        }
+    }
+    prts_hasher h = {n->block_hash};
+    const float args[4] = {min_x, min_z, max_x, max_z};
+    prts_hasher_bytes(&h, args, sizeof(args));
+    n->block_hash = h.h;
+    return changed;
 }
 
 int prts_nav_block(prts_nav *n, float min_x, float min_z, float max_x, float max_z, int delta)

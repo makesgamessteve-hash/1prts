@@ -32,6 +32,9 @@ bool prts_nav_height(const prts_nav *n, float x, float z, float *h);
 /* Adds `delta` (+1 to block, -1 to free) to the block count of every cell whose centre is in
  * the rectangle. Returns the number of cells changed. */
 int prts_nav_block(prts_nav *n, float min_x, float min_z, float max_x, float max_z, int delta);
+/* Reads the world again under the rectangle (a tree felled, a wall knocked down). The cells
+ * read are not saved: scripts that change the world redo it after loading. */
+int prts_nav_refresh(prts_nav *n, const prts_cworld *cw, float min_x, float min_z, float max_x, float max_z);
 /* A smoothed path from (x0, z0) to (x1, z1): writes up to `max` points (x, z pairs) into `out`,
  * not counting the start, and returns their number; -1 if there is none. A start or goal in a
  * blocked cell is moved to the nearest walkable cell. The same request gives the same path. */

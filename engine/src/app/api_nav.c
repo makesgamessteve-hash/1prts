@@ -101,6 +101,19 @@ static int block(lua_State *L, int delta)
     return 1;
 }
 
+static int l_nav_refresh(lua_State *L)
+{
+    prts_engine *e = E(L);
+    prts_nav *n = need_nav(L);
+    luaL_checktype(L, 1, LUA_TTABLE);
+    float x0, z0, x1, z1;
+    xz_field(L, 1, "min", &x0, &z0);
+    xz_field(L, 1, "max", &x1, &z1);
+    prts_cworld_sync(e->cworld, e->world);
+    lua_pushinteger(L, prts_nav_refresh(n, e->cworld, x0, z0, x1, z1));
+    return 1;
+}
+
 static int l_nav_block(lua_State *L) { return block(L, 1); }
 static int l_nav_unblock(lua_State *L) { return block(L, -1); }
 
@@ -271,7 +284,8 @@ void prts_engine_open_nav_api(prts_engine *e)
 {
     static const prts_script_fn nav[] = {{"build", l_nav_build},     {"path", l_nav_path},       {"walkable", l_nav_walkable},
                                          {"height", l_nav_height},   {"block", l_nav_block},     {"unblock", l_nav_unblock},
-                                         {"clear_line", l_nav_clear_line}, {"info", l_nav_info}, {NULL, NULL}};
+                                         {"clear_line", l_nav_clear_line}, {"info", l_nav_info}, {"refresh", l_nav_refresh},
+                                         {NULL, NULL}};
     static const prts_script_fn agent[] = {{"add", l_agent_add},           {"remove", l_agent_remove},
                                            {"move", l_agent_move},         {"follow", l_agent_follow},
                                            {"stop", l_agent_stop},         {"info", l_agent_info},

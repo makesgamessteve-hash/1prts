@@ -71,6 +71,14 @@ UTEST(nav, paths_go_around_walls_and_buildings)
     ASSERT_GT(count, 1);
     ASSERT_TRUE(path_ok(n, -10, 0, q, count));
     for (int i = 0; i < count; i++) ASSERT_TRUE(q[2 * i + 1] * side < 19.0f);
+    /* the wall's solid cells read again: still a wall; after it is switched off, open ground */
+    ASSERT_GT(prts_nav_refresh(n, cw, -1, -20, 1, 20), 0);
+    ASSERT_FALSE(prts_nav_walkable(n, 0.5f, 0.0f));
+    prts_cworld_set_enabled(cw, 1, false);
+    prts_nav_refresh(n, cw, -1, -20, 1, 20);
+    ASSERT_TRUE(prts_nav_walkable(n, 0.5f, 0.0f));
+    prts_cworld_set_enabled(cw, 1, true);
+    prts_nav_refresh(n, cw, -1, -20, 1, 20);
     /* the building gone: the first path again */
     prts_nav_block(n, -2, side * 19, 2, side * 30, -1);
     prts_nav_block(n, -2, side * 19, 2, side * 30, -1); /* never below zero */

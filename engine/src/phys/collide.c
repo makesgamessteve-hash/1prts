@@ -79,6 +79,9 @@ typedef struct cbox {
     prts_entity owner;
     bool enabled;
     bool use_only; /* only the use ray hits it (prts_cworld_add_use_box) */
+    bool posed;    /* world was computed from pose/pose_yaw (skips unmoved owners) */
+    prts_dvec3 pose;
+    float pose_yaw;
 } cbox;
 
 /* Static boxes (no owner) live in a bounding volume hierarchy, rebuilt when boxes are added;
@@ -140,7 +143,7 @@ void prts_cworld_destroy(prts_cworld *cw)
 
 int prts_cworld_add_box(prts_cworld *cw, prts_aabb box, prts_entity owner)
 {
-    cbox b = {box, box, owner, true, false};
+    cbox b = {box, box, owner, true, false, false, {0, 0, 0}, 0.0f};
     prts_array_push(&cw->boxes, &b);
     cw->bvh->dirty = true;
     return (int)cw->boxes.len - 1;
@@ -201,6 +204,10 @@ void prts_cworld_sync(prts_cworld *cw, const prts_world *w)
         if (b->owner == PRTS_ENTITY_NONE) continue;
         prts_dvec3 p = prts_world_pos(w, b->owner);
         float yaw = prts_world_yaw(w, b->owner);
+        if (b->posed && p.x == b->pose.x && p.y == b->pose.y && p.z == b->pose.z && yaw == b->pose_yaw) continue;
+        b->posed = true;
+        b->pose = p;
+        b->pose_yaw = yaw;
         prts_vec3 corners[8];
         for (int c = 0; c < 8; c++) {
             prts_vec3 v = prts_v3((c & 1) ? b->local.max.x : b->local.min.x, (c & 2) ? b->local.max.y : b->local.min.y,
