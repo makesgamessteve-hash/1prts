@@ -36,6 +36,7 @@ void prts_heightfield_destroy(prts_heightfield *hf)
 {
     if (!hf) return;
     prts_free(hf->heights);
+    prts_free(hf->holes);
     prts_free(hf);
 }
 
@@ -63,6 +64,48 @@ float prts_heightfield_sample(const prts_heightfield *hf, float x, float z)
     float h01 = prts_heightfield_get(hf, ix, iz + 1), h11 = prts_heightfield_get(hf, ix + 1, iz + 1);
     float a = h00 + (h10 - h00) * tx, b = h01 + (h11 - h01) * tx;
     return a + (b - a) * tz;
+}
+
+int prts_heightfield_set_hole(prts_heightfield *hf, float x0, float z0, float x1, float z1)
+{
+    int qx = hf->nx - 1, qz = hf->nz - 1;
+    if (qx < 1 || qz < 1 || !(x1 > x0) || !(z1 > z0)) return 0;
+    if (!hf->holes) hf->holes = prts_calloc((size_t)qx * (size_t)qz, 1);
+    int ix0 = (int)floorf((x0 - hf->origin_x) / hf->spacing), ix1 = (int)ceilf((x1 - hf->origin_x) / hf->spacing) - 1;
+    int iz0 = (int)floorf((z0 - hf->origin_z) / hf->spacing), iz1 = (int)ceilf((z1 - hf->origin_z) / hf->spacing) - 1;
+    ix0 = PRTS_MAX(ix0, 0);
+    iz0 = PRTS_MAX(iz0, 0);
+    ix1 = PRTS_MIN(ix1, qx - 1);
+    iz1 = PRTS_MIN(iz1, qz - 1);
+    int opened = 0;
+    for (int iz = iz0; iz <= iz1; iz++) {
+        for (int ix = ix0; ix <= ix1; ix++) {
+            unsigned char *q = &hf->holes[iz * qx + ix];
+            if (!*q) opened++;
+            *q = 1;
+        }
+    }
+    return opened;
+}
+
+bool prts_heightfield_quad_hole(const prts_heightfield *hf, int ix, int iz)
+{
+    int qx = hf->nx - 1, qz = hf->nz - 1;
+    if (!hf->holes || ix < 0 || iz < 0 || ix >= qx || iz >= qz) return false;
+    return hf->holes[iz * qx + ix] != 0;
+}
+
+bool prts_heightfield_hole(const prts_heightfield *hf, float x, float z)
+{
+    if (!hf->holes) return false;
+    int ix = (int)floorf((x - hf->origin_x) / hf->spacing), iz = (int)floorf((z - hf->origin_z) / hf->spacing);
+    return prts_heightfield_quad_hole(hf, ix, iz);
+}
+
+bool prts_heightfield_solid_at(const prts_heightfield *hf, float x, float z, float y)
+{
+    if (prts_heightfield_hole(hf, x, z)) return false;
+    return y >= prts_heightfield_sample(hf, x, z) - PRTS_UNDERGROUND;
 }
 
 prts_vec3 prts_heightfield_normal(const prts_heightfield *hf, float x, float z)
@@ -194,6 +237,8 @@ void prts_cworld_set_owner_enabled(prts_cworld *cw, prts_entity owner, bool enab
 }
 
 void prts_cworld_set_heightfield(prts_cworld *cw, const prts_heightfield *hf) { cw->hf = hf; }
+
+const prts_heightfield *prts_cworld_heightfield(const prts_cworld *cw) { return cw->hf; }
 
 void prts_cworld_set_max_slope(prts_cworld *cw, float radians) { cw->slope_cos = cosf(radians); }
 
@@ -402,6 +447,7 @@ static bool clamp_terrain(const prts_cworld *cw, prts_aabb *box)
     float cx = (box->min.x + box->max.x) * 0.5f, cz = (box->min.z + box->max.z) * 0.5f;
     float h = prts_heightfield_sample(cw->hf, cx, cz);
     if (box->min.y > h + EPS) return false;
+    if (!prts_heightfield_solid_at(cw->hf, cx, cz, box->min.y)) return false; /* a hole, or under the ground */
     float lift = h - box->min.y;
     box->min.y += lift;
     box->max.y += lift;
@@ -417,6 +463,7 @@ static bool limit_slope(const prts_cworld *cw, prts_aabb start, prts_aabb *box)
     if (!cw->hf) return false;
     float sx = (start.min.x + start.max.x) * 0.5f, sz = (start.min.z + start.max.z) * 0.5f;
     if (start.min.y > prts_heightfield_sample(cw->hf, sx, sz) + 0.05f) return false; /* not on the terrain */
+    if (!prts_heightfield_solid_at(cw->hf, sx, sz, start.min.y)) return false;  /* in a hole or under it */
     float dx = box->min.x - start.min.x, dz = box->min.z - start.min.z;
     if (dx * dx + dz * dz < 1e-12f) return false;
     prts_vec3 n = prts_heightfield_normal(cw->hf, sx + dx, sz + dz);
@@ -560,7 +607,8 @@ bool prts_cworld_ground(const prts_cworld *cw, prts_vec3 p, float max_drop, floa
     }
     if (cw->hf) {
         float h = prts_heightfield_sample(cw->hf, p.x, p.z);
-        if (h <= p.y + EPS && h >= best && prts_heightfield_normal(cw->hf, p.x, p.z).y >= cw->slope_cos) {
+        if (h <= p.y + EPS && h >= best && prts_heightfield_normal(cw->hf, p.x, p.z).y >= cw->slope_cos &&
+            prts_heightfield_solid_at(cw->hf, p.x, p.z, p.y)) {
             best = h;
             found = true;
         }

@@ -25,6 +25,11 @@ storm layer, the view above the clouds, the throne hall's war table over its scr
 weightless aether core with Ashby at the stone, and elder drakes over the courtyard. They are
 staged scenes taken at 960×540 under Xvfb like the others.
 
+`80`–`85` show Hollow Roads (M7) on Underhill: the tunnel gate at the foot of Merewatch Hill, a
+gallery lit by glowstone, Caldrith's broken chain in the glowstone cavern, the Hollow Court's war
+room under the ground, the Court's guard at its gatehouse, and a tunnel wyrm burst up out of the
+field.
+
 These images show Banner & Bastion art and are licensed under CC BY 4.0 like the rest of the
 art (see `LICENSING.md`). Credit: "Banner & Bastion screenshot" by The Banner & Bastion
 Contributors.

@@ -49,6 +49,7 @@ end
 -- most, timber as it runs short, bone for the Wildborn while remains lie about).
 function A.economy(side_id)
   local side = S.side(side_id)
+  local wood = (D.FACTIONS[side.faction].gathers or {})[2] or "timber" -- the Gloam cut stone, not timber
   local hold = S.hq(side_id)
   if not hold then return end
   local worker = S.role(side_id, "worker")
@@ -73,21 +74,21 @@ function A.economy(side_id)
   local bone = count(serfs, function(e) local t = S.data(e).task return t and t.res == "bone" end)
   -- saving for something short of timber or gold: an empty-handed gatherer changes over
   local want = A.shortfall(side_id)
-  if want == "timber" or want == "gold" then
-    local from = want == "timber" and "gold" or "timber"
+  if want == wood or want == "gold" then
+    local from = want == wood and "gold" or wood
     for _, e in ipairs(serfs) do
       local d = S.data(e)
       if d.task and d.task.t == "gather" and d.task.res == from and not d.carry then
         if E.gather(e, want) and want == "gold" then gold = gold + 1 end
-        if want == "timber" then gold = gold - 1 end
+        if want == wood then gold = gold - 1 end
         break
       end
     end
   -- plenty of timber: an empty-handed woodcutter goes to the mines instead
-  elseif side.timber > side.gold + 300 then
+  elseif side[wood] > side.gold + 300 then
     for _, e in ipairs(serfs) do
       local d = S.data(e)
-      if d.task and d.task.t == "gather" and d.task.res == "timber" and not d.carry then
+      if d.task and d.task.t == "gather" and d.task.res == wood and not d.carry then
         if E.gather(e, "gold") then gold = gold + 1 end
         break
       end
@@ -102,12 +103,12 @@ function A.economy(side_id)
         builders = builders + 1
       elseif bones and bone * 6 < #serfs and E.gather(e, "bone") then
         bone = bone + 1
-      elseif side.timber < side.gold * 0.6 and gold * 3 >= #serfs then
-        if not E.gather(e, "timber") then E.gather(e, "gold") end
-      elseif gold * 2 < #serfs or side.timber > side.gold + 200 then
+      elseif side[wood] < side.gold * 0.6 and gold * 3 >= #serfs then
+        if not E.gather(e, wood) then E.gather(e, "gold") end
+      elseif gold * 2 < #serfs or side[wood] > side.gold + 200 then
         if E.gather(e, "gold") then gold = gold + 1 end
       else
-        if not E.gather(e, "timber") then E.gather(e, "gold") end
+        if not E.gather(e, wood) then E.gather(e, "gold") end
       end
     end
   end
@@ -136,12 +137,13 @@ function A.shortfall(side_id)
 end
 
 -- The nearest free aether spring to (x, z) within 400 m, or nil.
-function A.free_spring(x, z)
+function A.free_spring(x, z, kind)
+  kind = kind or "spring"
   local best, bd = nil, 400
   for _, e in ipairs(S.match().resources) do
     if S.alive(e) then
       local d = S.data(e)
-      if d.kind == "spring" and not (d.well and S.alive(d.well)) then
+      if d.kind == kind and not (d.well and S.alive(d.well)) then
         local sx, _, sz = S.pos(e)
         local dist = S.dist(x, z, sx, sz)
         if dist < bd then best, bd = e, dist end
@@ -156,13 +158,14 @@ function A.site_for(side_id, role, def_id)
   local side = S.side(side_id)
   local hold = S.hq(side_id)
   local hx, _, hz = S.pos(hold)
-  if role == "aether" then
-    local spring = A.free_spring(hx, hz)
+  if role == "aether" then -- a well or shrine by a spring; glowstone works over a grotto
+    local grotto = D.structure(def_id).glowstone
+    local spring = A.free_spring(hx, hz, grotto and "grotto" or "spring")
     if not spring then return nil end
     local sx, _, sz = S.pos(spring)
-    return A.find_spot(def_id, sx, sz, 0, D.SPRING_REACH - 1)
+    return A.find_spot(def_id, sx, sz, 0, (grotto and D.GROTTO_REACH or D.SPRING_REACH) - 1)
   elseif role == "tower" then
-    local enemy = S.hq(side.enemy)
+    local enemy = S.foe(side_id, hx, hz)
     if enemy then
       local ex, _, ez = S.pos(enemy)
       local dx, dz = ex - hx, ez - hz
@@ -170,7 +173,8 @@ function A.site_for(side_id, role, def_id)
       return A.find_spot(def_id, hx + dx / len * 90, hz + dz / len * 90, 0, 40)
     end
   elseif role == "timber_drop" then
-    local tree = E.nearest_source("timber", hx, hz, 400)
+    local res = (D.FACTIONS[side.faction].gathers or {})[2] or "timber"
+    local tree = E.nearest_source(res, hx, hz, 400)
     if tree then
       local tx, _, tz = S.pos(tree)
       return A.find_spot(def_id, tx, tz, 12, 40)
@@ -340,7 +344,7 @@ function A.army(side_id, now)
     end
   end
   if men >= A.SQUAD_MEN * math.min(A.MAX_WAVE, A.FIRST_WAVE + side.wave) then
-    local enemy = S.hq(side.enemy)
+    local enemy = S.foe(side_id, hx, hz)
     if not enemy then return nil end
     local ex, _, ez = S.pos(enemy)
     side.wave = side.wave + 1
@@ -350,7 +354,7 @@ function A.army(side_id, now)
     return "attack"
   end
   -- attackers whose march is done press on against the enemy headquarters
-  local enemy = S.hq(side.enemy)
+  local enemy = S.foe(side_id, hx, hz)
   if enemy then
     local ex, _, ez = S.pos(enemy)
     for _, c in ipairs(companies) do

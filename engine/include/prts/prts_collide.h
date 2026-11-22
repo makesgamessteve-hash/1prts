@@ -18,7 +18,12 @@ typedef struct prts_heightfield {
     float spacing;
     float origin_x, origin_z;
     float *heights;
+    unsigned char *holes; /* one per grid quad ((nx - 1) * (nz - 1)); NULL until a hole is cut */
 } prts_heightfield;
+
+/* Deeper than this under the terrain's surface, the terrain is not solid: galleries dug there
+ * (boxes) are walkable, and the navigation grid does not count them as ground. */
+#define PRTS_UNDERGROUND 3.0f
 
 prts_heightfield *prts_heightfield_create(int nx, int nz, float spacing, float origin_x, float origin_z);
 void prts_heightfield_destroy(prts_heightfield *hf);
@@ -27,6 +32,16 @@ void prts_heightfield_set(prts_heightfield *hf, int ix, int iz, float h);
 /* Bilinear height at a world position (clamped to the grid edge). */
 float prts_heightfield_sample(const prts_heightfield *hf, float x, float z);
 prts_vec3 prts_heightfield_normal(const prts_heightfield *hf, float x, float z);
+/* Cuts a hole: every grid quad overlapping the rectangle is open (neither drawn nor solid).
+ * Returns how many quads were newly opened. */
+int prts_heightfield_set_hole(prts_heightfield *hf, float x0, float z0, float x1, float z1);
+/* Whether (x, z) lies in a hole. */
+bool prts_heightfield_hole(const prts_heightfield *hf, float x, float z);
+/* Whether the quad at grid index (ix, iz) is a hole. */
+bool prts_heightfield_quad_hole(const prts_heightfield *hf, int ix, int iz);
+/* Whether the terrain is solid ground at (x, z) for something whose bottom is at y: not in a
+ * hole, and not more than PRTS_UNDERGROUND under the surface. */
+bool prts_heightfield_solid_at(const prts_heightfield *hf, float x, float z, float y);
 
 typedef struct prts_cworld prts_cworld;
 
@@ -46,6 +61,7 @@ bool prts_cworld_enabled(const prts_cworld *cw, int id);
 /* Enables or disables every box owned by an entity. */
 void prts_cworld_set_owner_enabled(prts_cworld *cw, prts_entity owner, bool enabled);
 void prts_cworld_set_heightfield(prts_cworld *cw, const prts_heightfield *hf);
+const prts_heightfield *prts_cworld_heightfield(const prts_cworld *cw);
 /* The steepest terrain a mover standing on it can walk up (default 45 degrees). */
 void prts_cworld_set_max_slope(prts_cworld *cw, float radians);
 /* Recomputes world-space boxes of owned boxes from their owners' transforms. */

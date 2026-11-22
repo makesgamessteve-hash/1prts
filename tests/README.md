@@ -228,3 +228,21 @@ is missing. References are C unit tests (`suite.case`), test files and scripts (
 | storm-the-citadel | Storming Caldrith | `tests/game/scenarios/storm_the_citadel.lua` |
 | storm-the-citadel | Caldrith broken | `tests/game/scenarios/storm_the_citadel_lost.lua` |
 | storm-the-citadel | A citadel over Thornmere | `tests/game/scenarios/citadel_skirmish.lua` |
+| underground | Down through a hole | `tests/game/scenarios/tunnels_walk.lua`, `engine/tests/test_collide.c` (`collide.terrain_holes`) |
+| underground | Walking a gallery under the field | `tests/game/scenarios/tunnels_walk.lua`, `engine/tests/test_collide.c` (`collide.under_the_terrain`), `engine/tests/test_nav.c` (`nav.ignores_galleries_under_the_field`) |
+| tunnels | Through the tunnel road | `tests/game/scenarios/tunnel_road.lua` |
+| tunnels | Delvers dig a tunnel | `tests/game/scenarios/tunnel_dig.lua` |
+| tunnels | A gallery collapses | `tests/game/scenarios/tunnel_collapse.lua` |
+| tunnels | A flooded gallery | `tests/game/scenarios/tunnel_collapse.lua` |
+| tunnels | Into the dark | `tests/game/scenarios/tunnels_walk.lua` |
+| tunnels | Down the deep shaft | `tests/game/scenarios/deep_shaft.lua` |
+| tunnels | Orders under the ground | `tests/game/scenarios/echo_pillar.lua` |
+| gloam-courts | The Gloam economy | `tests/game/scenarios/gloam_economy.lua` |
+| gloam-courts | Down to the war room | `tests/game/scenarios/gloam_hq.lua` |
+| gloam-courts | Gloam soldiers | `tests/game/scenarios/gloam_units.lua` |
+| gloam-courts | The wyrm bursts up | `tests/game/scenarios/tunnel_wyrm.lua` |
+| gloam-courts | Four sides, three factions | `tests/game/scenarios/fourway_match.lua` |
+| gloam-magic | Glimmer-wright spells | `tests/game/scenarios/gloam_spells.lua` |
+| gloam-magic | Mycel keeper spells | `tests/game/scenarios/gloam_spells.lua` |
+| under-the-hill | Taking the Hollow Court | `tests/game/scenarios/under_the_hill.lua` |
+| under-the-hill | Caldrith's chain | `tests/game/scenarios/deep_shaft.lua` |

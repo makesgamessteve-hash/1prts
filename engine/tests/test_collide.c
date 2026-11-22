@@ -325,3 +325,71 @@ UTEST(collide, bvh_matches_checking_every_box)
     prts_cworld_destroy(cw);
     prts_world_destroy(w);
 }
+
+/* A flat 20 x 20 m terrain at height 0 (grid spacing 2 m). */
+static prts_heightfield *flat_terrain(void) { return prts_heightfield_create(11, 11, 2.0f, -10.0f, -10.0f); }
+
+UTEST(collide, terrain_holes)
+{
+    /* Spec (underground): Down through a hole */
+    prts_heightfield *hf = flat_terrain();
+    prts_cworld *cw = prts_cworld_create();
+    prts_cworld_set_heightfield(cw, hf);
+    ASSERT_TRUE(prts_cworld_heightfield(cw) == hf);
+    ASSERT_FALSE(prts_heightfield_hole(hf, 0.5f, 0.5f));
+    ASSERT_FALSE(prts_heightfield_quad_hole(hf, 5, 5));
+    ASSERT_EQ(0, prts_heightfield_set_hole(hf, 1, 1, 1, 1));       /* an empty rectangle */
+    ASSERT_EQ(4, prts_heightfield_set_hole(hf, -1.5f, -1.5f, 1.5f, 1.5f));
+    ASSERT_EQ(0, prts_heightfield_set_hole(hf, -1, -1, 1, 1));       /* already open */
+    ASSERT_TRUE(prts_heightfield_hole(hf, 0.5f, 0.5f));
+    ASSERT_TRUE(prts_heightfield_hole(hf, -1.9f, -1.9f));
+    ASSERT_FALSE(prts_heightfield_hole(hf, 2.5f, 0.5f));
+    ASSERT_FALSE(prts_heightfield_quad_hole(hf, -1, 0));            /* outside the grid */
+    ASSERT_FALSE(prts_heightfield_solid_at(hf, 0.5f, 0.5f, 0.0f));
+    ASSERT_TRUE(prts_heightfield_solid_at(hf, 3.0f, 3.0f, 0.0f));
+    /* a gallery floor 8 m down: falling through the hole lands on it */
+    prts_cworld_add_box(cw, box(-2, -9, -2, 2, -8, 2), PRTS_ENTITY_NONE);
+    prts_aabb me = box(-0.3f, 0.0f, -0.3f, 0.3f, 1.8f, 0.3f);
+    prts_move_result r;
+    for (int i = 0; i < 40; i++) prts_cworld_move(cw, &me, prts_v3(0, -0.5f, 0), 0.4f, &r);
+    ASSERT_NEAR(-8.0f, me.min.y, 1e-3f);
+    ASSERT_TRUE(r.on_ground);
+    ASSERT_EQ(0, r.ground_box);
+    /* beside the hole the terrain still holds */
+    me = box(4.7f, 0.0f, 4.7f, 5.3f, 1.8f, 5.3f);
+    prts_cworld_move(cw, &me, prts_v3(0, -0.5f, 0), 0.4f, &r);
+    ASSERT_NEAR(0.0f, me.min.y, 1e-3f);
+    float h = 0.0f;
+    ASSERT_TRUE(prts_cworld_ground(cw, prts_v3(0, 5, 0), 20, &h));
+    ASSERT_NEAR(-8.0f, h, 1e-3f); /* the gallery floor, not the terrain over the hole */
+    prts_cworld_destroy(cw);
+    prts_heightfield_destroy(hf);
+    /* a grid too small for quads has no holes */
+    prts_heightfield *dot = prts_heightfield_create(1, 1, 1.0f, 0, 0);
+    ASSERT_EQ(0, prts_heightfield_set_hole(dot, -1, -1, 1, 1));
+    prts_heightfield_destroy(dot);
+}
+
+UTEST(collide, under_the_terrain)
+{
+    /* Spec (underground): Walking a gallery under the field */
+    prts_heightfield *hf = flat_terrain();
+    prts_cworld *cw = prts_cworld_create();
+    prts_cworld_set_heightfield(cw, hf);
+    prts_cworld_add_box(cw, box(-10, -11, -2, 10, -10, 2), PRTS_ENTITY_NONE); /* a gallery floor 10 m down */
+    prts_aabb me = box(-8.3f, -10.0f, -0.3f, -7.7f, -8.2f, 0.3f);
+    prts_move_result r;
+    for (int i = 0; i < 30; i++) prts_cworld_move(cw, &me, prts_v3(0.5f, -0.1f, 0), 0.4f, &r);
+    ASSERT_NEAR(-10.0f, me.min.y, 1e-3f); /* the terrain above does not push the walker up */
+    ASSERT_NEAR(6.7f, me.min.x, 1e-3f);
+    ASSERT_TRUE(r.on_ground);
+    float h = 0.0f;
+    ASSERT_TRUE(prts_cworld_ground(cw, prts_v3(0, -9.5f, 0), 5, &h));
+    ASSERT_NEAR(-10.0f, h, 1e-3f);
+    /* just under the surface (a fall in progress) the terrain still catches */
+    me = box(-0.3f, -0.6f, -0.3f, 0.3f, 1.2f, 0.3f);
+    prts_cworld_move(cw, &me, prts_v3(0, -0.1f, 0), 0.4f, &r);
+    ASSERT_NEAR(0.0f, me.min.y, 1e-3f);
+    prts_cworld_destroy(cw);
+    prts_heightfield_destroy(hf);
+}

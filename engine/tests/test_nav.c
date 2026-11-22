@@ -390,3 +390,27 @@ UTEST(agents, queries_speed_removal_and_saves)
     prts_agents_destroy(NULL);
     prts_world_destroy(w);
 }
+
+UTEST(nav, ignores_galleries_under_the_field)
+{
+    /* Spec (underground): Walking a gallery under the field (units keep to the field) */
+    prts_heightfield *hf = prts_heightfield_create(31, 31, 2.0f, -30.0f, -30.0f);
+    prts_cworld *cw = prts_cworld_create();
+    prts_cworld_set_heightfield(cw, hf);
+    prts_cworld_add_box(cw, box(-20, -11, -2, 20, -10, 2), PRTS_ENTITY_NONE); /* a gallery 10 m down */
+    prts_cworld_add_box(cw, box(-4, -0.5f, 10, 4, -0.3f, 14), PRTS_ENTITY_NONE); /* a cellar floor just under */
+    prts_heightfield_set_hole(hf, 18, -2, 22, 2);                                /* a mouth's hole */
+    prts_cworld_add_box(cw, box(18, -9, -2, 22, -8, 2), PRTS_ENTITY_NONE);      /* its ramp, under the hole */
+    prts_nav *n = prts_nav_build(cw, -30, -30, 30, 30, 2.0f);
+    float h = 1.0f;
+    ASSERT_TRUE(prts_nav_height(n, 0, 0, &h));
+    ASSERT_NEAR(0.0f, h, 1e-3f); /* the field over the gallery */
+    ASSERT_TRUE(prts_nav_walkable(n, 0, 0));
+    ASSERT_TRUE(prts_nav_height(n, 0, 12, &h));
+    ASSERT_NEAR(-0.3f, h, 1e-3f); /* a floor just under the surface is still ground */
+    ASSERT_TRUE(prts_nav_height(n, 20, 0, &h));
+    ASSERT_NEAR(-8.0f, h, 1e-3f); /* in the hole: the ramp */
+    prts_nav_destroy(n);
+    prts_cworld_destroy(cw);
+    prts_heightfield_destroy(hf);
+}

@@ -182,6 +182,8 @@ typedef struct prts_scene {
     prts_array images;  /* prts_scene_image */
     prts_cell_mask current_cells; /* cells given to geometry added from now on */
     prts_heightfield *terrain;
+    int terrain_group;      /* the mesh group holding the terrain's triangles (-1: none) */
+    size_t terrain_first;   /* where the terrain's indices start in that group */
     prts_scene_env env;
     uint32_t revision; /* bumped on every change, so the renderer knows to re-upload */
 } prts_scene;
@@ -228,6 +230,9 @@ typedef struct prts_tube {
 void prts_scene_add_tube(prts_scene *s, const prts_tube *t, int material, prts_entity owner);
 /* Generates terrain from value noise, flattening the given areas. Replaces old terrain. */
 void prts_scene_terrain(prts_scene *s, const prts_terrain_params *p, const prts_terrain_flat *flats, int nflats);
+/* Cuts a hole in the terrain over the rectangle: its quads are no longer drawn (their triangles
+ * collapse) nor solid. Returns how many quads were newly opened (0: nothing changed). */
+int prts_scene_terrain_hole(prts_scene *s, float x0, float z0, float x1, float z1);
 float prts_scene_height(const prts_scene *s, float x, float z);
 void prts_scene_add_light(prts_scene *s, prts_light light);
 void prts_scene_add_marker(prts_scene *s, const char *name, prts_dvec3 pos, float yaw);

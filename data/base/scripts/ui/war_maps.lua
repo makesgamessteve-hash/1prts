@@ -158,6 +158,10 @@ end
 
 local function status_line(side)
   local sd = S.side(side)
+  if sd.faction == "gloam" then
+    return string.format("Gold %d  Stone %d  Glow %d  Aether %d  Folk %d/%d  Tier %d", sd.gold, sd.stone or 0,
+                         sd.glowstone or 0, sd.aether, S.folk(side), S.food(side), require("rts.tiers").tier(side))
+  end
   local special = sd.faction == "wildborn" and string.format("Bone %d", sd.bone) or string.format("Powder %d", sd.powder)
   return string.format("Gold %d  Timber %d  Aether %d  %s  Folk %d/%d  Tier %d", sd.gold, sd.timber, sd.aether, special,
                        S.folk(side), S.food(side), require("rts.tiers").tier(side))
@@ -188,12 +192,16 @@ W.TRAIN = {
             { "crown.knight", "Knights" } },
   wildborn = { { "wildborn.kobb", "Kobb" }, { "wildborn.ghorr", "Brutes" }, { "wildborn.spearhurler", "Spears" },
                { "wildborn.boar_rider", "Boars" } },
+  gloam = { { "gloam.delver", "Delver" }, { "gloam.basalt_guard", "Guard" }, { "gloam.slinger", "Sling" },
+            { "gloam.deep_pikes", "Pikes" } },
 }
 W.BUILD = {
   crown = { { "crown.farmstead", "Farm" }, { "crown.barracks", "Barr." }, { "crown.watchtower", "Tower" },
             { "crown.sawmill", "Saw" }, { "crown.stables", "Stable" } },
   wildborn = { { "wildborn.herd_pen", "Pen" }, { "wildborn.war_pit", "Pit" }, { "wildborn.totem_watch", "Totem" },
                { "wildborn.timber_camp", "Camp" }, { "wildborn.beast_den", "Den" } },
+  gloam = { { "gloam.mycel_gardens", "Mycel" }, { "gloam.guard_hall", "Hall" }, { "gloam.glow_tower", "Tower" },
+            { "gloam.stonecutters", "Stone" }, { "gloam.beetle_pens", "Pens" } },
 }
 W.WORKS = {
   crown = { { "hq_up", "Raise HQ" }, { "build:crown.aether_well", "Well" }, { "build:crown.smithy", "Smithy" },
@@ -202,6 +210,9 @@ W.WORKS = {
   wildborn = { { "hq_up", "Raise HQ" }, { "build:wildborn.aether_shrine", "Shrine" },
                { "build:wildborn.bone_forge", "Forge" }, { "build:wildborn.giants_cairn", "Cairn" },
                { "research:wildborn.bone_spears", "Spears+" }, { "research:wildborn.war_paint", "Paint" } },
+  gloam = { { "hq_up", "Raise HQ" }, { "build:gloam.glowstone_works", "Works" }, { "build:gloam.engine_vault", "Vault" },
+            { "build:gloam.wyrm_hollow", "Hollow" }, { "research:gloam.crystal_tips", "Tips" },
+            { "build:gloam.echo_pillar", "Pillar" } },
 }
 
 -- The second row of works (M6): casters' buildings, far-sight, the sky and a citadel's orders.
@@ -211,6 +222,9 @@ W.WORKS2 = {
             { "drop", "Drop" }, { "bombard", "Bombard" } },
   wildborn = { { "build:wildborn.spirit_lodge", "Lodge" }, { "far_sight", "Far-sight" },
                { "build:wildborn.roost_cliffs", "Roost" }, { "drop", "Drop" }, { "bombard", "Bombard" } },
+  gloam = { { "build:gloam.crystal_sanctum", "Sanctum" }, { "far_sight", "Deep-sight" },
+            { "build:gloam.spore_grotto", "Grotto" }, { "build:gloam.moth_spire", "Spire" },
+            { "build:gloam.tunnel_gate", "Gate" } },
 }
 
 local function faction(side) return S.side(side).faction end

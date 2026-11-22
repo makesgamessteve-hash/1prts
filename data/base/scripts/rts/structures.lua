@@ -191,6 +191,20 @@ local function build_shape(e, def, color)
   local banner = color == "red" and "banner_red" or "banner"
   if def.mobile then return -- the behemoth carries its own beast (props/behemoth.lua)
   elseif def.hq and D.faction_of(def.id) == "crown" then SHAPES.holdfast(e, w, d, banner)
+  elseif def.underhall then -- the Gloam's gatehouse; its hall lies under the ground
+    SHAPES.hall(e, w * 0.7, d * 0.5, 6, "stone")
+    SHAPES.totem(e, 3)
+    require("rts.tunnels").hall(e, def.underhall)
+  elseif def.shaft then -- a headframe over a deep shaft
+    for _, c in ipairs({ { -1, -1 }, { 1, -1 }, { -1, 1 }, { 1, 1 } }) do
+      box(e, "oak", c[1] * 3 - 0.2, 0, c[2] * 3 - 0.2, c[1] * 3 + 0.2, 7, c[2] * 3 + 0.2)
+    end
+    box(e, "oak", -3.2, 7, -3.2, 3.2, 7.4, 3.2, false)
+    require("rts.tunnels").shaft(e, def.shaft)
+  elseif kind == "echo_pillar" then SHAPES.totem(e, w)
+  elseif kind == "glow_tower" then SHAPES.watchtower(e, w, d)
+  elseif kind == "glowstone_works" then SHAPES.well(e, w, true)
+  elseif D.faction_of(def.id) == "gloam" then SHAPES.hall(e, w, d, 4, "stone")
   elseif def.hq then SHAPES.lodge(e, w, d, def.hq)
   elseif kind == "herd_pen" then SHAPES.pen(e, w, d, 2.5)
   elseif kind == "war_pit" then SHAPES.pen(e, w, d, 3, true)
@@ -281,14 +295,17 @@ function B.can_place(def_id, x, z)
   return true
 end
 
--- The free aether spring within reach of (x, z), for wells and shrines.
-function B.spring_at(x, z)
+-- The free aether spring within reach of (x, z), for wells and shrines (kind "grotto": a
+-- glowstone grotto's vent, for glowstone works).
+function B.spring_at(x, z, kind)
+  kind = kind or "spring"
+  local reach = kind == "grotto" and D.GROTTO_REACH or D.SPRING_REACH
   for _, e in ipairs(S.match().resources) do
     if S.alive(e) then
       local d = S.data(e)
-      if d.kind == "spring" and not (d.well and S.alive(d.well)) then
+      if d.kind == kind and not (d.well and S.alive(d.well)) then
         local sx, _, sz = S.pos(e)
-        if S.dist(x, z, sx, sz) <= D.SPRING_REACH then return e end
+        if S.dist(x, z, sx, sz) <= reach then return e end
       end
     end
   end
@@ -302,11 +319,12 @@ function B.place(side_id, def_id, x, z, built)
   local def = D.structure(def_id)
   local side = S.side(side_id)
   if not def then return nil, "unknown" end
-  local spring = def.aether and B.spring_at(x, z)
+  local spring = (def.aether and B.spring_at(x, z)) or (def.glowstone and B.spring_at(x, z, "grotto"))
   if not built then
     if def.mobile then return nil, "not built in place" end
     if not require("rts.tiers").allowed(side_id, def) then return nil, "needs tier " .. def.tier end
     if def.aether and not spring then return nil, "needs an aether spring" end
+    if def.glowstone and not spring then return nil, "needs a glowstone grotto" end
     if def.harbor and not require("rts.fleet").shore_ok(def, x, z) then return nil, "needs deep water" end
     if not B.can_place(def_id, x, z) then return nil, "no room" end
     if not S.pay(side, def.cost) then return nil, "cannot pay" end
@@ -471,6 +489,7 @@ function B.train_tick(e, seconds)
     local sea = d.seaward or 1 -- which side of the building the water is on (+z, or -z)
     return require("rts.fleet").launch(d.side, item, x, z + sea * (def.size[2] / 2 + 18), sea > 0 and math.pi or 0)
   end
+  if it.wyrm then return require("props.wyrm").spawn(d.side, x, z + def.size[2] / 2 + 20) end
   return require("props.behemoth").spawn(d.side, item, x, z + def.size[2] / 2 + 24)
 end
 
@@ -537,6 +556,15 @@ function B.produce(e, seconds)
         side.powder = side.powder + P.powder
         made = "powder"
       end
+    end
+  elseif def.glowstone then -- glowstone (and aether from the seep) from a works over a grotto
+    if not d.spring then d.acc = 0 return nil end
+    while d.acc >= D.GLOWSTONE_EVERY do
+      d.acc = d.acc - D.GLOWSTONE_EVERY
+      side.glowstone = (side.glowstone or 0) + 1
+      d.seep = (d.seep or 0) + 1
+      if d.seep % 2 == 0 then side.aether = side.aether + 1 end
+      made = "glowstone"
     end
   elseif def.bone then
     while d.acc >= D.BONE_EVERY do

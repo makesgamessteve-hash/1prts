@@ -49,6 +49,34 @@ function E.add_spring(x, z)
   return e
 end
 
+-- A stone quarry (M7): a broken rock face the Gloam's delvers cut.
+function E.add_quarry(x, z, stone)
+  local m = S.match()
+  local y = prts.scene.height(x, z)
+  local e = prts.entity.spawn{ name = "quarry." .. (#m.resources + 1), pos = { x, y, z } }
+  prts.scene.box{ min = { -3.5, -0.5, -2.5 }, max = { 3.5, 2.5, 2.5 }, material = "rock", entity = e }
+  prts.scene.box{ min = { -2, 2.5, -1.5 }, max = { 1.5, 4.0, 1.5 }, material = "rock", entity = e }
+  local d = prts.entity.data(e)
+  d.kind, d.stone, d.at = "quarry", stone or D.QUARRY_STONE, { x, z + 4 }
+  m.resources[#m.resources + 1] = e
+  return e
+end
+
+-- A glowstone grotto's vent (M7): crystal light from a cavern below, where glowstone works stand.
+function E.add_grotto(x, z)
+  local m = S.match()
+  local y = prts.scene.height(x, z)
+  local e = prts.entity.spawn{ name = "grotto." .. (#m.resources + 1), pos = { x, y, z } }
+  for i = 0, 3 do
+    local a = i / 4 * 2 * math.pi
+    prts.scene.prism{ base = { math.cos(a) * 1.6, -0.3, math.sin(a) * 1.6 }, radius = 0.4, top_radius = 0.05,
+                      height = 1.6 + i * 0.3, sides = 5, material = "aether_glow", entity = e }
+  end
+  S.data(e).kind = "grotto"
+  m.resources[#m.resources + 1] = e
+  return e
+end
+
 -- Remains where units fell: bone for Kobb to gather, for a few minutes.
 function E.add_remains(x, z, bone)
   local m = S.match()
@@ -77,10 +105,10 @@ function E.decay(now)
   return n
 end
 
-local SOURCE = { gold = "mine", timber = "tree", bone = "remains" }
+local SOURCE = { gold = "mine", timber = "tree", bone = "remains", stone = "quarry" }
 
 -- What is left in a source.
-function E.left(d) return d.gold or d.timber or d.bone or 0 end
+function E.left(d) return d.gold or d.timber or d.bone or d.stone or 0 end
 
 -- The nearest source of `res` ("gold" | "timber" | "bone") within r of (x, z) not used up.
 function E.nearest_source(res, x, z, r)

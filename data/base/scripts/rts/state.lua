@@ -46,7 +46,7 @@ function S.reset()
   return m
 end
 
-S.RESOURCES = { "gold", "timber", "aether", "powder", "bone" }
+S.RESOURCES = { "gold", "timber", "aether", "powder", "bone", "stone", "glowstone" }
 
 -- cfg = { id, name, faction ("crown" | "wildborn"), color ("crown" | "red"), ai = bool, gold,
 -- timber, aether, powder, bone, enemy = id }
@@ -88,6 +88,31 @@ function S.hqs(side_id)
 end
 
 function S.side(id) return S.match().sides[id] end
+
+-- The sides a side fights: its named enemy, or every other side still in the match (four-way).
+function S.enemies(side_id)
+  local side = S.side(side_id)
+  local out = {}
+  for id, o in prts.sorted_pairs(S.match().sides) do
+    if id ~= side_id and not o.lost and (side.enemy == nil or side.enemy == id or not side.named_enemy) then
+      out[#out + 1] = id
+    end
+  end
+  return out
+end
+
+-- The headquarters of the nearest living foe to (x, z), and its side; nil if none.
+function S.foe(side_id, x, z)
+  local best, bd, bs
+  for _, id in ipairs(S.enemies(side_id)) do
+    for _, hq in ipairs(S.hqs(id)) do
+      local hx, _, hz = S.pos(hq)
+      local dist = S.dist(x, z, hx, hz)
+      if not bd or dist < bd then best, bd, bs = hq, dist, id end
+    end
+  end
+  return best, bs
+end
 
 function S.alive(e) return e ~= nil and prts.entity.alive(e) end
 

@@ -100,6 +100,7 @@ void prts_scene_env_default(prts_scene_env *env)
 prts_scene *prts_scene_create(void)
 {
     prts_scene *s = prts_calloc(1, sizeof(*s));
+    s->terrain_group = -1;
     prts_array_init(&s->materials, sizeof(prts_material));
     prts_array_init(&s->groups, sizeof(prts_mesh_group));
     prts_array_init(&s->lights, sizeof(prts_light));
@@ -140,6 +141,7 @@ void prts_scene_clear(prts_scene *s)
     s->current_cells = PRTS_CELLS_ALL;
     prts_heightfield_destroy(s->terrain);
     s->terrain = NULL;
+    s->terrain_group = -1;
     prts_scene_env_default(&s->env);
     s->revision++;
 }
@@ -409,6 +411,8 @@ void prts_scene_terrain(prts_scene *s, const prts_terrain_params *p, const prts_
     s->terrain = hf;
     /* mesh: one vertex per grid point, coloured by slope (grass on flats, earth on slopes) */
     prts_mesh_group *g = prts_scene_group(s, p->material, PRTS_ENTITY_NONE);
+    s->terrain_group = (int)(g - (prts_mesh_group *)s->groups.data);
+    s->terrain_first = g->mesh.indices.len;
     prts_material *m = material_at(s, p->material);
     uint32_t base = (uint32_t)g->mesh.verts.len;
     for (int iz = 0; iz < n; iz++) {
@@ -435,6 +439,25 @@ void prts_scene_terrain(prts_scene *s, const prts_terrain_params *p, const prts_
         }
     }
     s->revision++;
+}
+
+int prts_scene_terrain_hole(prts_scene *s, float x0, float z0, float x1, float z1)
+{
+    if (!s->terrain || s->terrain_group < 0) return 0;
+    int opened = prts_heightfield_set_hole(s->terrain, x0, z0, x1, z1);
+    if (opened == 0) return 0;
+    prts_heightfield *hf = s->terrain;
+    prts_mesh_group *g = prts_array_at(&s->groups, (size_t)s->terrain_group);
+    uint32_t *idx = (uint32_t *)g->mesh.indices.data + s->terrain_first;
+    for (int iz = 0; iz + 1 < hf->nz; iz++) {
+        for (int ix = 0; ix + 1 < hf->nx; ix++) {
+            if (!prts_heightfield_quad_hole(hf, ix, iz)) continue;
+            uint32_t *q = idx + (size_t)(iz * (hf->nx - 1) + ix) * 6;
+            for (int k = 1; k < 6; k++) q[k] = q[0]; /* a collapsed (invisible) pair of triangles */
+        }
+    }
+    s->revision++;
+    return opened;
 }
 
 float prts_scene_height(const prts_scene *s, float x, float z)

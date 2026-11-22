@@ -11,6 +11,8 @@ S.maps = {
   { id = "thornmere", name = "Skirmish: Thornmere (Crown against Wildborn)" },
   { id = "saltcoast", name = "Scenario: The Harbor Siege" },
   { id = "caldmere", name = "Scenario: Storm the Citadel" },
+  { id = "underhill", name = "Scenario: Under the Hill" },
+  { id = "hollowfell", name = "Skirmish: Hollowfell (four sides, three peoples)" },
 }
 
 -- Starts map `id` (scripts/maps/<id>.lua). Only one map per run in M1: returns false if a

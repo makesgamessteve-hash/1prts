@@ -21,6 +21,8 @@ require("rts.fleet")
 require("rts.citadel")
 require("rts.storm")
 require("rts.spells")
+require("rts.tunnels")
+require("props.wyrm")
 require("props.skyship")
 require("rts.tools")
 require("ui.war_maps")
@@ -35,12 +37,15 @@ function M.start(cfg)
   local m = S.reset()
   m.started = prts.time.tick()
   m.running = true
-  local a, b = cfg.sides[1], cfg.sides[2]
-  a.enemy, b.enemy = b.id, a.id
+  if #cfg.sides == 2 then -- two sides: each the other's enemy; more: every side against all others
+    local a, b = cfg.sides[1], cfg.sides[2]
+    a.enemy, b.enemy = a.enemy or b.id, b.enemy or a.id
+  end
   for _, sc in ipairs(cfg.sides) do
     S.add_side{ id = sc.id, name = sc.name, faction = sc.faction or "crown", color = sc.color, ai = sc.ai,
                 gold = sc.gold or 300, timber = sc.timber or 200, aether = sc.aether, powder = sc.powder, bone = sc.bone,
-                enemy = sc.enemy }
+                enemy = sc.enemy, stone = sc.stone, glowstone = sc.glowstone }
+    S.side(sc.id).named_enemy = #cfg.sides == 2 or sc.enemy ~= nil
     local hq = S.role(sc.id, "hq")[1]
     B.place(sc.id, hq, sc.x, sc.z, true)
     local hd = D.structure(hq).size[2] / 2
@@ -61,7 +66,7 @@ function M.tick(now)
   C.deliver(now)
   Su.tick(now)
   for _, e in ipairs(m.units) do
-    if S.alive(e) and stagger(e, now, M.THINK) then
+    if S.alive(e) and stagger(e, now, M.THINK) and not S.data(e).under and not S.data(e).tunnel then -- bound for or in the tunnels
       local d = S.data(e)
       if d.flying then
         Sk.think(e, M.THINK)
@@ -108,20 +113,34 @@ function M.tick(now)
   return true
 end
 
--- The end: a side without a holdfast has lost.
+-- The end: a side without a headquarters has lost; the match is over when one side is left.
 function M.check_end(now)
   local m = S.match()
   for id, side in prts.sorted_pairs(m.sides) do
     if not side.lost and (#S.hqs(id) == 0 or side.defeated) then
       side.lost = true
-      m.running = false
-      m.winner = side.enemy
-      m.ended = now
-      S.dispatch(side.enemy, "Marshal", "Victory! The enemy holdfast has fallen.")
       S.dispatch(id, "Marshal", "Our holdfast has fallen. The day is lost.")
-      prts.events.emit("rts_match_over", side.enemy, id)
-      return side.enemy
+      prts.events.emit("rts_side_lost", id)
     end
+  end
+  local left = {}
+  for id, side in prts.sorted_pairs(m.sides) do
+    if not side.lost then left[#left + 1] = id end
+  end
+  local lost_any = false
+  for _, side in prts.sorted_pairs(m.sides) do lost_any = lost_any or side.lost end
+  if lost_any and #left <= 1 then
+    local winner = left[1]
+    m.running = false
+    m.winner = winner
+    m.ended = now
+    if winner then S.dispatch(winner, "Marshal", "Victory! The enemy holdfast has fallen.") end
+    local loser
+    for id, side in prts.sorted_pairs(m.sides) do
+      if side.lost then loser = id end
+    end
+    prts.events.emit("rts_match_over", winner, loser)
+    return winner
   end
   return nil
 end

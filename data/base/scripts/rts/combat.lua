@@ -88,6 +88,13 @@ local function strike(e, d, w, target)
   local x0, _, z0 = S.pos(e)
   if u and require("rts.presence").near(d.side, x0, z0) then damage = damage * require("rts.presence").STRIKE end
   local td = S.alive(target) and S.data(target)
+  local now = prts.time.tick()
+  if (d.weak_until or 0) > now then damage = damage * 0.5 end -- coughing in a spore cloud
+  if td and td.kind == "unit" and w.vs_mounted and D.unit(td.def).mounted then damage = damage * w.vs_mounted end
+  if td and w.glow then -- glowstone shot: what it strikes stays lit for the side to see
+    td.lit = td.lit or {}
+    td.lit[d.side] = now + w.glow * 30
+  end
   if td and td.kind == "structure" then
     if w.structures then damage = damage * w.structures end
     local fire = u and Ti.ignites(d.side, d.def) or 0
@@ -136,6 +143,10 @@ function K.think(e, ticks)
   local c = d.company and S.company(d.company)
   if c and not c.strength then c.strength = #c.members end
   local order = c and c.order or { kind = "idle" }
+  if (d.stunned_until or 0) > prts.time.tick() then -- blinded by a Glowflare
+    if prts.agent.info(e).moving then prts.agent.stop(e) end
+    return "stunned"
+  end
   if c and c.broken then
     if not prts.agent.info(e).moving then
       c.broken = nil

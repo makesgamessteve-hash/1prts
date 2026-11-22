@@ -55,7 +55,7 @@ function Sp.cast(caster, spell_id, target, tz)
   if Sp.cooldown(caster, spell_id) > 0 then return fail(caster, "Not yet: the " .. sp.name .. " needs time to gather.") end
   local cx, _, cz = S.pos(caster)
   if S.dist(cx, cz, x, z) > sp.range then return fail(caster, "Too far for a " .. sp.name .. ".") end
-  if not Sp.sees(d.side, x, z) then return fail(caster, "I cannot see the mark.") end
+  if not sp.sight_free and not Sp.sees(d.side, x, z) then return fail(caster, "I cannot see the mark.") end
   if not S.pay(S.side(d.side), { aether = sp.aether }) then return fail(caster, "No aether left for the " .. sp.name .. ".") end
   d.spell_cd = d.spell_cd or {}
   d.spell_cd[spell_id] = now() + math.floor(sp.cooldown * 30 + 0.5)
@@ -110,17 +110,118 @@ function Sp.second()
   local keep = {}
   for _, fx in ipairs(list) do
     local work = Sp.LINGER[fx.kind]
-    if work then
-      for _, e in ipairs(prts.agent.near(fx.x, fx.z, fx.r, 64)) do
+    local list = fx.all and S.match().units or prts.agent.near(fx.x, fx.z, fx.r, 64)
+    for _, e in ipairs(list) do
+      if S.alive(e) then
         local d = S.data(e)
-        if S.alive(e) and d.kind == "unit" and d.hp > 0 then work(fx, e, d) end
+        local ex, _, ez = S.pos(e)
+        if d.kind == "unit" and d.hp > 0 and S.dist(ex, ez, fx.x, fx.z) <= fx.r then work(fx, e, d) end
       end
     end
     fx.left = fx.left - 1
     if fx.left > 0 then keep[#keep + 1] = fx end
   end
   S.match().effects = keep
+  local now = prts.time.tick()
+  for _, e in ipairs(S.match().units) do -- out of the spores: full speed again
+    if S.alive(e) then
+      local d = S.data(e)
+      if d.spored and (d.weak_until or 0) <= now and prts.agent.info(e) then
+        prts.agent.set_speed(e, d.spored)
+        d.spored = nil
+      end
+    end
+  end
   return #keep
+end
+
+-- The Gloam's spells (M7). Glowflare: the enemy around the mark stands blinded (Durrow immune).
+function Sp.EFFECTS.glowflare(caster, sp, _, x, z)
+  local side, n = S.data(caster).side, 0
+  for _, e in ipairs(prts.agent.near(x, z, sp.radius, 64)) do
+    local d = S.data(e)
+    if d.kind == "unit" and d.side ~= side and not D.unit(d.def).durrow then
+      d.stunned_until = prts.time.tick() + sp.seconds * 30
+      n = n + 1
+    end
+  end
+  return n
+end
+
+-- Stonemeld: the gallery nearest the mark collapses, or opens again if it had collapsed.
+function Sp.EFFECTS.stonemeld(_, sp, _, x, z)
+  local Tu = require("rts.tunnels")
+  if not Tu.exists() then return nil end
+  local best, bd
+  for id, g in prts.sorted_pairs(Tu.data().gals) do
+    if g.box then
+      local gx, gz = (g.box[1] + g.box[4]) / 2, (g.box[3] + g.box[6]) / 2
+      local dist = math.max(0, math.abs(x - gx) - (g.box[4] - g.box[1]) / 2) + math.max(0, math.abs(z - gz) - (g.box[6] - g.box[3]) / 2)
+      if dist <= sp.range and (not bd or dist < bd) then best, bd = id, dist end
+    end
+  end
+  if not best then return nil end
+  if Tu.data().gals[best].state == "collapsed" then Tu.open(best) else Tu.collapse(best) end
+  return best
+end
+
+-- Crystal Sight: every unit in the area, in the tunnels too, is seen for a while.
+function Sp.EFFECTS.crystal_sight(caster, sp, _, x, z)
+  return Sp.add_effect{ kind = "crystal_sight", side = S.data(caster).side, x = x, z = z, r = sp.radius, left = sp.seconds,
+                        all = true }
+end
+function Sp.LINGER.crystal_sight(fx, e, d)
+  if d.side ~= fx.side then
+    d.lit = d.lit or {}
+    d.lit[fx.side] = prts.time.tick() + 45
+  end
+end
+
+-- Spore Cloud: enemies in it strike at half strength and move at half speed.
+function Sp.EFFECTS.spore_cloud(caster, sp, _, x, z)
+  return Sp.add_effect{ kind = "spore_cloud", side = S.data(caster).side, x = x, z = z, r = sp.radius, left = sp.seconds }
+end
+function Sp.LINGER.spore_cloud(fx, e, d)
+  if d.side == fx.side then return end
+  d.weak_until = prts.time.tick() + 45
+  local info = prts.agent.info(e)
+  if info and not d.spored then
+    d.spored = info.speed
+    prts.agent.set_speed(e, info.speed * 0.5)
+  end
+end
+
+-- Fungal Mend: the side's units in the area heal every second, twice as fast under the ground.
+function Sp.EFFECTS.fungal_mend(caster, sp, _, x, z)
+  return Sp.add_effect{ kind = "fungal_mend", side = S.data(caster).side, x = x, z = z, r = sp.radius, left = sp.seconds,
+                        heal = sp.heal, all = true }
+end
+function Sp.LINGER.fungal_mend(fx, e, d)
+  if d.side ~= fx.side then return end
+  local x, y, z = S.pos(e)
+  local Tu = require("rts.tunnels")
+  local heal = fx.heal * ((d.under or Tu.underground(x, y + 1, z)) and 2 or 1)
+  d.hp = math.min(D.unit(d.def).hp, d.hp + heal)
+end
+
+-- Echo Call: every enemy within its radius, through rock too, shows up as an old sighting.
+function Sp.EFFECTS.echo_call(caster, sp)
+  local side = S.data(caster).side
+  local cx, _, cz = S.pos(caster)
+  local pic = S.side(side).picture
+  local old = prts.time.tick() - require("rts.picture").SEEN_FOR - 1
+  local n = 0
+  for _, e in ipairs(S.match().units) do
+    if S.alive(e) then
+      local d = S.data(e)
+      local x, _, z = S.pos(e)
+      if d.side ~= side and S.dist(cx, cz, x, z) <= sp.radius then
+        pic[e] = { x = x, z = z, def = d.def, what = "unit", side = d.side, seen = old }
+        n = n + 1
+      end
+    end
+  end
+  return n
 end
 
 -- A caster ordered to fight casts its first spell at its target on its own when it can.

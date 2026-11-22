@@ -218,7 +218,52 @@ static int l_scene_terrain(lua_State *L)
     lua_pop(L, 1);
     prts_scene_terrain(e->scene, &p, flats, n);
     prts_cworld_set_heightfield(e->cworld, e->scene->terrain);
+    /* holes = { { x0, z0, x1, z1 }, ... }: open ground (mouths, shafts) */
+    lua_getfield(L, 1, "holes");
+    if (lua_istable(L, -1)) {
+        int ht = lua_gettop(L);
+        for (int i = 1; lua_rawgeti(L, ht, i) == LUA_TTABLE; i++) {
+            float r[4];
+            for (int k = 0; k < 4; k++) {
+                lua_rawgeti(L, -1 - k, k + 1);
+                r[k] = (float)luaL_checknumber(L, -1);
+            }
+            lua_pop(L, 5);
+            prts_scene_terrain_hole(e->scene, r[0], r[1], r[2], r[3]);
+        }
+        lua_pop(L, 1);
+    }
+    lua_pop(L, 1);
     return 0;
+}
+
+/* prts.scene.hole{ min = { x, z }, max = { x, z } } -> quads opened */
+static int l_scene_hole(lua_State *L)
+{
+    prts_engine *e = prts_engine_from_lua(L);
+    luaL_checktype(L, 1, LUA_TTABLE);
+    float v[4];
+    const char *keys[2] = {"min", "max"};
+    for (int k = 0; k < 2; k++) {
+        lua_getfield(L, 1, keys[k]);
+        luaL_checktype(L, -1, LUA_TTABLE);
+        lua_rawgeti(L, -1, 1);
+        lua_rawgeti(L, -2, 2);
+        v[k * 2] = (float)luaL_checknumber(L, -2);
+        v[k * 2 + 1] = (float)luaL_checknumber(L, -1);
+        lua_pop(L, 3);
+    }
+    lua_pushinteger(L, prts_scene_terrain_hole(e->scene, v[0], v[1], v[2], v[3]));
+    return 1;
+}
+
+/* prts.scene.hole_at(x, z) -> true if the terrain is open there */
+static int l_scene_hole_at(lua_State *L)
+{
+    prts_engine *e = prts_engine_from_lua(L);
+    float x = (float)luaL_checknumber(L, 1), z = (float)luaL_checknumber(L, 2);
+    lua_pushboolean(L, e->scene->terrain && prts_heightfield_hole(e->scene->terrain, x, z));
+    return 1;
 }
 
 static int l_scene_height(lua_State *L)
@@ -942,7 +987,7 @@ void prts_engine_open_game_api(prts_engine *e)
 {
     static const prts_script_fn scene[] = {
         {"material", l_scene_material}, {"box", l_scene_box},       {"prism", l_scene_prism},
-        {"terrain", l_scene_terrain},   {"height", l_scene_height}, {"light", l_scene_light},
+        {"terrain", l_scene_terrain},   {"hole", l_scene_hole},       {"hole_at", l_scene_hole_at},   {"height", l_scene_height}, {"light", l_scene_light},
         {"marker", l_scene_marker},     {"marker_pos", l_scene_marker_pos}, {"zone", l_scene_zone},
         {"env", l_scene_env},           {"illusion", l_scene_illusion}, {"cell", l_scene_cell},
         {"portal", l_scene_portal},     {"set_portal", l_scene_set_portal}, {"portal_open", l_scene_portal_open},

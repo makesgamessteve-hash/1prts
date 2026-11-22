@@ -44,6 +44,7 @@ function C.order(c, order)
   c.order = order
   c.order.given = prts.time.tick()
   local members = C.members(c)
+  for _, e in ipairs(members) do S.data(e).tunnel = nil end -- a new order calls off a trip to a tunnel
   if order.kind == "move" or order.kind == "attack" then
     local cx, cz = C.centre(c)
     if not cx then return false end
@@ -51,13 +52,14 @@ function C.order(c, order)
       local d = S.data(e)
       d.target = nil
       local x, z = C.slot(i, #members, order.x, order.z, order.x - cx, order.z - cz)
-      if d.flying then d.goal = { x, z } else prts.agent.move(e, x, z) end -- flyers fly (rts/sky.lua)
+      if d.flying then d.goal = { x, z } -- flyers fly (rts/sky.lua)
+      elseif not d.under then prts.agent.move(e, x, z) end -- those in the tunnels carry on to the far gate
     end
   elseif order.kind == "follow" then
     C.follow_step(c, true)
   elseif order.kind == "hold" or order.kind == "idle" then
     for _, e in ipairs(members) do
-      if not S.data(e).flying then prts.agent.stop(e) end
+      if not S.data(e).flying and not S.data(e).under then prts.agent.stop(e) end
     end
   end
   prts.events.emit("rts_order", c.id, order.kind)
@@ -74,13 +76,20 @@ function C.hubs(side_id)
 end
 
 -- Whether a company can hear its side's sending stones (any member within reach of a hub).
+-- Under the ground (M7) the stones carry only from an echo pillar of the side, within ECHO_RANGE.
+C.ECHO_RANGE = 300
 function C.in_reach(c)
   local hubs = C.hubs(c.side)
   for _, e in ipairs(C.members(c)) do
     local x, _, z = S.pos(e)
+    local under = S.data(e).under ~= nil
     for _, h in ipairs(hubs) do
       local hx, _, hz = S.pos(h)
-      if S.dist(x, z, hx, hz) <= D.HUB_RANGE then return true end
+      if under then
+        if D.structure(S.data(h).def).echo and S.dist(x, z, hx, hz) <= C.ECHO_RANGE then return true end
+      elseif S.dist(x, z, hx, hz) <= D.HUB_RANGE then
+        return true
+      end
     end
   end
   return false
@@ -175,7 +184,7 @@ function C.follow_step(c, force)
   local members = C.members(c)
   for i, e in ipairs(members) do
     local sx, sz = C.slot(i, #members, tx, tz, fx, fz)
-    if S.data(e).flying then S.data(e).goal = { sx, sz } else prts.agent.move(e, sx, sz) end
+    if S.data(e).flying then S.data(e).goal = { sx, sz } elseif not S.data(e).under then prts.agent.move(e, sx, sz) end
   end
   return true
 end

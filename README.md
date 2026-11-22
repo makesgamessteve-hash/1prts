@@ -9,7 +9,7 @@ face-to-face orders. Keeps, mines, war galleons, siege towers, skyships, walking
 and floating citadels are built at real size with real crews, and you can walk inside every one
 of them. The look is retro 3D: low-poly models, sprites and voxels.
 
-> **Status: M1 done; M2 (First Command) to M6 (Skyfall) playable.** The C engine runs on Windows, Linux, macOS
+> **Status: M1 done; M2 (First Command) to M7 (Hollow Roads) playable.** The C engine runs on Windows, Linux, macOS
 > and in the browser (WebGL 2, touch controls on phones, WebXR). It loads all content from
 > `data/` and plays two maps in first person. **Harrowmark**, the Crown's border castle, is the
 > story map ([the story](docs/concept/15-story.md)). **Ashford Vale** is the first skirmish. Serfs
@@ -62,12 +62,30 @@ of them. The look is retro 3D: low-poly models, sprites and voxels.
 >   crater lake with Ashby aboard, and you fly up by skyship to take it before the clans break
 >   its stone. Thornmere's skirmish has a citadel drifting over the field.
 >
+> **M7 (Hollow Roads)** goes under the ground:
+> - the ground can be dug: holes in the terrain, and galleries under the field that you walk
+>   while soldiers march overhead. The dark closes in down there, lit by glowstone;
+> - tunnel roads that companies travel unseen from gate to gate. Galleries are dug (fast by the
+>   Gloam's delvers), collapse, flood and are cleared again. Deep mine shafts take a lift cage
+>   down to the caverns, and echo pillars carry the sending stone under the rock;
+> - the **Gloam Courts**, the third faction:
+>   - stone and glowstone instead of timber;
+>   - delvers, basalt guard, deep pikes, slingers whose glowing shot keeps a target seen,
+>     undercutters, the hushfoot, echo hounds, carapace riders on cave beetles, olm brutes and
+>     moth riders;
+>   - the Glimmer-wright and the Mycel keeper with six spells;
+>   - a headquarters (Delve, Hollow Court, Sunken Throne) whose war room lies under the ground;
+>   - the **tunnel wyrm**, which you ride under the field before it bursts up in an enemy camp;
+> - the scenario **Under the Hill**, down Caldrith's broken chain into the caverns, and
+>   **Hollowfell**, a four-way skirmish of three peoples.
+>
 > The tasks of [`add-command-core`](openspec/changes/add-command-core/tasks.md) (M2),
 > [`add-mounts-and-engines`](openspec/changes/add-mounts-and-engines/tasks.md) (M3) and
 > [`add-economy-and-second-faction`](openspec/changes/add-economy-and-second-faction/tasks.md)
 > (M4), [`add-water-and-sky-theaters`](openspec/changes/add-water-and-sky-theaters/tasks.md)
-> (M5) and [`add-high-sky-citadels`](openspec/changes/add-high-sky-citadels/tasks.md) (M6) list
-> what is done and how each part was verified.
+> (M5), [`add-high-sky-citadels`](openspec/changes/add-high-sky-citadels/tasks.md) (M6) and
+> [`add-underground-and-gloam-courts`](openspec/changes/add-underground-and-gloam-courts/tasks.md)
+> (M7) list what is done and how each part was verified.
 
 ![Harrowmark at dusk](docs/screenshots/01_approach_at_dusk.png)
 
@@ -86,6 +104,8 @@ of them. The look is retro 3D: low-poly models, sprites and voxels.
 | ![The gun deck](docs/screenshots/62_gun_deck.png) | ![From the balloon's basket](docs/screenshots/64_balloon_view.png) | ![The skyship at its mast](docs/screenshots/65_skyship_at_mast.png) |
 | ![Caldrith rising out of the Caldmere](docs/screenshots/70_caldrith_rising.png) | ![Into the storm on the skyship's deck](docs/screenshots/71_into_the_storm.png) | ![Above the clouds](docs/screenshots/72_above_the_clouds.png) |
 | ![The throne hall's war table and scrying floor](docs/screenshots/73_throne_hall.png) | ![Floating in the aether core, Ashby at the stone](docs/screenshots/74_aether_core.png) | ![Elder drakes over Caldrith](docs/screenshots/75_drakes_over_caldrith.png) |
+| ![The gate under Merewatch Hill](docs/screenshots/80_tunnel_gate.png) | ![A gallery lit by glowstone](docs/screenshots/81_gallery.png) | ![Caldrith's chain in the glowstone cavern](docs/screenshots/82_chain_cavern.png) |
+| ![The Hollow Court's war room under the ground](docs/screenshots/83_gloam_war_room.png) | ![The Hollow Court and its guard](docs/screenshots/84_hollow_court.png) | ![A tunnel wyrm burst up out of the field](docs/screenshots/85_tunnel_wyrm.png) |
 | ![Great hall](docs/screenshots/12_hall_benches_braziers.png) | ![Forge](docs/screenshots/05_forge.png) | ![Front-end menu](docs/screenshots/13_front_end_menu.png) |
 
 ## Read this first

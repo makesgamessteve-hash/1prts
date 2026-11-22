@@ -14,8 +14,11 @@ function P.eyes(side_id)
   local out = {}
   local Storm = require("rts.storm")
   for _, e in ipairs(S.units(side_id)) do
-    local x, y, z = S.pos(e)
-    out[#out + 1] = { x, z, Storm.sight(y, D.unit(S.data(e).def).sight), y }
+    if not S.data(e).under then -- those in the tunnels see nothing of the field
+      local x, y, z = S.pos(e)
+      local u = D.unit(S.data(e).def)
+      out[#out + 1] = { x, z, Storm.sight(y, u.sight), y, u.senses }
+    end
   end
   for _, e in ipairs(S.structures(side_id, nil, true)) do
     local x, _, z = S.pos(e)
@@ -57,6 +60,18 @@ function P.update(side_id, now)
     for _, e in ipairs(prts.agent.near(eye[1], eye[2], eye[3], 64)) do
       local d = S.data(e)
       if d.kind == "unit" and d.side ~= side_id then
+        local x, _, z = S.pos(e)
+        local hidden = D.unit(d.def).hidden -- the hushfoot: seen only close, or by hounds
+        if not hidden or eye[5] or S.dist(eye[1], eye[2], x, z) <= hidden then
+          pic[e] = { x = x, z = z, def = d.def, what = "unit", side = d.side, seen = now }
+        end
+      end
+    end
+  end
+  for _, e in ipairs(S.match().units) do -- lit by glowstone shot, or shown by Crystal Sight
+    if S.alive(e) then
+      local d = S.data(e)
+      if d.side ~= side_id and d.lit and (d.lit[side_id] or 0) > now then
         local x, _, z = S.pos(e)
         pic[e] = { x = x, z = z, def = d.def, what = "unit", side = d.side, seen = now }
       end

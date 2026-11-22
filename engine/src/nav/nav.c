@@ -70,7 +70,12 @@ static void sample(prts_nav *n, const prts_cworld *cw, int cx, int cz)
      * roofs and wall tops (those are for the commander and, later, garrisons) */
     float x = centre_x(n, cx), z = centre_z(n, cz), h = 0.0f, y = PROBE_UP, found = 0.0f;
     bool any = false;
+    /* galleries dug under the field are not ground for units (they walk the field above) */
+    const prts_heightfield *hf = prts_cworld_heightfield(cw);
+    float floor_y = -1e30f;
+    if (hf && !prts_heightfield_hole(hf, x, z)) floor_y = prts_heightfield_sample(hf, x, z) - PRTS_UNDERGROUND;
     for (int k = 0; k < 16 && prts_cworld_ground(cw, prts_v3(x, y, z), y + PROBE_UP, &found); k++) {
+        if (any && found < floor_y) break;
         h = found;
         any = true;
         y = found - 0.05f;
