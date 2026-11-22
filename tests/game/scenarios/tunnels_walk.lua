@@ -2,6 +2,7 @@
 -- Spec (tunnels): Into the dark. Under Merewatch Hill: the commander walks down the gate's ramp
 -- into the dark, along the gallery under the field while men-at-arms march over it, falls
 -- through a hole cut over the gallery, and comes out into the daylight again. MIT License.
+-- ctest-labels: slow
 -- ctest-args: --start underhill
 return {
   name = "walking the tunnels",

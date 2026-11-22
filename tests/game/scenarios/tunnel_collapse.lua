@@ -1,4 +1,5 @@
 -- Spec (tunnels): A gallery collapses; A flooded gallery. MIT License.
+-- ctest-labels: slow
 -- ctest-args: --start underhill
 return {
   name = "collapse and flooding",

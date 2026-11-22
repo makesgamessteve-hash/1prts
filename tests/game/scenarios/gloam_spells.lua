@@ -1,4 +1,5 @@
 -- Spec (gloam-magic): Glimmer-wright spells; Mycel keeper spells. MIT License.
+-- ctest-labels: slow
 -- ctest-args: --start underhill
 return {
   name = "Gloam spells",

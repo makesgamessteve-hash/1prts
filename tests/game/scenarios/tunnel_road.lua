@@ -1,6 +1,7 @@
 -- Spec (tunnels): Through the tunnel road. The Crown's men-at-arms go in at the gate under
 -- Merewatch Hill, pass under the field unseen by the Gloam, and come out at the Hollow Court's
 -- ramp on the far side. MIT License.
+-- ctest-labels: slow
 -- ctest-args: --start underhill
 return {
   name = "through the tunnel road",

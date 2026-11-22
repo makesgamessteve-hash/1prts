@@ -1,6 +1,7 @@
 -- Spec (citadels): Waking the citadel; No caster, no waking. The commander flies up to Caldrith
 -- on the skyship with the Magister aboard; the stone does not answer before the Magister is
 -- aboard, and wakes Caldrith once the skyship has docked. MIT License.
+-- ctest-labels: slow
 -- ctest-args: --start caldmere
 return {
   name = "waking the citadel",

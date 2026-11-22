@@ -1,5 +1,6 @@
 -- Spec (storm-the-citadel): Caldrith broken. Nobody comes to Caldrith's aid: the clan's boarders
 -- hold its core alone until the aetherstone breaks, and the Crown loses. MIT License.
+-- ctest-labels: slow
 -- ctest-args: --start caldmere
 return {
   name = "Caldrith broken",

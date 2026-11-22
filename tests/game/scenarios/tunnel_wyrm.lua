@@ -1,6 +1,7 @@
 -- Spec (gloam-courts): The wyrm bursts up. The commander rides the Court's tunnel wyrm (at the
 -- gondola's war table) under the field to the Crown's camp on Merewatch Hill; it bursts up, the
 -- camp's buildings take damage and the basalt guard aboard are put down round it. MIT License.
+-- ctest-labels: slow
 -- ctest-args: --start underhill
 return {
   name = "the wyrm bursts up",

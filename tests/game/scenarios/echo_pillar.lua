@@ -1,5 +1,6 @@
 -- Spec (tunnels): Orders under the ground. A Gloam company in the tunnel road is out of the
 -- stones' reach under the hill until an echo pillar stands near it. MIT License.
+-- ctest-labels: slow
 -- ctest-args: --start underhill
 return {
   name = "orders under the ground",
