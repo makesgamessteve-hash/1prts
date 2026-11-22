@@ -19,6 +19,7 @@ void prts_render_settings_default(prts_render_settings *s)
     s->crosshair = true;
     s->fov_y = (float)(70.0 * PRTS_PI / 180.0);
     s->vignette = 0.0f;
+    s->draw_distance = PRTS_DRAW_DISTANCE_MAX;
 }
 
 int prts_res_preset_lines(prts_res_preset p)
@@ -494,6 +495,15 @@ static int pick_lights(const frame_ctx *f, prts_light *out)
     return n;
 }
 
+/* Whether a world point lies beyond the draw distance from the eye (M9). */
+static bool too_far(const frame_ctx *f, prts_dvec3 p)
+{
+    float dd = f->rs->draw_distance;
+    if (!(dd < PRTS_DRAW_DISTANCE_MAX)) return false;
+    prts_vec3 rel = prts_dv3_relative(p, f->view->eye);
+    return prts_v3_length(rel) > dd;
+}
+
 static void draw_meshes(prts_gfx *g, const frame_ctx *f, prts_mat4 view_proj)
 {
     GLuint p = g->prog_world;
@@ -504,7 +514,9 @@ static void draw_meshes(prts_gfx *g, const frame_ctx *f, prts_mat4 view_proj)
     set_vec3(g, p, "u_sun_color", env->sun_color);
     set_vec3(g, p, "u_ambient", env->ambient);
     set_vec3(g, p, "u_fog_color", env->fog_color);
-    g->gl.glUniform2f(prts_gfx_uniform(g, p, "u_fog_range"), env->fog_near, f->rs->fog ? env->fog_far : 1e9f);
+    float far = f->rs->fog ? env->fog_far : 1e9f;
+    if (f->rs->draw_distance < PRTS_DRAW_DISTANCE_MAX) far = fminf(far, f->rs->draw_distance * 0.95f); /* fog before the edge */
+    g->gl.glUniform2f(prts_gfx_uniform(g, p, "u_fog_range"), fminf(env->fog_near, far * 0.5f), far);
     g->gl.glUniform2f(prts_gfx_uniform(g, p, "u_snap"), f->rs->snap ? (float)f->iw * 0.5f : 0.0f, (float)f->ih * 0.5f);
     g->gl.glUniform1f(prts_gfx_uniform(g, p, "u_affine"), f->rs->affine ? 1.0f : 0.0f);
     prts_light lights[MAX_LIGHTS];
@@ -533,6 +545,10 @@ static void draw_meshes(prts_gfx *g, const frame_ctx *f, prts_mat4 view_proj)
         gpu_mesh *m = prts_array_at(&g->meshes, i);
         if (!(m->cells & f->visible)) continue;
         if (m->owner != PRTS_ENTITY_NONE && !prts_world_alive(f->world, m->owner)) continue;
+        if (m->owner != PRTS_ENTITY_NONE) {
+            if (too_far(f, prts_world_pos_interp(f->world, m->owner, f->alpha))) continue;
+            g->entity_groups_drawn++;
+        }
         const prts_material *mat = prts_array_at(&f->scene->materials, (size_t)m->material);
         int surface = mat && mat->surface[0] ? prts_scene_find_surface(f->scene, mat->surface) : -1;
         if (surface >= 0 && surface == f->skip_surface) continue; /* no display inside its own picture */
@@ -552,6 +568,8 @@ static void draw_meshes(prts_gfx *g, const frame_ctx *f, prts_mat4 view_proj)
 }
 
 int prts_gfx_sprites_drawn(const prts_gfx *g) { return g->sprites_drawn; }
+int prts_gfx_entity_groups_drawn(const prts_gfx *g) { return g->entity_groups_drawn; }
+
 
 static void push_sprite_vertex(prts_array *out, prts_vec3 p, prts_vec3 n, float u, float v, float sun)
 {
@@ -598,6 +616,7 @@ static void draw_sprites(prts_gfx *g, const frame_ctx *f)
                                     prts_dv3_from_v3(prts_v3_rotate_y(sp->pos, oy)));
                 yaw += oy;
             }
+            if (too_far(f, base)) continue;
             prts_vec3 rel = prts_dv3_relative(base, f->view->eye);
             int dir = prts_sprite_direction(yaw, prts_v3(-rel.x, 0.0f, -rel.z), def->directions);
             const prts_sprite_anim *a = &def->anims[PRTS_CLAMP(sp->anim, 0, def->anim_count - 1)];
@@ -841,6 +860,7 @@ void prts_gfx_render_views(prts_gfx *g, const prts_scene *scene, const prts_worl
     g->last_views = view_count;
     if (g->null) return;
     if (g->uploaded_scene != scene || g->uploaded_revision != scene->revision) upload_scene(g, scene);
+    g->entity_groups_drawn = 0; /* counted over every pass of the frame */
     draw_surfaces(g, scene, world, rs, alpha, time);
     for (int i = 0; i < view_count; i++) {
         frame_ctx f = {scene, world, &views[i], rs, alpha, 0, 0, PRTS_CELLS_ALL, time, -1};

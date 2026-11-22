@@ -12,7 +12,8 @@ M.PRESET_NAMES = {
 }
 -- VR. Spec "Comfort defaults": in a headset vertex snapping, affine textures, dithering and the
 -- crosshair are off and the comfort vignette is on until the player changes them.
-M.XR = { locomotion = "smooth", turn = "snap", snap_angle = 45, turn_speed = 120, vignette = true, seated = false }
+M.XR = { locomotion = "smooth", turn = "snap", snap_angle = 45, turn_speed = 120, vignette = true, seated = false,
+         ride_vignette = true, ride_strength = 0.8 }
 M.XR_VIDEO = { preset = "hd", dither = false, snap = false, affine = false, crosshair = false }
 M.BUSES = { "master", "music", "effects", "voice" }
 M.BUS_NAMES = { master = "Master", music = "Music", effects = "Effects", voice = "Voices" }
@@ -59,12 +60,55 @@ function M.xr_video() return read("xr.video.", M.XR_VIDEO) end
 -- Game settings (game.<key>): whether a map started from the front-end menu opens with its
 -- prologue (a few spoken lines as the Marshal arrives), and how much the view moves on its own
 -- (camera_motion: head bob, landing dips and shakes; 0 off .. 1 full; never in VR).
-M.GAME = { prologue = true, camera_motion = 1.0 }
+-- M9 accessibility and performance: the war maps' palette and text size, crouch and run as
+-- toggles, a brightness boost in dark places, game speed, and the performance profile (nil:
+-- low on touch screens and in headsets, high elsewhere, until the player picks one).
+M.GAME = { prologue = true, camera_motion = 1.0, palette = "default", map_text = 1, toggle_crouch = false,
+           toggle_run = false, dark_boost = false, speed = 1.0 }
+M.PALETTES = { "default", "deuteranopia", "protanopia", "tritanopia", "high_contrast" }
+M.PALETTE_NAMES = { default = "Default", deuteranopia = "Deuteranopia", protanopia = "Protanopia",
+                    tritanopia = "Tritanopia", high_contrast = "High contrast" }
+M.SPEEDS = { 0.5, 1.0, 1.5, 2.0 }
+M.PERFORMANCE = { low = { draw_distance = 350, preset = "retro" }, medium = { draw_distance = 900 },
+                  high = { draw_distance = 5000 } }
+M.PERFORMANCE_ORDER = { "low", "medium", "high" }
 function M.game() return read("game.", M.GAME) end
+
+-- The performance profile: the saved one, or low on touch screens and in headsets.
+function M.performance()
+  local p = prts.settings.get("game.performance")
+  if type(p) == "string" and M.PERFORMANCE[p] then return p end
+  local scheme = prts.input.scheme()
+  return (scheme == "touch" or scheme == "xr") and "low" or "high"
+end
+
+-- Applies the M9 game options: toggles, speed, the dark boost, the profile's draw distance.
+function M.apply_game()
+  local g = M.game()
+  prts.input.toggle("crouch", g.toggle_crouch)
+  prts.input.toggle("run", g.toggle_run)
+  prts.time.scale(g.speed)
+  require("lib.fog").boost(g.dark_boost)
+  local p = M.PERFORMANCE[M.performance()]
+  local v = { draw_distance = p.draw_distance }
+  if p.preset and prts.settings.get("video.preset") == nil then v.preset = p.preset end
+  prts.render.settings(v)
+  return g
+end
+
+-- Touch controls (M9): the buttons' size and the left-handed mirror.
+M.TOUCH = { scale = 1.0, left_handed = false }
+function M.touch() return read("touch.", M.TOUCH) end
+function M.set_touch(key, value, save)
+  prts.settings.set("touch." .. key, value)
+  require("ui.touch").apply()
+  if save ~= false then prts.settings.save() end
+end
 
 -- Changes one game setting and (unless save is false) saves it; it is read when it matters.
 function M.set_game(key, value, save)
   prts.settings.set("game." .. key, value)
+  M.apply_game()
   if save ~= false then prts.settings.save() end
 end
 
@@ -122,6 +166,7 @@ function M.apply()
   M.apply_video()
   M.apply_audio()
   M.apply_xr()
+  M.apply_game()
 end
 
 return M

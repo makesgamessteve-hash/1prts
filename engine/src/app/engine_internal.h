@@ -33,6 +33,8 @@ typedef struct prts_engine_xr {
     float turn_speed;       /* radians per second at full deflection (smooth turning) */
     bool vignette;          /* the comfort vignette while moving or turning smoothly */
     float vignette_strength;
+    bool ride_vignette;     /* M9: the vignette also while carried (riding, sailing, flying) */
+    float ride_strength;
     bool seated;            /* seated mode: the view is raised to standing eye height */
     /* video settings in XR; the others (fog) follow the flat screen's */
     prts_res_preset preset;
@@ -50,6 +52,8 @@ typedef struct prts_engine_xr {
     float prev_trigger[2];
     float vignette_level;   /* current strength (eases in and out) */
     prts_vec3 pushback;     /* the last view's head push-back */
+    prts_dvec3 last_pos;    /* the commander's world position last frame (carried motion) */
+    bool have_last, carried;
 } prts_engine_xr;
 /* Registry key of the per-entity script data table (prts.entity.data). */
 #define PRTS_REG_EDATA "prts.edata"
@@ -75,6 +79,7 @@ struct prts_engine {
     prts_input_state dev;
     prts_engine_xr xr;
     prts_clock clock;
+    float time_scale; /* game speed (prts.time.scale): real seconds are multiplied by it */
     prts_render_settings render;
     bool quit;
     int exit_code;

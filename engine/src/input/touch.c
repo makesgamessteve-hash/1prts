@@ -80,7 +80,7 @@ static finger_role classify(const prts_touch *t, float x, float y, float aspect,
             return ROLE_BUTTON;
         }
     }
-    if (x < t->layout.split) return stick_taken(t) ? ROLE_IGNORED : ROLE_STICK;
+    if ((x < t->layout.split) != t->layout.stick_right) return stick_taken(t) ? ROLE_IGNORED : ROLE_STICK;
     return ROLE_LOOK;
 }
 

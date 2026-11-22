@@ -22,7 +22,26 @@ T.LAYOUT = {
   },
 }
 
-function T.apply() return prts.input.touch_layout(T.LAYOUT) end
+-- The layout the engine gets (M9): every radius times `scale`; left-handed, the buttons mirrored
+-- onto the left and the stick on the right half (split mirrored and the halves swapped).
+function T.layout(opts)
+  local scale, left = opts and opts.scale or 1.0, opts and opts.left_handed or false
+  local out = {}
+  for k, v in pairs(T.LAYOUT) do out[k] = v end
+  out.buttons = {}
+  for i, b in ipairs(T.LAYOUT.buttons) do
+    out.buttons[i] = { id = b.id, label = b.label, x = left and 1 - b.x or b.x, y = b.y, radius = b.radius * scale }
+  end
+  out.stick_right = left or nil
+  return out
+end
+
+function T.apply()
+  local ok, settings = pcall(require, "game.settings")
+  local opts = ok and settings.touch and settings.touch() or nil
+  T.current = T.layout(opts)
+  return prts.input.touch_layout(T.current)
+end
 
 -- Whether the commander leads a side in a running skirmish (the tools' buttons show then);
 -- rts/tools.lua sets T.tools_active when it is loaded; props/horse.lua sets T.can_ride.
@@ -40,6 +59,19 @@ function T.usable()
     field_map = tools, stone = tools, mark = tools, horn = tools, next_company = tools,
     mount = playing and T.can_ride ~= nil and T.can_ride() == true,
   }
+end
+
+-- What a button says now (M9): Rise and Dive in the water, Dismount on a horse, Lower a held map.
+function T.label(id)
+  local swimming = prts.entity.find("commander.swimming") ~= nil
+  if swimming and id == "jump" then return "Rise" end
+  if swimming and id == "crouch" then return "Dive" end
+  if id == "mount" and T.riding ~= nil and T.riding() then return "Dismount" end
+  if id == "field_map" and T.holding ~= nil and T.holding() == "map" then return "Lower" end
+  for _, b in ipairs(T.LAYOUT.buttons) do
+    if b.id == id then return b.label end
+  end
+  return id
 end
 
 function T.update()
@@ -68,7 +100,7 @@ function T.draw(w, h)
     if b.visible then
       local r, x, y = b.radius * h, b.x * w, b.y * h
       prts.ui.draw_icon(b.held and "disc" or "ring", x - r, y - r, 2 * r, 2 * r, RING)
-      prts.ui.draw_text(T.LAYOUT.buttons[i].label, x, y - 4, { align = "center" })
+      prts.ui.draw_text(T.label(T.LAYOUT.buttons[i].id), x, y - 4, { align = "center" })
     end
   end
   return true

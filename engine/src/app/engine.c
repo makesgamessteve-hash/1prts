@@ -69,6 +69,7 @@ prts_engine *prts_engine_create(const prts_engine_config *cfg, char *err, size_t
     if (!e->user_dir) e->user_dir = prts_path_join(data_dir, "../user");
     prts_array_init(&e->move_done, sizeof(prts_entity));
     prts_clock_init(&e->clock, PRTS_TICK_HZ, 5);
+    e->time_scale = 1.0f;
     prts_render_settings_default(&e->render);
     prts_engine_xr_init(e);
     e->vfs = prts_vfs_create();
@@ -297,7 +298,7 @@ bool prts_engine_frame(prts_engine *e, double real_seconds)
     if (!prts_engine_xr_look(e, real_seconds)) apply_look(e);
     prts_platform_begin_frame(&e->dev);
     /* scenarios run one tick per frame, so they are deterministic even with a window */
-    int n = e->scenario_active || e->cfg.scenario ? 1 : prts_clock_advance(&e->clock, real_seconds);
+    int n = e->scenario_active || e->cfg.scenario ? 1 : prts_clock_advance(&e->clock, real_seconds * e->time_scale);
     for (int i = 0; i < n && !e->quit; i++) prts_engine_tick(e);
     e->time = (double)e->clock.tick * e->clock.tick_seconds;
     prts_engine_ui_frame(e, real_seconds);
@@ -357,6 +358,8 @@ void prts_engine_get_status(const prts_engine *e, prts_engine_status *out)
     out->xr_vignette_level = e->xr.vignette_level;
     out->xr_turn = e->xr.turn;
     out->xr_seat = e->xr.seat;
+    out->xr_pointer = e->xr.hand;
+    out->xr_carried = e->xr.carried;
     if (!e->has_commander) return;
     prts_dvec3 p = prts_world_pos(e->world, e->commander.entity);
     out->commander[0] = p.x;

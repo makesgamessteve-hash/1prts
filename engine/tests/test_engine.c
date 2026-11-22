@@ -413,7 +413,7 @@ UTEST(gfx, windowed_engine_renders_and_recovers_from_broken_content)
     cfg.hidden = true;
     cfg.width = 320;
     cfg.height = 180;
-    cfg.ticks = 4;
+    cfg.ticks = 6; /* (two of them for the draw distance) */
     cfg.mods[cfg.mod_count++] = "broken_look";
     char err[1024];
     prts_log_set_min_level(PRTS_LOG_ERROR + 1);
@@ -424,6 +424,14 @@ UTEST(gfx, windowed_engine_renders_and_recovers_from_broken_content)
     ASSERT_TRUE(prts_gfx_shader_errors(e->gfx) >= 2);
     ASSERT_TRUE(prts_engine_frame(e, 1.0 / 30.0));
     ASSERT_TRUE(prts_gfx_mesh_count(e->gfx) > 10);
+    /* Spec (performance): A shorter draw distance. Far entities and sprites are skipped. */
+    int far_groups = prts_gfx_entity_groups_drawn(e->gfx), far_sprites = prts_gfx_sprites_drawn(e->gfx);
+    e->render.draw_distance = 2.0f;
+    ASSERT_TRUE(prts_engine_frame(e, 1.0 / 30.0));
+    ASSERT_TRUE(prts_gfx_entity_groups_drawn(e->gfx) < far_groups);
+    ASSERT_TRUE(prts_gfx_sprites_drawn(e->gfx) < far_sprites);
+    e->render.draw_distance = PRTS_DRAW_DISTANCE_MAX;
+    ASSERT_TRUE(prts_engine_frame(e, 1.0 / 30.0));
     /* Spec: Live war table (the map's war table surface is drawn every frame) */
     ASSERT_EQ(1, prts_gfx_surfaces_drawn(e->gfx));
     ASSERT_TRUE(prts_gfx_last_visible_cells(e->gfx) & PRTS_CELL_BIT(0));
@@ -551,4 +559,28 @@ UTEST(gfx, settings_and_null_backend)
     ASSERT_EQ(4, prts_gfx_last_view_count(g)); /* at most PRTS_GFX_MAX_VIEWS */
     prts_gfx_destroy(g);
     prts_gfx_destroy(NULL);
+}
+
+UTEST(engine, game_speed_scales_ticks)
+{
+    /* Spec (accessibility): Faster game. Twice as many ticks per second of real time. */
+    char err[1024];
+    prts_engine *e = boot(PRTS_TEST_DATA, NULL, NULL, true, err);
+    ASSERT_TRUE(e != NULL);
+    ASSERT_STREQ("1.0", lua_eval(e, "prts.time.scale()"));
+    prts_engine_status s0, s1, s2;
+    prts_engine_get_status(e, &s0);
+    for (int i = 0; i < 30; i++) prts_engine_frame(e, 1.0 / 30.0);
+    prts_engine_get_status(e, &s1);
+    ASSERT_STREQ("2.0", lua_eval(e, "prts.time.scale(2)"));
+    for (int i = 0; i < 30; i++) prts_engine_frame(e, 1.0 / 30.0);
+    prts_engine_get_status(e, &s2);
+    ASSERT_EQ((uint64_t)30, s1.tick - s0.tick);
+    ASSERT_EQ((uint64_t)60, s2.tick - s1.tick);
+    ASSERT_STREQ("4.0", lua_eval(e, "prts.time.scale(100)")); /* clamped */
+    ASSERT_STREQ("true", lua_eval(e, "prts.input.toggle('crouch', true)"));
+    ASSERT_STREQ("<error>", lua_eval(e, "prts.input.toggle('nothing', true)"));
+    ASSERT_STREQ("0", lua_eval(e, "prts.render.stats().sprites")); /* headless: nothing drawn */
+    ASSERT_STREQ("120.0", lua_eval(e, "prts.render.settings{ draw_distance = 120 }.draw_distance"));
+    prts_engine_destroy(e);
 }

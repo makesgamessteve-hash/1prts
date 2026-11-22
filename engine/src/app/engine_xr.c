@@ -35,6 +35,8 @@ void prts_engine_xr_init(prts_engine *e)
     x->turn_speed = 120.0f * DEG;
     x->vignette = true;
     x->vignette_strength = 0.6f;
+    x->ride_vignette = true;
+    x->ride_strength = 0.8f;
     /* Spec "Comfort defaults": vertex snapping and screen-wide retro effects are off in XR */
     x->preset = PRTS_RES_HD;
     x->snap = x->dither = x->affine = x->crosshair = false;
@@ -85,6 +87,7 @@ static void start_session(prts_engine *e)
     x->aim_locked = false;
     x->hand = 1;
     x->vignette_level = 0.0f;
+    x->have_last = x->carried = false;
 }
 
 static void end_session(prts_engine *e)
@@ -165,6 +168,17 @@ bool prts_engine_xr_look(prts_engine *e, double dt)
     /* Spec "Comfort options": the comfort vignette while moving or turning smoothly */
     bool moving = !x->teleport && move_amount(e->input) > 0.1f;
     float target = x->vignette && (moving || turning) ? x->vignette_strength : 0.0f;
+    /* Spec "Riding a ship in VR" (M9): carried by something that moves, the riding vignette */
+    prts_dvec3 pos = prts_world_pos(e->world, e->commander.entity);
+    double speed = 0.0;
+    if (x->have_last && dt > 0.0) {
+        prts_dvec3 d = prts_dv3_sub(pos, x->last_pos);
+        speed = sqrt(d.x * d.x + d.y * d.y + d.z * d.z) / dt;
+    }
+    x->last_pos = pos;
+    x->have_last = true;
+    x->carried = !moving && move_amount(e->input) <= 0.1f && speed > 0.5;
+    if (x->ride_vignette && x->carried && x->ride_strength > target) target = x->ride_strength;
     float step = VIGNETTE_RATE * (float)dt;
     x->vignette_level = fabsf(target - x->vignette_level) <= step ? target
                       : x->vignette_level + (target > x->vignette_level ? step : -step);
@@ -375,6 +389,8 @@ static int l_xr_settings(lua_State *L)
         opt_number(L, "turn_speed", 10.0f, 720.0f, DEG, &x->turn_speed);
         opt_bool(L, "vignette", &x->vignette);
         opt_number(L, "vignette_strength", 0.0f, 1.0f, 1.0f, &x->vignette_strength);
+        opt_bool(L, "ride_vignette", &x->ride_vignette);
+        opt_number(L, "ride_strength", 0.0f, 1.0f, 1.0f, &x->ride_strength);
         bool seated = x->seated;
         opt_bool(L, "seated", &x->seated);
         if (seated != x->seated) x->align_pending = prts_xr_get()->active; /* measure the seat again */
@@ -395,6 +411,8 @@ static int l_xr_settings(lua_State *L)
     set_number(L, "turn_speed", roundf(x->turn_speed / DEG));
     set_bool(L, "vignette", x->vignette);
     set_number(L, "vignette_strength", x->vignette_strength);
+    set_bool(L, "ride_vignette", x->ride_vignette);
+    set_number(L, "ride_strength", x->ride_strength);
     set_bool(L, "seated", x->seated);
     set_string(L, "preset", PRESETS[PRTS_CLAMP((int)x->preset, 0, 4)]);
     set_bool(L, "dither", x->dither);
@@ -422,6 +440,7 @@ static int l_xr_state(lua_State *L)
     set_number(L, "turn", x->turn);
     set_number(L, "seat", x->seat);
     set_number(L, "vignette", x->vignette_level);
+    set_bool(L, "carried", x->carried);
     set_bool(L, "aiming", e->commander.aiming);
     set_number(L, "pushback", prts_v3_length(x->pushback));
     /* where the play area's origin is in the world (its floor, under the head when aligned) */

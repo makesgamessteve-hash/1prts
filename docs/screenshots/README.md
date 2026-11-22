@@ -34,6 +34,10 @@ field.
 deck, a pearl bed under the water (with the breath bar), the sunken sky-barge, the diving bell's
 shell table on the seabed, and the market town of Saltwick.
 
+`96`–`99` show Every Screen (M9): the war table in the deuteranopia palette and in high contrast
+(rings mark your own companies, squares the enemy's), the touch buttons laid out left-handed, and
+the Access tab of the options menu.
+
 These images show Banner & Bastion art and are licensed under CC BY 4.0 like the rest of the
 art (see `LICENSING.md`). Credit: "Banner & Bastion screenshot" by The Banner & Bastion
 Contributors.

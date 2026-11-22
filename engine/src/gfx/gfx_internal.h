@@ -69,6 +69,7 @@ struct prts_gfx {
     GLuint sprite_vao, sprite_vbo;
     prts_array sprite_verts;     /* prts_vertex scratch for billboards */
     int sprites_drawn;
+    int entity_groups_drawn;
     int surfaces_drawn;
     GLuint empty_vao;
     prts_gfx_ray rays[PRTS_GFX_MAX_RAYS];

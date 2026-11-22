@@ -82,6 +82,8 @@ typedef struct prts_engine_status {
     bool xr_vignette;     /* comfort vignette on */
     bool xr_snap;         /* vertex snapping in XR */
     float xr_vignette_level, xr_turn, xr_seat;
+    int xr_pointer;   /* the pointer hand: 0 left, 1 right */
+    bool xr_carried;  /* carried by something moving (the riding vignette) */
 } prts_engine_status;
 /* The strings point into the engine and stay valid until it is destroyed. */
 void prts_engine_get_status(const prts_engine *e, prts_engine_status *out);

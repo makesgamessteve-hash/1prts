@@ -9,7 +9,7 @@ face-to-face orders. Keeps, mines, war galleons, siege towers, skyships, walking
 and floating citadels are built at real size with real crews, and you can walk inside every one
 of them. The look is retro 3D: low-poly models, sprites and voxels.
 
-> **Status: M1 done; M2 (First Command) to M8 (Deep Water) playable.** The C engine runs on Windows, Linux, macOS
+> **Status: M1 done; M2 (First Command) to M8 (Deep Water) playable; M9 (Every Screen) polish done.** The C engine runs on Windows, Linux, macOS
 > and in the browser (WebGL 2, touch controls on phones, WebXR). It loads all content from
 > `data/` and plays two maps in first person. **Harrowmark**, the Crown's border castle, is the
 > story map ([the story](docs/concept/15-story.md)). **Ashford Vale** is the first skirmish. Serfs
@@ -92,6 +92,17 @@ of them. The look is retro 3D: low-poly models, sprites and voxels.
 >   **lighthouses** (sight over the sea, a relay for the stones);
 > - the scenario **The Reef War** at Reefholm, and **Tidesend**, a skirmish of all four peoples.
 >
+> **M9 (Every Screen)** polishes every way to play:
+> - touch buttons that can be larger and moved to the left hand, and say what they do (Rise and
+>   Dive in the water, Dismount on a horse);
+> - WebXR hand tracking: pinch to use, a left-hand pinch to walk;
+> - in VR, a comfort vignette while riding, sailing and flying;
+> - a draw distance and low, medium and high performance profiles (low on phones and in
+>   headsets);
+> - an Access tab: colour-blind palettes and a high-contrast war table with shapes for friend
+>   and foe, large map text, crouch and run as toggles, brighter tunnels and deep water, and game
+>   speed.
+>
 > The tasks of [`add-command-core`](openspec/changes/add-command-core/tasks.md) (M2),
 > [`add-mounts-and-engines`](openspec/changes/add-mounts-and-engines/tasks.md) (M3) and
 > [`add-economy-and-second-faction`](openspec/changes/add-economy-and-second-faction/tasks.md)
@@ -121,6 +132,8 @@ of them. The look is retro 3D: low-poly models, sprites and voxels.
 | ![The Hollow Court's war room under the ground](docs/screenshots/83_gloam_war_room.png) | ![The Hollow Court and its guard](docs/screenshots/84_hollow_court.png) | ![A tunnel wyrm burst up out of the field](docs/screenshots/85_tunnel_wyrm.png) |
 | ![The Tidehold beyond the reef](docs/screenshots/90_tidehold_beyond_the_reef.png) | ![On the Tidehold's council deck](docs/screenshots/91_tidehold_council_deck.png) | ![A pearl bed under the water](docs/screenshots/92_pearl_bed.png) |
 | ![The sunken sky-barge](docs/screenshots/93_sunken_sky_barge.png) | ![The diving bell's shell table](docs/screenshots/94_diving_bell.png) | ![Saltwick market town](docs/screenshots/95_saltwick_market.png) |
+| ![The war table in the deuteranopia palette](docs/screenshots/96_war_table_deuteranopia.png) | ![The war table in high contrast](docs/screenshots/97_war_table_high_contrast.png) | ![Left-handed touch buttons](docs/screenshots/98_touch_left_handed.png) |
+| ![The Access options](docs/screenshots/99_options_access.png) | | |
 | ![Great hall](docs/screenshots/12_hall_benches_braziers.png) | ![Forge](docs/screenshots/05_forge.png) | ![Front-end menu](docs/screenshots/13_front_end_menu.png) |
 
 ## Read this first

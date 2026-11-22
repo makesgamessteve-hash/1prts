@@ -20,6 +20,47 @@ W.COLORS = {
 }
 local COL = W.COLORS
 
+-- M9 accessibility: colour-blind-safe palettes and a high-contrast mode replace the colours that
+-- tell friend from foe; the shapes (sigils) tell them apart in every palette: own companies are
+-- rings, the enemy's men squares.
+W.PALETTES = {
+  default = {},
+  deuteranopia = { own = { 40, 110, 230, 255 }, enemy = { 240, 140, 20, 255 }, old = { 170, 120, 60, 160 },
+                   selected = { 250, 250, 250, 255 } },
+  protanopia = { own = { 40, 110, 230, 255 }, enemy = { 240, 160, 30, 255 }, old = { 170, 130, 70, 160 },
+                 selected = { 250, 250, 250, 255 } },
+  tritanopia = { own = { 20, 160, 170, 255 }, enemy = { 220, 40, 60, 255 }, old = { 150, 70, 80, 160 },
+                 selected = { 250, 250, 250, 255 } },
+  high_contrast = { land = { 0, 0, 0, 255 }, ink = { 255, 255, 255, 255 }, parchment = { 0, 0, 0, 255 },
+                    own = { 255, 255, 0, 255 }, enemy = { 255, 0, 255, 255 }, old = { 160, 0, 160, 255 },
+                    text = { 255, 255, 255, 255 }, wood = { 60, 60, 60, 255 }, selected = { 0, 255, 255, 255 },
+                    button = { 40, 40, 40, 255 }, frame = { 255, 255, 255, 255 } },
+}
+W.SIGILS = { own = "ring", enemy = "square" }
+local DEFAULT = {}
+for k, v in pairs(W.COLORS) do DEFAULT[k] = v end
+W.palette = "default"
+
+-- Switches the palette (the colours are changed in place, so every drawing follows).
+function W.set_palette(name)
+  if not W.PALETTES[name] then name = "default" end
+  if name == W.palette then return false end
+  for k, v in pairs(DEFAULT) do COL[k] = v end
+  for k, v in pairs(W.PALETTES[name]) do COL[k] = v end
+  W.palette = name
+  return true
+end
+
+-- The text scale of the maps (1 or 2) and the player's palette, from the game settings.
+function W.text_scale()
+  local ok, settings = pcall(require, "game.settings")
+  return ok and settings.game().map_text or 1
+end
+local function follow_settings()
+  local ok, settings = pcall(require, "game.settings")
+  if ok then W.set_palette(settings.game().palette) end
+end
+
 W.PICK_PX = 5 -- a company within this many pixels of where the commander points is picked
 
 -- The last frame's clickable areas per surface, for tests: { { id, x, y, w, h } }.
@@ -91,7 +132,7 @@ function W.picture(side, x, y, w, h, opts)
     local cx, cz = C.centre(c)
     local px, py = at(cx, cz)
     if c.id == sel then prts.ui.draw_icon("ring", px - 6, py - 6, 12, 12, COL.selected) end
-    prts.ui.draw_icon("disc", px - 3, py - 3, 6, 6, c.broken and COL.old or COL.own)
+    prts.ui.draw_icon(W.SIGILS.own, px - 3, py - 3, 6, 6, c.broken and COL.old or COL.own)
     if opts.labels ~= false then prts.ui.draw_text(tostring(i), px + 4, py - 9, { color = COL.text }) end
   end
   -- the side's ships (the chosen one ringed)
@@ -131,7 +172,7 @@ function W.picture(side, x, y, w, h, opts)
     local col = s.state == "seen" and COL.enemy or COL.old
     if s.what == "structure" then rect(px - 3, py - 3, 6, 6, col)
     elseif s.what == "ship" then rect(px - 3, py - 1, 7, 3, col)
-    else prts.ui.draw_icon("disc", px - 2, py - 2, 4, 4, col) end
+    else rect(px - 2, py - 2, 4, 4, col) end -- the enemy's men: squares
   end
   local mark = Cmd.state().mark
   if mark then
@@ -265,12 +306,14 @@ function W.draw_table(w, h, ptr)
   local side = Cmd.side()
   if not side then return false end
   W.hot.war_table = {}
+  follow_settings()
   rect(0, 0, w, h, COL.parchment)
   local mx, my, mw, mh = W.TABLE_MAP[1], W.TABLE_MAP[2], W.TABLE_MAP[3], W.TABLE_MAP[4]
   rect(mx - 2, my - 2, mw + 4, mh + 4, COL.frame)
   W.picture(side, mx, my, mw, mh)
-  prts.ui.draw_text(status_line(side), 7, 3, { color = COL.ink })
-  prts.ui.draw_text(selected_line(), w - 7, 3, { align = "right", color = COL.ink })
+  local ts = W.text_scale()
+  prts.ui.draw_text(status_line(side), 7, 3, { color = COL.ink, scale = ts })
+  if ts == 1 then prts.ui.draw_text(selected_line(), w - 7, 3, { align = "right", color = COL.ink }) end
   local result = point_picture(ptr, mx, my, mw, mh)
   local bw = 37
   local f = faction(side)
@@ -305,10 +348,11 @@ end
 function W.draw_map(w, h, ptr)
   local side = Cmd.side()
   W.hot["rts.hand"] = {}
+  follow_settings()
   rect(0, 0, w, h, COL.parchment)
   local mx, my, mw, mh = 4, 14, w - 8, h - 30
   W.picture(side, mx, my, mw, mh, { woods = false })
-  prts.ui.draw_text(selected_line(), 4, 3, { color = COL.ink })
+  prts.ui.draw_text(selected_line(), 4, 3, { color = COL.ink, scale = W.text_scale() })
   prts.ui.draw_text("Point and use: choose or order   X next   Q stone   H horn", w / 2, h - 12,
                     { align = "center", color = COL.ink })
   W.last_result = point_picture(ptr, mx, my, mw, mh) or W.last_result

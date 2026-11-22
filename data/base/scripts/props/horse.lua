@@ -138,6 +138,7 @@ end
 
 -- the touch button shows while riding or beside a horse
 require("ui.touch").can_ride = function() return H.mounted() or H.nearest() ~= nil end
+require("ui.touch").riding = function() return H.mounted() end
 
 prts.events.on("use", "props.horse", H.on_use)
 prts.events.on("tick", "props.horse", H.tick)

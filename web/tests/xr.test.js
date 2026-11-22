@@ -169,4 +169,25 @@ module.exports = [
       expect(page.prtsErrors.length === 0, `page errors: ${page.prtsErrors.join(' | ')}`);
     },
   },
+  {
+    // Spec (xr-hands): Pinching to walk and to use.
+    name: 'tracked hands: a left pinch walks, a right pinch is the trigger',
+    init: installXRMock,
+    async run(env, context) {
+      const page = await openGame(env, context);
+      await page.evaluate(() => window.__xrMock.useHands(true));
+      await enterVR(page);
+      const xr = await page.evaluate(() => window.prts_test.xr());
+      expect(xr.controllers === 2, `${xr.controllers} hands reached the engine`);
+      const before = await commander(page);
+      await setHand(page, 'left', { pinch: true });
+      await waitFor(page, (b) => {
+        const c = window.prts_test.commander();
+        return Math.hypot(c.x - b.x, c.z - b.z) > 0.5;
+      }, before, 'the commander to walk while the left hand pinches');
+      await setHand(page, 'left', { pinch: false });
+      await setHand(page, 'right', { pinch: true });
+      await waitFor(page, () => window.prts_test.xr().pointer === 'right', null, 'the right hand to point');
+    },
+  },
 ];

@@ -19,6 +19,7 @@ typedef struct prts_touch_button {
 
 typedef struct prts_touch_layout {
     float split;        /* a new finger left of this fraction of the width drives the stick */
+    bool stick_right;   /* left-handed (M9): the stick is right of split instead, looking left of it */
     float stick_radius; /* finger distance for full stick deflection, fraction of the height */
     float look_speed;   /* look units (like mouse pixels) per screen height of dragging */
     float tap_distance; /* the most a finger may move and still tap, fraction of the height */

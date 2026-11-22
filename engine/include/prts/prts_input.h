@@ -114,6 +114,10 @@ void prts_input_end_tick(prts_input *in);
 
 /* Scripted input for tests: holds a value for some ticks, or presses once. */
 void prts_input_override(prts_input *in, const char *action, float value, int ticks);
+/* Makes an action a toggle (M9, accessibility): a press latches it on, the next press off; its
+ * value and down state are the latch. Returns false for an unknown action. */
+bool prts_input_set_toggle(prts_input *in, const char *action, bool on);
+bool prts_input_toggle(const prts_input *in, const char *action);
 void prts_input_tick_overrides(prts_input *in);
 
 prts_input_scheme prts_input_scheme_active(const prts_input *in);

@@ -15,6 +15,7 @@ typedef struct action {
     prts_array bindings; /* binding */
     float value;
     bool down, was_down, pressed;
+    bool toggle, latched, raw_down; /* M9: a toggled action latches on a press, unlatches on the next */
     bool always; /* still works while input is blocked by a menu */
     float override_value;
     int override_ticks;
@@ -216,6 +217,12 @@ void prts_input_update(prts_input *in, const prts_input_state *s)
             for (size_t j = 0; j < a->bindings.len; j++) v += binding_value(prts_array_at(&a->bindings, j), s);
         }
         if (a->override_ticks > 0) v = a->override_value;
+        if (a->toggle) {
+            bool raw = fabsf(v) > 0.5f;
+            if (raw && !a->raw_down) a->latched = !a->latched;
+            a->raw_down = raw;
+            v = a->latched ? 1.0f : 0.0f;
+        }
         a->value = v;
         a->was_down = a->down;
         a->down = fabsf(v) > 0.5f;
@@ -255,6 +262,21 @@ bool prts_input_went_down(const prts_input *in, const char *name)
 void prts_input_end_tick(prts_input *in)
 {
     for (size_t i = 0; i < in->actions.len; i++) ((action *)prts_array_at(&in->actions, i))->pressed = false;
+}
+
+bool prts_input_set_toggle(prts_input *in, const char *name, bool on)
+{
+    action *a = get(in, name);
+    if (!a) return false;
+    if (a->toggle != on) a->latched = a->raw_down = false;
+    a->toggle = on;
+    return true;
+}
+
+bool prts_input_toggle(const prts_input *in, const char *name)
+{
+    action *a = get(in, name);
+    return a && a->toggle;
 }
 
 void prts_input_override(prts_input *in, const char *name, float value, int ticks)

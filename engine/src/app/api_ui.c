@@ -340,6 +340,9 @@ static int l_touch_layout(lua_State *L)
     prts_touch_layout l;
     prts_touch_layout_default(&l);
     l.split = opt_field_number(L, 1, "split", l.split);
+    lua_getfield(L, 1, "stick_right");
+    l.stick_right = lua_toboolean(L, -1);
+    lua_pop(L, 1);
     l.stick_radius = opt_field_number(L, 1, "stick_radius", l.stick_radius);
     l.look_speed = opt_field_number(L, 1, "look_speed", l.look_speed);
     l.tap_distance = opt_field_number(L, 1, "tap_distance", l.tap_distance);

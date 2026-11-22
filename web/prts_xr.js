@@ -68,7 +68,7 @@ addToLibrary({
     enter() {
       if (PrtsXR.session || PrtsXR.starting || !navigator.xr) return;
       PrtsXR.starting = true;
-      navigator.xr.requestSession('immersive-vr', { optionalFeatures: ['local-floor'] })
+      navigator.xr.requestSession('immersive-vr', { optionalFeatures: ['local-floor', 'hand-tracking'] })
         .then(PrtsXR.start)
         .catch(function (e) { console.warn('1stPRTS: could not enter VR: ' + e); })
         .then(function () { PrtsXR.starting = false; });
@@ -130,6 +130,37 @@ addToLibrary({
       d[o + 3] = t.orientation.x; d[o + 4] = t.orientation.y; d[o + 5] = t.orientation.z; d[o + 6] = t.orientation.w;
     },
 
+    // M9 hand tracking: a pinch (thumb tip to index tip under 2.5 cm, let go above 4 cm) is
+    // the trigger; a left-hand pinch also pushes the stick forward (walk, or aim a teleport).
+    PINCH_ON: 0.025, PINCH_OFF: 0.04,
+    pinched: {},
+
+    pinch(frame, src) {
+      var hand = src.hand;
+      var thumb = hand.get && hand.get('thumb-tip'), index = hand.get && hand.get('index-finger-tip');
+      var a = thumb && frame.getJointPose && frame.getJointPose(thumb, PrtsXR.space);
+      var b = index && frame.getJointPose && frame.getJointPose(index, PrtsXR.space);
+      var key = src.handedness || 'none';
+      if (!a || !b) return (PrtsXR.pinched[key] = false);
+      var dx = a.transform.position.x - b.transform.position.x, dy = a.transform.position.y - b.transform.position.y;
+      var dz = a.transform.position.z - b.transform.position.z;
+      var dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+      var was = !!PrtsXR.pinched[key];
+      return (PrtsXR.pinched[key] = was ? dist < PrtsXR.PINCH_OFF : dist < PrtsXR.PINCH_ON);
+    },
+
+    putHand(d, co, frame, src) {
+      var wrist = src.hand.get && src.hand.get('wrist');
+      var grip = wrist && frame.getJointPose && frame.getJointPose(wrist, PrtsXR.space);
+      if (grip) { d[co + 2] = 1; PrtsXR.putPose(d, co + 3, grip.transform); }
+      var on = PrtsXR.pinch(frame, src);
+      d[co + 18] = 1;                      // one button: the pinch as the trigger
+      d[co + 19] = on ? 1 : 0;
+      d[co + 20] = on ? 1 : 0;
+      d[co + 28] = 4;                      // the stick: forward while the left hand pinches
+      d[co + 32] = on && src.handedness === 'left' ? -1 : 0;
+    },
+
     pack(frame) {
       var d = PrtsXR.data || (PrtsXR.data = new Float32Array(PrtsXR.FRAME_FLOATS));
       d.fill(0);
@@ -161,6 +192,7 @@ addToLibrary({
         var aim = src.targetRaySpace && frame.getPose(src.targetRaySpace, PrtsXR.space);
         if (aim) { d[co + 10] = 1; PrtsXR.putPose(d, co + 11, aim.transform); }
         var gp = src.gamepad;
+        if (src.hand && !gp) PrtsXR.putHand(d, co, frame, src);
         if (gp) {
           var nb = Math.min(gp.buttons.length, PrtsXR.MAX_BUTTONS), mask = 0;
           for (var b = 0; b < nb; b++) {

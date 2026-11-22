@@ -92,6 +92,8 @@ EMSCRIPTEN_KEEPALIVE double prts_test_xr(int field)
         case 12: return s.xr_teleport ? 1.0 : 0.0;
         case 13: return s.xr_turn;
         case 14: return s.xr_seat;
+        case 15: return s.xr_pointer;
+        case 16: return s.xr_carried ? 1.0 : 0.0;
         default: return NAN;
         }
     }

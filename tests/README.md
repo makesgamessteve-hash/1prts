@@ -262,3 +262,14 @@ is missing. References are C unit tests (`suite.case`), test files and scripts (
 | neutral-places | Holding the lighthouse | `tests/game/scenarios/lighthouse.lua` |
 | reef-war | Sinking the Tidehold | `tests/game/scenarios/reef_war.lua` |
 | reef-war | The harbor falls | `tests/game/scenarios/reef_war_lost.lua` |
+| touch-polish | Left-handed with large buttons | `tests/game/scenarios/touch_polish.lua` |
+| touch-polish | Buttons under the water | `tests/game/scenarios/touch_polish.lua` |
+| xr-hands | Pinching to walk and to use | `web/tests/xr.test.js` (tracked hands) |
+| comfort | Riding a ship in VR | `tests/game/scenarios/xr_ride_comfort.lua` |
+| performance | A shorter draw distance | `engine/tests/test_engine.c` (`gfx.windowed_engine_renders_and_recovers_from_broken_content`), `tests/game/scenarios/performance.lua` |
+| performance | A phone starts on low | `tests/game/scenarios/performance.lua` |
+| accessibility | A colour-blind palette | `tests/game/scenarios/accessibility_maps.lua` |
+| accessibility | Larger map text | `tests/game/scenarios/accessibility_maps.lua` |
+| accessibility | Toggle crouch | `tests/game/scenarios/accessibility_play.lua`, `engine/tests/test_input.c` (`input.toggled_actions_latch`) |
+| accessibility | Brightness under the ground | `tests/game/scenarios/accessibility_play.lua` |
+| accessibility | Faster game | `engine/tests/test_engine.c` (`engine.game_speed_scales_ticks`), `tests/game/scenarios/accessibility_play.lua` |

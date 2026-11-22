@@ -213,6 +213,7 @@ function T.tick()
 end
 
 require("ui.touch").tools_active = T.active
+require("ui.touch").holding = T.held
 
 prts.events.on("tick", "rts.tools", function()
   if prts.entity.find(S.REGISTRY) then T.tick() end

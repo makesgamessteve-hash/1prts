@@ -71,6 +71,15 @@ function installXRMock() {
     },
   });
 
+  // Tracked hands (M9): no gamepad, joints; the fingertips meet when the hand pinches.
+  const trackedHand = (hand) => ({
+    handedness: hand,
+    targetRayMode: 'tracked-pointer',
+    targetRaySpace: { hand, kind: 'aim' },
+    profiles: ['generic-hand'],
+    hand: { get(joint) { return { hand, joint }; } },
+  });
+
   class Frame {
     constructor(session) { this.session = session; }
     getViewerPose() {
@@ -82,13 +91,19 @@ function installXRMock() {
       const h = mock.hands[space.hand];
       return { transform: new RigidTransform(h.pos, h.quat) };
     }
+    getJointPose(joint) {
+      const h = mock.hands[joint.hand];
+      const gap = joint.joint === 'index-finger-tip' ? (h.pinch ? 0.01 : 0.07) : 0;
+      return { transform: new RigidTransform([h.pos[0] + gap, h.pos[1], h.pos[2]], h.quat), radius: 0.008 };
+    }
   }
 
   class Session extends Target {
     constructor() {
       super();
       this.renderState = { baseLayer: null };
-      this.inputSources = [controller('left'), controller('right')];
+      this.inputSources = mock.trackedHands ? [trackedHand('left'), trackedHand('right')]
+        : [controller('left'), controller('right')];
       this._callbacks = new Map();
       this._next = 0;
       this._timer = 0;
@@ -169,6 +184,8 @@ function installXRMock() {
     endFromDevice() { if (mock.session) mock.session.end(); },
     // Moves a controller: { pos, quat, buttons (xr-standard values), axes (stick x, y at 2, 3) }.
     setHand(name, state) { Object.assign(mock.hands[name], state); },
+    // The next session has tracked hands instead of controllers.
+    useHands(on) { mock.trackedHands = on; },
   };
   window.__xrMock = mock;
   Object.defineProperty(navigator, 'xr', { value: new XRSystem(), configurable: true });

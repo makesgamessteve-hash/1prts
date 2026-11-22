@@ -12,6 +12,7 @@ O.TABS = {
   { id = "controls", label = "Controls" },
   { id = "vr", label = "VR" },
   { id = "game", label = "Game" },
+  { id = "access", label = "Access" },
 }
 O.EFFECTS = {
   { key = "dither", label = "Palette and dithering" },
@@ -27,8 +28,57 @@ O.GAME_OPTIONS = {
 
 O.XR_OPTIONS = {
   { key = "vignette", label = "Comfort vignette while moving" },
+  { key = "ride_vignette", label = "Comfort vignette while riding and flying" },
   { key = "seated", label = "Seated mode (standing eye height)" },
 }
+-- M9 accessibility (the Access tab): checkboxes, and choices cycled by a button.
+O.ACCESS_OPTIONS = {
+  { key = "toggle_crouch", label = "Crouch is a toggle" },
+  { key = "toggle_run", label = "Run is a toggle" },
+  { key = "dark_boost", label = "Brighter tunnels, caverns and deep water" },
+}
+
+-- The next value after `current` in `list` (round).
+function O.cycle(list, current)
+  for i, v in ipairs(list) do
+    if v == current then return list[i % #list + 1] end
+  end
+  return list[1]
+end
+
+function O.draw_access()
+  local g = settings.game()
+  local tc = settings.touch()
+  prts.ui.row({ 150, -1 })
+  prts.ui.label("War table colours")
+  if prts.ui.button(settings.PALETTE_NAMES[g.palette] or g.palette, "game.palette") then
+    settings.set_game("palette", O.cycle(settings.PALETTES, g.palette))
+  end
+  prts.ui.label("Map text")
+  if prts.ui.button(g.map_text == 2 and "Large" or "Normal", "game.map_text") then
+    settings.set_game("map_text", g.map_text == 2 and 1 or 2)
+  end
+  prts.ui.label("Game speed")
+  if prts.ui.button(string.format("%.1fx", g.speed), "game.speed") then
+    settings.set_game("speed", O.cycle(settings.SPEEDS, g.speed))
+  end
+  prts.ui.label("Performance")
+  local perf = settings.performance()
+  if prts.ui.button(perf:sub(1, 1):upper() .. perf:sub(2), "game.performance") then
+    settings.set_game("performance", O.cycle(settings.PERFORMANCE_ORDER, perf))
+  end
+  prts.ui.label("Touch buttons")
+  local v, changed = prts.ui.slider("touch.scale", tc.scale, 0.75, 1.5, 0.25)
+  if changed then settings.set_touch("scale", v) end
+  prts.ui.row({ -1 })
+  local left, flipped = prts.ui.checkbox("Touch: left-handed", tc.left_handed, "touch.left_handed")
+  if flipped then settings.set_touch("left_handed", left) end
+  for _, o in ipairs(O.ACCESS_OPTIONS) do
+    local value, changed2 = prts.ui.checkbox(o.label, g[o.key], "game." .. o.key)
+    if changed2 then settings.set_game(o.key, value) end
+  end
+end
+
 O.XR_EFFECTS = {
   { key = "snap", label = "Vertex snapping in VR" },
   { key = "dither", label = "Palette and dithering in VR" },
@@ -121,7 +171,7 @@ end
 function O.draw(w, h, back)
   local ww, wh = math.min(440, w - 16), math.min(290, h - 16)
   prts.ui.window("Options", math.floor((w - ww) / 2), math.floor((h - wh) / 2), ww, wh, function()
-    prts.ui.row({ 70, 70, 70, 70, 70, -1 })
+    prts.ui.row({ 60, 60, 60, 60, 60, 60, -1 })
     for _, tab in ipairs(O.TABS) do
       if prts.ui.button(tab.id == O.tab and ("[" .. tab.label .. "]") or tab.label, "tab." .. tab.id) then
         O.tab = tab.id
@@ -141,6 +191,8 @@ function O.draw(w, h, back)
       O.draw_vr()
     elseif O.tab == "game" then
       O.draw_game()
+    elseif O.tab == "access" then
+      O.draw_access()
     else
       controls.draw()
     end

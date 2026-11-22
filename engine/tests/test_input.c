@@ -404,3 +404,40 @@ UTEST(commander, rides_a_moving_platform_and_uses_things)
     prts_cworld_destroy(cw);
     prts_world_destroy(w);
 }
+
+UTEST(input, toggled_actions_latch)
+{
+    /* Spec (accessibility): Toggle crouch */
+    prts_input *in = prts_input_create(fake_keys);
+    prts_input_define(in, "crouch");
+    ASSERT_TRUE(prts_input_bind(in, "crouch", PRTS_BIND_KEY, "E", 0, 1.0f));
+    ASSERT_FALSE(prts_input_set_toggle(in, "nothing", true));
+    ASSERT_FALSE(prts_input_toggle(in, "nothing"));
+    ASSERT_TRUE(prts_input_set_toggle(in, "crouch", true));
+    ASSERT_TRUE(prts_input_toggle(in, "crouch"));
+    prts_input_state s;
+    memset(&s, 0, sizeof(s));
+    int key = fake_keys("E");
+    s.keys[key] = true; /* pressed */
+    prts_input_update(in, &s);
+    ASSERT_TRUE(prts_input_down(in, "crouch"));
+    s.keys[key] = false; /* let go: it stays latched */
+    prts_input_update(in, &s);
+    prts_input_update(in, &s);
+    ASSERT_TRUE(prts_input_down(in, "crouch"));
+    ASSERT_NEAR(1.0f, prts_input_value(in, "crouch"), 1e-6f);
+    s.keys[key] = true; /* the next press unlatches */
+    prts_input_update(in, &s);
+    s.keys[key] = false;
+    prts_input_update(in, &s);
+    ASSERT_FALSE(prts_input_down(in, "crouch"));
+    /* a hold again */
+    ASSERT_TRUE(prts_input_set_toggle(in, "crouch", false));
+    s.keys[key] = true;
+    prts_input_update(in, &s);
+    ASSERT_TRUE(prts_input_down(in, "crouch"));
+    s.keys[key] = false;
+    prts_input_update(in, &s);
+    ASSERT_FALSE(prts_input_down(in, "crouch"));
+    prts_input_destroy(in);
+}

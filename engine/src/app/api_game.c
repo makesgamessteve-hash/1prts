@@ -775,6 +775,26 @@ static int l_input_down(lua_State *L)
     return 1;
 }
 
+/* prts.input.toggle(action [, on]): makes an action a toggle (or a hold again); returns whether it is one */
+static int l_input_toggle(lua_State *L)
+{
+    prts_engine *e = prts_engine_from_lua(L);
+    const char *name = luaL_checkstring(L, 1);
+    if (!lua_isnoneornil(L, 2) && !prts_input_set_toggle(e->input, name, lua_toboolean(L, 2)))
+        return luaL_error(L, "unknown action '%s'", name);
+    lua_pushboolean(L, prts_input_toggle(e->input, name));
+    return 1;
+}
+
+/* prts.time.scale([s]): the game speed (0.25..4), how fast ticks run against the clock */
+static int l_time_scale(lua_State *L)
+{
+    prts_engine *e = prts_engine_from_lua(L);
+    if (!lua_isnoneornil(L, 1)) e->time_scale = prts_clampf((float)luaL_checknumber(L, 1), 0.25f, 4.0f);
+    lua_pushnumber(L, e->time_scale);
+    return 1;
+}
+
 static int l_input_scheme(lua_State *L)
 {
     lua_pushstring(L, prts_input_scheme_name(prts_input_scheme_active(prts_engine_from_lua(L)->input)));
@@ -946,6 +966,18 @@ static int l_commander_set_feel(lua_State *L)
 
 /* --- prts.render ------------------------------------------------------------------ */
 
+/* prts.render.stats(): what the last frame drew (zeros without a window) */
+static int l_render_stats(lua_State *L)
+{
+    prts_engine *e = prts_engine_from_lua(L);
+    lua_createtable(L, 0, 2);
+    lua_pushinteger(L, e->gfx ? prts_gfx_sprites_drawn(e->gfx) : 0);
+    lua_setfield(L, -2, "sprites");
+    lua_pushinteger(L, e->gfx ? prts_gfx_entity_groups_drawn(e->gfx) : 0);
+    lua_setfield(L, -2, "entity_groups");
+    return 1;
+}
+
 static int l_render_settings(lua_State *L)
 {
     prts_engine *e = prts_engine_from_lua(L);
@@ -959,6 +991,7 @@ static int l_render_settings(lua_State *L)
         r->fog = field_bool(L, 1, "fog", r->fog);
         r->crosshair = field_bool(L, 1, "crosshair", r->crosshair);
         r->fov_y = field_number(L, 1, "fov", r->fov_y * 180.0f / (float)PRTS_PI) * (float)PRTS_PI / 180.0f;
+        r->draw_distance = prts_clampf(field_number(L, 1, "draw_distance", r->draw_distance), 50.0f, PRTS_DRAW_DISTANCE_MAX);
     }
     lua_createtable(L, 0, 10);
     static const char *presets[] = {"authentic", "retro", "crisp", "hd", "native"};
@@ -972,6 +1005,8 @@ static int l_render_settings(lua_State *L)
     lua_setfield(L, -2, "fov");
     lua_pushinteger(L, prts_res_preset_lines(e->render.preset));
     lua_setfield(L, -2, "lines");
+    lua_pushnumber(L, e->render.draw_distance);
+    lua_setfield(L, -2, "draw_distance");
     lua_pushboolean(L, e->render.dither);
     lua_setfield(L, -2, "dither");
     lua_pushboolean(L, e->render.snap);
@@ -1002,15 +1037,18 @@ void prts_engine_open_game_api(prts_engine *e)
         {"find", l_entity_find},     {"alive", l_entity_alive},     {"despawn", l_entity_despawn},
         {"data", l_entity_data},     {NULL, NULL}};
     static const prts_script_fn input[] = {
-        {"action", l_input_action}, {"value", l_input_value}, {"down", l_input_down}, {"scheme", l_input_scheme}, {NULL, NULL}};
+        {"action", l_input_action}, {"value", l_input_value}, {"down", l_input_down}, {"scheme", l_input_scheme},
+        {"toggle", l_input_toggle}, {NULL, NULL}};
+    static const prts_script_fn timef[] = {{"scale", l_time_scale}, {NULL, NULL}};
     static const prts_script_fn commander[] = {
         {"spawn", l_commander_spawn}, {"tune", l_commander_tune}, {"place", l_commander_place}, {"entity", l_commander_entity}, {"view", l_commander_view},
         {"feel", l_commander_feel},   {"impulse", l_commander_impulse}, {"set_feel", l_commander_set_feel},
         {NULL, NULL}};
-    static const prts_script_fn render[] = {{"settings", l_render_settings}, {NULL, NULL}};
+    static const prts_script_fn render[] = {{"settings", l_render_settings}, {"stats", l_render_stats}, {NULL, NULL}};
     prts_script_register(e->script, "scene", scene);
     prts_script_register(e->script, "entity", entity);
     prts_script_register(e->script, "input", input);
     prts_script_register(e->script, "commander", commander);
     prts_script_register(e->script, "render", render);
+    prts_script_register(e->script, "time", timef);
 }

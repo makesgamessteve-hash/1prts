@@ -53,7 +53,7 @@
         controllers: f(5), framebuffer: f(6), headHeight: num(f(7)), secondViewX: num(f(8)),
         // comfort options and their state (game/settings.lua, engine/src/app/engine_xr.c)
         vignetteOn: f(9) === 1, snap: f(10) === 1, vignette: num(f(11)), teleport: f(12) === 1,
-        turn: num(f(13)), seat: num(f(14)),
+        turn: num(f(13)), seat: num(f(14)), pointer: f(15) === 0 ? 'left' : 'right', carried: f(16) === 1,
         control: document.body.dataset.prtsXr || 'unknown',
       };
     },

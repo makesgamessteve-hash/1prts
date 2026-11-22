@@ -26,7 +26,10 @@ typedef struct prts_render_settings {
     bool crosshair;
     float fov_y;   /* radians */
     float vignette; /* 0..1: comfort vignette, a darkening towards the edges of each view (XR) */
+    float draw_distance; /* metres: farther sprites and entities are not drawn; the fog closes in before it */
 } prts_render_settings;
+
+#define PRTS_DRAW_DISTANCE_MAX 5000.0f
 
 void prts_render_settings_default(prts_render_settings *s);
 /* Lines of the preset; 0 for native. */
@@ -94,6 +97,8 @@ void prts_gfx_set_named_texture(prts_gfx *g, const char *name, uint32_t tex);
 uint32_t prts_gfx_named_texture(const prts_gfx *g, const char *name);
 /* Number of sprites drawn in the last layer of the last view. */
 int prts_gfx_sprites_drawn(const prts_gfx *g);
+/* Mesh groups of entities drawn in the last frame (static world geometry is not counted). */
+int prts_gfx_entity_groups_drawn(const prts_gfx *g);
 /* Cells that were visible in the last view drawn. */
 prts_cell_mask prts_gfx_last_visible_cells(const prts_gfx *g);
 /* Saves the last rendered frame as PNG. */
