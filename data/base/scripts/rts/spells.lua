@@ -115,7 +115,7 @@ function Sp.second()
       if S.alive(e) then
         local d = S.data(e)
         local ex, _, ez = S.pos(e)
-        if d.kind == "unit" and d.hp > 0 and S.dist(ex, ez, fx.x, fx.z) <= fx.r then work(fx, e, d) end
+        if work and d.kind == "unit" and d.hp > 0 and S.dist(ex, ez, fx.x, fx.z) <= fx.r then work(fx, e, d) end
       end
     end
     fx.left = fx.left - 1
@@ -126,13 +126,25 @@ function Sp.second()
   for _, e in ipairs(S.match().units) do -- out of the spores: full speed again
     if S.alive(e) then
       local d = S.data(e)
-      if d.spored and (d.weak_until or 0) <= now and prts.agent.info(e) then
+      if d.spored and (d.weak_until or 0) <= now and (d.slow_until or 0) <= now and prts.agent.info(e) then
         prts.agent.set_speed(e, d.spored)
         d.spored = nil
       end
     end
   end
   return #keep
+end
+
+-- A unit slowed to half speed for `seconds` (a harpoon's pin, spores, an undertow).
+function Sp.slow(e, seconds)
+  local d = S.data(e)
+  d.slow_until = math.max(d.slow_until or 0, prts.time.tick() + math.floor(seconds * 30))
+  local info = prts.agent.info(e)
+  if info and not d.spored then
+    d.spored = info.speed
+    prts.agent.set_speed(e, info.speed * 0.5)
+  end
+  return d.slow_until
 end
 
 -- The Gloam's spells (M7). Glowflare: the enemy around the mark stands blinded (Durrow immune).
@@ -184,11 +196,7 @@ end
 function Sp.LINGER.spore_cloud(fx, e, d)
   if d.side == fx.side then return end
   d.weak_until = prts.time.tick() + 45
-  local info = prts.agent.info(e)
-  if info and not d.spored then
-    d.spored = info.speed
-    prts.agent.set_speed(e, info.speed * 0.5)
-  end
+  Sp.slow(e, 1.5)
 end
 
 -- Fungal Mend: the side's units in the area heal every second, twice as fast under the ground.
@@ -224,6 +232,140 @@ function Sp.EFFECTS.echo_call(caster, sp)
   return n
 end
 
+-- The League's spells (M8). Squall: a lane of wind from the caster through the mark; fires in it
+-- go out, enemy flyers in it are struck and brought low, enemy ships in it are pushed along.
+function Sp.EFFECTS.squall(caster, sp, _, x, z)
+  local cd = S.data(caster)
+  local cx, _, cz = S.pos(caster)
+  local dx, dz = x - cx, z - cz
+  local len = math.max(1, math.sqrt(dx * dx + dz * dz))
+  local ux, uz = dx / len, dz / len
+  local function in_lane(px, pz)
+    local t = (px - cx) * ux + (pz - cz) * uz
+    local off = math.abs((px - cx) * uz - (pz - cz) * ux)
+    return t >= 0 and t <= len + sp.radius and off <= sp.radius
+  end
+  local n = 0
+  for _, st in ipairs(S.match().structures) do
+    if S.alive(st) and (S.data(st).fire or 0) > 0 then
+      local px, _, pz = S.pos(st)
+      if in_lane(px, pz) then S.data(st).fire = 0 n = n + 1 end
+    end
+  end
+  for _, f in ipairs(require("rts.sky").flyers()) do
+    local fd = S.data(f)
+    local px, _, pz = S.pos(f)
+    if fd.side ~= cd.side and in_lane(px, pz) then
+      fd.low = true
+      require("rts.combat").hit(f, sp.damage)
+      n = n + 1
+    end
+  end
+  for _, sh in ipairs(require("rts.fleet").ships()) do
+    local sd = S.data(sh)
+    local px, py, pz = S.pos(sh)
+    if S.alive(sh) and sd.side ~= cd.side and in_lane(px, pz) then
+      prts.entity.place(sh, { px + ux * sp.push, py, pz + uz * sp.push }, prts.entity.yaw(sh))
+      n = n + 1
+    end
+  end
+  return n
+end
+
+-- Lightning Lash: the target, then the two nearest enemies within reach of the last struck.
+function Sp.EFFECTS.lightning_lash(caster, sp, target, x, z)
+  local K = require("rts.combat")
+  local side = S.data(caster).side
+  local Wa, Storm = require("rts.water"), require("rts.storm")
+  target = target or K.nearest_enemy_unit(side, x, z, 6) or K.nearest_enemy_structure(side, x, z, 6, { missile = true })
+  local struck, n = {}, 0
+  while target and n <= sp.jumps do
+    struck[target] = true
+    local tx, ty, tz = S.pos(target)
+    local bonus = (Wa.depth(tx, tz) > 0 or Storm.inside(ty)) and 1.5 or 1
+    local alive = S.alive(target)
+    K.hit(target, sp.damage * bonus)
+    n = n + 1
+    local nxt
+    for _, e in ipairs(prts.agent.near(tx, tz, sp.reach, 32)) do
+      local ed = S.data(e)
+      if not nxt and not struck[e] and ed.kind == "unit" and ed.side ~= side and ed.hp > 0 then nxt = e end
+    end
+    target = alive and nxt or nxt
+  end
+  prts.events.emit("rts_lightning_lash", caster, n)
+  return n
+end
+
+-- Fog Bank: sight in the area is cut to a few metres, both ways, for a while.
+function Sp.EFFECTS.fog_bank(caster, sp, _, x, z)
+  return Sp.add_effect{ kind = "fog_bank", side = S.data(caster).side, x = x, z = z, r = sp.radius, left = sp.seconds,
+                        sight = sp.sight }
+end
+
+-- How far one sees at (x, z) inside a fog bank, or nil outside every bank.
+function Sp.fogged(x, z)
+  for _, fx in ipairs(S.match().effects or {}) do
+    if fx.kind == "fog_bank" and S.dist(x, z, fx.x, fx.z) <= fx.r then return fx.sight end
+  end
+  return nil
+end
+
+-- Tide Surge: the wave knocks the enemy's men in the area down and puts out fires there.
+function Sp.EFFECTS.tide_surge(caster, sp, _, x, z)
+  local side, n = S.data(caster).side, 0
+  for _, e in ipairs(prts.agent.near(x, z, sp.radius, 64)) do
+    local d = S.data(e)
+    if d.kind == "unit" and d.side ~= side then
+      d.stunned_until = prts.time.tick() + sp.seconds * 30
+      n = n + 1
+    end
+  end
+  for _, st in ipairs(S.match().structures) do
+    if S.alive(st) and S.rect_dist(x, z, S.data(st).fp) <= sp.radius then S.data(st).fire = 0 end
+  end
+  return n
+end
+
+-- Brine Mend: one company of the side heals at once, twice as much near water.
+function Sp.EFFECTS.brine_mend(caster, sp, target, x, z)
+  local side = S.data(caster).side
+  local C = require("rts.companies")
+  local unit = target
+  if not unit then
+    for _, e in ipairs(prts.agent.near(x, z, 8, 32)) do
+      if not unit and S.data(e).kind == "unit" and S.data(e).side == side then unit = e end
+    end
+  end
+  if not unit or S.data(unit).side ~= side then return 0 end
+  local Wa = require("rts.water")
+  local c = S.data(unit).company and S.company(S.data(unit).company)
+  local n = 0
+  for _, e in ipairs(c and C.members(c) or { unit }) do
+    local d = S.data(e)
+    local ex, _, ez = S.pos(e)
+    local wet = Wa.depth(ex, ez) > 0 or Wa.depth(ex + 8, ez) > 0 or Wa.depth(ex - 8, ez) > 0 or Wa.depth(ex, ez + 8) > 0
+                or Wa.depth(ex, ez - 8) > 0
+    d.hp = math.min(D.unit(d.def).hp, d.hp + sp.heal * (wet and 2 or 1))
+    n = n + 1
+  end
+  return n
+end
+
+-- Undertow: the enemy's ships in the area sail at half speed for a while.
+function Sp.EFFECTS.undertow(caster, sp, _, x, z)
+  local side, n = S.data(caster).side, 0
+  for _, sh in ipairs(require("rts.fleet").ships()) do
+    local sd = S.data(sh)
+    local px, _, pz = S.pos(sh)
+    if S.alive(sh) and sd.side ~= side and S.dist(x, z, px, pz) <= sp.radius then
+      sd.undertow = prts.time.tick() + sp.seconds * 30
+      n = n + 1
+    end
+  end
+  return n
+end
+
 -- A caster ordered to fight casts its first spell at its target on its own when it can.
 function Sp.auto(caster, target)
   local u = D.unit(S.data(caster).def)
@@ -241,7 +383,8 @@ end
 function Sp.far_sight(structure, x, z)
   local d = S.data(structure)
   local def = D.structure(d.def)
-  local F = D.FAR_SIGHT
+  local F = { radius = def.storm_eye and D.STORM_EYE or D.FAR_SIGHT.radius, cooldown = D.FAR_SIGHT.cooldown,
+              aether = D.FAR_SIGHT.aether }
   if not def.far_sight or not d.built then return false, "no far-sight here" end
   if (d.far_ready or 0) > now() then
     S.dispatch(d.side, def.name, "The pool is still clouded. Far-sight needs time.")

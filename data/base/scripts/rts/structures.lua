@@ -201,6 +201,11 @@ local function build_shape(e, def, color)
     end
     box(e, "oak", -3.2, 7, -3.2, 3.2, 7.4, 3.2, false)
     require("rts.tunnels").shaft(e, def.shaft)
+  elseif def.sails then return -- the Tidehold builds its own rafts (props/tidehold.lua)
+  elseif kind == "shipwright_yard" or kind == "great_dock" then SHAPES.harbor(e, w, d, kind == "great_dock")
+  elseif kind == "storm_tower" or kind == "signal_mast" then SHAPES.watchtower(e, math.min(w, 6), math.min(d, 6))
+  elseif kind == "harpoon_battery" then SHAPES.watchtower(e, w * 0.6, d * 0.6)
+  elseif D.faction_of(def.id) == "brine" and def.hq then SHAPES.holdfast(e, w, d, "banner_blue")
   elseif kind == "echo_pillar" then SHAPES.totem(e, w)
   elseif kind == "glow_tower" then SHAPES.watchtower(e, w, d)
   elseif kind == "glowstone_works" then SHAPES.well(e, w, true)
@@ -274,6 +279,9 @@ function B.materials()
   m{ id = "flame", texture = "textures/flame.png", uv_scale = 1, emissive = true }
   m{ id = "aether_glow", texture = "textures/iron.png", tint = { 0.5, 1.2, 1.6 }, uv_scale = 1, emissive = true }
   m{ id = "scorched", texture = "textures/iron.png", tint = { 0.16, 0.14, 0.13 }, uv_scale = 1 }
+  m{ id = "coral", texture = "textures/plaster.png", tint = { 1.3, 0.62, 0.55 }, uv_scale = 1 }
+  m{ id = "banner_blue", texture = "textures/banner_crown.png", tint = { 0.35, 0.9, 1.3 }, uv_scale = 1.6 }
+  m{ id = "sail_blue", texture = "textures/plaster.png", tint = { 0.75, 0.95, 1.25 }, uv_scale = 2 }
 end
 
 -- The footprint rectangle { x0, z0, x1, z1 } of def centred on (x, z).
@@ -312,6 +320,18 @@ function B.spring_at(x, z, kind)
   return nil
 end
 
+-- Whether deep water (over 2 m) lies within D.SHORE of (x, z): a League hall's shore.
+function B.shore_at(x, z)
+  local Wa = require("rts.water")
+  for r = 6, D.SHORE, 6 do
+    for i = 0, 11 do
+      local a = i / 12 * 2 * math.pi
+      if Wa.depth(x + math.cos(a) * r, z + math.sin(a) * r) > 2 then return true end
+    end
+  end
+  return false
+end
+
 -- Places a structure for side at (x, z). `built` makes it finished at once (starting
 -- headquarters, map set pieces); otherwise it is a site the side pays for and workers build.
 -- Returns the entity or nil, reason.
@@ -325,6 +345,7 @@ function B.place(side_id, def_id, x, z, built)
     if not require("rts.tiers").allowed(side_id, def) then return nil, "needs tier " .. def.tier end
     if def.aether and not spring then return nil, "needs an aether spring" end
     if def.glowstone and not spring then return nil, "needs a glowstone grotto" end
+    if def.shore and not B.shore_at(x, z) then return nil, "needs a shore" end
     if def.harbor and not require("rts.fleet").shore_ok(def, x, z) then return nil, "needs deep water" end
     if not B.can_place(def_id, x, z) then return nil, "no room" end
     if not S.pay(side, def.cost) then return nil, "cannot pay" end
@@ -490,6 +511,10 @@ function B.train_tick(e, seconds)
     return require("rts.fleet").launch(d.side, item, x, z + sea * (def.size[2] / 2 + 18), sea > 0 and math.pi or 0)
   end
   if it.wyrm then return require("props.wyrm").spawn(d.side, x, z + def.size[2] / 2 + 20) end
+  if it.sails then -- the Tidehold is floated out off the dock's seaward side
+    local sea = d.seaward or 1
+    return require("props.tidehold").spawn(d.side, x, z + sea * (def.size[2] / 2 + 40))
+  end
   return require("props.behemoth").spawn(d.side, item, x, z + def.size[2] / 2 + 24)
 end
 

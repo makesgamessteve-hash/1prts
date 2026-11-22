@@ -19,6 +19,12 @@ Sh.KINDS = {
       "dddddd", "dddddd", "dddddd", "dddddd", "dddddd", "dddddd", "dddddd", "dddddd",
       "dddddd", "dddddd", "#WDWW#", "#wwww#", "#wwww#", "######",
     } } }, rooms = { d = "deck", w = "wheelhouse" } },
+  -- the League's wind-barque: a sailing airship, much faster in the storm layer's winds
+  wind_barque = { half_w = 4.2, half_l = 12, cargo = 3, hp = 1800, sight = 110, storm_speed = 2.5, levels = {
+    { y = 0, height = 2.4, rows = {
+      "ddddddd", "ddddddd", "ddddddd", "ddddddd", "ddddddd", "ddddddd", "ddddddd", "ddddddd", "ddddddd", "ddddddd",
+      "ddddddd", "ddddddd", "ddddddd", "ddddddd", "ddddddd", "ddddddd", "#WWDWW#", "#bbbbb#", "#bbbbb#", "#######",
+    } } }, rooms = { d = "deck", b = "cabin" } },
   sky_galleon = { half_w = 4.8, half_l = 14.4, cargo = 6, hp = 2600, sight = 120,
     guns = { damage = 45, range = 70, cooldown = 5, per_side = 6 }, levels = {
     { y = 0, height = 2.6, rows = {
@@ -174,7 +180,8 @@ function Sh.fly(dt)
             yaw = yaw + math.max(-Sh.TURN * dt, math.min(Sh.TURN * dt, diff))
             -- climbing to a height far above: hold position until near it, so the climb is straight up
             local climbing = math.abs(want_y - y) > 20 and gy ~= nil
-            local step = climbing and 0 or (math.abs(diff) < 0.8 and math.min(Sh.SPEED * dt, dist) or Sh.SPEED * dt * 0.3)
+            local fast = Sh.SPEED * ((Sh.kind(e).storm_speed and Storm.inside(y)) and Sh.kind(e).storm_speed or 1)
+            local step = climbing and 0 or (math.abs(diff) < 0.8 and math.min(fast * dt, dist) or fast * dt * 0.3)
             nx, nz = x - math.sin(yaw) * step, z - math.cos(yaw) * step
           end
           local ny = y + math.max(-Sh.CLIMB * dt, math.min(Sh.CLIMB * dt, want_y - y))

@@ -13,6 +13,8 @@ S.maps = {
   { id = "caldmere", name = "Scenario: Storm the Citadel" },
   { id = "underhill", name = "Scenario: Under the Hill" },
   { id = "hollowfell", name = "Skirmish: Hollowfell (four sides, three peoples)" },
+  { id = "reefholm", name = "Scenario: The Reef War" },
+  { id = "tidesend", name = "Skirmish: Tidesend (four peoples)" },
 }
 
 -- Starts map `id` (scripts/maps/<id>.lua). Only one map per run in M1: returns false if a

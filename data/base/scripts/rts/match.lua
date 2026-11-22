@@ -23,6 +23,10 @@ require("rts.storm")
 require("rts.spells")
 require("rts.tunnels")
 require("props.wyrm")
+require("props.tidehold")
+require("props.wreck")
+require("props.bell")
+require("rts.neutral")
 require("props.skyship")
 require("rts.tools")
 require("ui.war_maps")
@@ -44,12 +48,12 @@ function M.start(cfg)
   for _, sc in ipairs(cfg.sides) do
     S.add_side{ id = sc.id, name = sc.name, faction = sc.faction or "crown", color = sc.color, ai = sc.ai,
                 gold = sc.gold or 300, timber = sc.timber or 200, aether = sc.aether, powder = sc.powder, bone = sc.bone,
-                enemy = sc.enemy, stone = sc.stone, glowstone = sc.glowstone }
+                enemy = sc.enemy, stone = sc.stone, glowstone = sc.glowstone, pearls = sc.pearls }
     S.side(sc.id).named_enemy = #cfg.sides == 2 or sc.enemy ~= nil
     local hq = S.role(sc.id, "hq")[1]
-    B.place(sc.id, hq, sc.x, sc.z, true)
+    if not sc.no_hq then B.place(sc.id, hq, sc.x, sc.z, true) end -- (a map may give a side its own: a Tidehold)
     local hd = D.structure(hq).size[2] / 2
-    for i = 1, cfg.serfs or 4 do
+    for i = 1, (sc.no_hq and 0 or cfg.serfs or 4) do
       local serf = S.spawn_unit(sc.id, S.role(sc.id, "worker"), sc.x - 6 + i * 2.4, sc.z + hd + 4)
       if sc.ai then E.gather(serf, i % 3 == 0 and "timber" or "gold") end
     end

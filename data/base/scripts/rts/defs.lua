@@ -104,11 +104,13 @@ require("rts.ships")(D)
 require("rts.skyfall")(D)
 -- The Gloam Courts and deep shafts (M7).
 require("rts.gloam")(D)
+-- The Brine League (M8).
+require("rts.brine")(D)
 
 -- Gold mines and trees.
 D.MINE_GOLD = 4000
 D.TREE_TIMBER = 40
-D.WORK = { gold = 3.0, timber = 4.0, bone = 2.5, stone = 3.0 } -- seconds a worker works for one load
+D.WORK = { gold = 3.0, timber = 4.0, bone = 2.5, stone = 3.0, pearls = 4.0 } -- seconds a worker works for one load
 D.SPRING_REACH = 6                    -- an aether well or shrine stands within this of a spring
 D.AETHER_EVERY = 2                    -- seconds per aether from a well or shrine
 D.POWDER = { every = 10, gold = 10, timber = 10, powder = 5, max = 400 }

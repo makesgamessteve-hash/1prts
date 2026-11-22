@@ -246,3 +246,19 @@ is missing. References are C unit tests (`suite.case`), test files and scripts (
 | gloam-magic | Mycel keeper spells | `tests/game/scenarios/gloam_spells.lua` |
 | under-the-hill | Taking the Hollow Court | `tests/game/scenarios/under_the_hill.lua` |
 | under-the-hill | Caldrith's chain | `tests/game/scenarios/deep_shaft.lua` |
+| under-water | Diving to the reef | `tests/game/scenarios/diving.lua` |
+| under-water | Out of breath | `tests/game/scenarios/diving.lua` |
+| under-water | The sky-barge's relic | `tests/game/scenarios/wreck.lua` |
+| under-water | Down in the bell | `tests/game/scenarios/diving_bell.lua` |
+| brine-league | Pearl divers at work | `tests/game/scenarios/brine_economy.lua` |
+| brine-league | Harpoons and hull-borers | `tests/game/scenarios/brine_units.lua` |
+| brine-league | A brigantine from the yard | `tests/game/scenarios/brine_units.lua` |
+| brine-league | The raft-city sails | `tests/game/scenarios/tidehold.lua` |
+| brine-league | Riding the storm winds | `tests/game/scenarios/wind_barque.lua` |
+| brine-league | Four peoples | `tests/game/scenarios/four_factions.lua` |
+| brine-magic | Weatherwright spells | `tests/game/scenarios/brine_spells.lua` |
+| brine-magic | Tidecantor spells | `tests/game/scenarios/brine_spells.lua` |
+| neutral-places | Trading at the market | `tests/game/scenarios/market_town.lua` |
+| neutral-places | Holding the lighthouse | `tests/game/scenarios/lighthouse.lua` |
+| reef-war | Sinking the Tidehold | `tests/game/scenarios/reef_war.lua` |
+| reef-war | The harbor falls | `tests/game/scenarios/reef_war_lost.lua` |

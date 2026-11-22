@@ -9,7 +9,7 @@ face-to-face orders. Keeps, mines, war galleons, siege towers, skyships, walking
 and floating citadels are built at real size with real crews, and you can walk inside every one
 of them. The look is retro 3D: low-poly models, sprites and voxels.
 
-> **Status: M1 done; M2 (First Command) to M7 (Hollow Roads) playable.** The C engine runs on Windows, Linux, macOS
+> **Status: M1 done; M2 (First Command) to M8 (Deep Water) playable.** The C engine runs on Windows, Linux, macOS
 > and in the browser (WebGL 2, touch controls on phones, WebXR). It loads all content from
 > `data/` and plays two maps in first person. **Harrowmark**, the Crown's border castle, is the
 > story map ([the story](docs/concept/15-story.md)). **Ashford Vale** is the first skirmish. Serfs
@@ -79,6 +79,19 @@ of them. The look is retro 3D: low-poly models, sprites and voxels.
 > - the scenario **Under the Hill**, down Caldrith's broken chain into the caverns, and
 >   **Hollowfell**, a four-way skirmish of three peoples.
 >
+> **M8 (Deep Water)** goes under the waves:
+> - you swim and dive (crouch down, jump up) into a blue-green dark, with your breath running
+>   out until you surface. Air waits in a diving bell, which you ride down to the seabed with a
+>   shell table in it, and in the hold of a sunken Imperium sky-barge that holds a relic;
+> - the **Brine League**, the fourth faction: pearls from the beds under the sea, dockhands,
+>   pearl divers, marines, harpooneers whose harpoons pin, hull-borers, reef guard, crab and
+>   albatross riders, six ships from the pearl lighter to the war carrack, the wind-barque that
+>   rides the storm winds, the Weatherwright's and Tidecantor's six spells, and the **Tidehold**,
+>   a raft-city headquarters that sails with you on its council deck;
+> - neutral **market towns** (trade at moving prices, folk and rumours for the holder) and
+>   **lighthouses** (sight over the sea, a relay for the stones);
+> - the scenario **The Reef War** at Reefholm, and **Tidesend**, a skirmish of all four peoples.
+>
 > The tasks of [`add-command-core`](openspec/changes/add-command-core/tasks.md) (M2),
 > [`add-mounts-and-engines`](openspec/changes/add-mounts-and-engines/tasks.md) (M3) and
 > [`add-economy-and-second-faction`](openspec/changes/add-economy-and-second-faction/tasks.md)
@@ -106,6 +119,8 @@ of them. The look is retro 3D: low-poly models, sprites and voxels.
 | ![The throne hall's war table and scrying floor](docs/screenshots/73_throne_hall.png) | ![Floating in the aether core, Ashby at the stone](docs/screenshots/74_aether_core.png) | ![Elder drakes over Caldrith](docs/screenshots/75_drakes_over_caldrith.png) |
 | ![The gate under Merewatch Hill](docs/screenshots/80_tunnel_gate.png) | ![A gallery lit by glowstone](docs/screenshots/81_gallery.png) | ![Caldrith's chain in the glowstone cavern](docs/screenshots/82_chain_cavern.png) |
 | ![The Hollow Court's war room under the ground](docs/screenshots/83_gloam_war_room.png) | ![The Hollow Court and its guard](docs/screenshots/84_hollow_court.png) | ![A tunnel wyrm burst up out of the field](docs/screenshots/85_tunnel_wyrm.png) |
+| ![The Tidehold beyond the reef](docs/screenshots/90_tidehold_beyond_the_reef.png) | ![On the Tidehold's council deck](docs/screenshots/91_tidehold_council_deck.png) | ![A pearl bed under the water](docs/screenshots/92_pearl_bed.png) |
+| ![The sunken sky-barge](docs/screenshots/93_sunken_sky_barge.png) | ![The diving bell's shell table](docs/screenshots/94_diving_bell.png) | ![Saltwick market town](docs/screenshots/95_saltwick_market.png) |
 | ![Great hall](docs/screenshots/12_hall_benches_braziers.png) | ![Forge](docs/screenshots/05_forge.png) | ![Front-end menu](docs/screenshots/13_front_end_menu.png) |
 
 ## Read this first

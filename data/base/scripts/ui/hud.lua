@@ -35,9 +35,24 @@ function H.prompt()
   return glyphs.prompt("use", H.scheme) .. " " .. H.prompt_text(target)
 end
 
+-- Under the water (M8): a breath bar while breath is not full, with "Breath" written on it.
+function H.draw_breath(w, h)
+  local Wa = require("rts.water")
+  local left, full = Wa.breath()
+  if left >= full then return false end
+  local bw = 120
+  local x, y = math.floor(w / 2 - bw / 2), math.floor(h * 0.12)
+  prts.ui.draw_rect(x - 2, y - 2, bw + 4, 10, { 0, 0, 0, 150 })
+  local col = left > full * 0.25 and { 120, 200, 230, 255 } or { 230, 90, 70, 255 }
+  prts.ui.draw_rect(x, y, math.max(1, math.floor(bw * left / full)), 6, col)
+  prts.ui.draw_text("Breath", w / 2, y + 9, { align = "center", color = { 220, 240, 250, 255 } })
+  return true
+end
+
 function H.draw(w, h)
   if not H.visible or prts.ui.modal() then return false end
   if prts.dev and prts.dev.observer() then return false end -- the commander's view only
+  H.draw_breath(w, h)
   local text = H.prompt()
   if not text then return false end
   local tw = prts.ui.text_width(text)

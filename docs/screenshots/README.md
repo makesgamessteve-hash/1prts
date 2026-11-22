@@ -30,6 +30,10 @@ gallery lit by glowstone, Caldrith's broken chain in the glowstone cavern, the H
 room under the ground, the Court's guard at its gatehouse, and a tunnel wyrm burst up out of the
 field.
 
+`90`–`95` show Deep Water (M8) at Reefholm: the League's Tidehold beyond the reef, its council
+deck, a pearl bed under the water (with the breath bar), the sunken sky-barge, the diving bell's
+shell table on the seabed, and the market town of Saltwick.
+
 These images show Banner & Bastion art and are licensed under CC BY 4.0 like the rest of the
 art (see `LICENSING.md`). Credit: "Banner & Bastion screenshot" by The Banner & Bastion
 Contributors.

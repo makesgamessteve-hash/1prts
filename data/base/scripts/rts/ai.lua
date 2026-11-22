@@ -94,6 +94,10 @@ function A.economy(side_id)
       end
     end
   end
+  for _, e in ipairs(S.units(side_id)) do -- the League's pearl divers keep to the beds
+    local d = S.data(e)
+    if not d.task and D.unit(d.def).diver then E.gather(e, "pearls") end
+  end
   local bones = D.unit(worker).bone
   for _, e in ipairs(serfs) do
     local d = S.data(e)

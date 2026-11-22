@@ -15,6 +15,7 @@ local band -- nil: no storm layer on this map
 -- cfg = { low, high, wind = { x, z }, area = { x0, z0, x1, z1 }, fog = { near, far } (the map's own) }
 function St.setup(cfg)
   band = { low = cfg.low, high = cfg.high, wind = cfg.wind or { 0, 0 }, fog = cfg.fog or { 200, 1100 } }
+  require("lib.fog").base(band.fog[1], band.fog[2], band.fog[3])
   local a = cfg.area
   for _, y in ipairs({ cfg.low, cfg.high }) do
     prts.scene.box{ min = { a[1], y - 0.4, a[2] }, max = { a[3], y, a[4] }, material = "cloud", solid = false }
@@ -76,8 +77,8 @@ function St.tick(now)
     local fogged = St.inside(y + eye)
     if fogged ~= (band.fogged == true) then
       band.fogged = fogged
-      if fogged then prts.scene.env{ fog_near = St.FOG.near, fog_far = St.FOG.far }
-      else prts.scene.env{ fog_near = band.fog[1], fog_far = band.fog[2] } end
+      if fogged then require("lib.fog").set("storm", St.FOG.near, St.FOG.far)
+      else require("lib.fog").set("storm", nil) end
       prts.events.emit("storm_fog", fogged)
     end
   end

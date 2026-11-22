@@ -111,6 +111,14 @@ def person(d, step, kind, side="crown"):
                                     "mycel": ((100, 84, 110), (210, 150, 200))}[kind] + ((60, 56, 58), (176, 170, 180))
         if kind == "basalt":
             head_c = (70, 68, 74)
+    elif kind in ("dockhand", "marine", "harpooneer", "weather"):  # the League's humans: sea blue and brass
+        body, trim, legs, head_c = {"dockhand": ((96, 110, 120), (200, 170, 90)), "marine": ((40, 90, 120), (210, 180, 90)),
+                                    "harpooneer": ((60, 100, 110), (230, 220, 200)),
+                                    "weather": ((70, 80, 140), (220, 230, 255))}[kind] + ((60, 60, 70), (90, 64, 40))
+        if kind == "marine":
+            head_c = (150, 156, 168)
+    elif kind == "hesk":  # the Hesk: blue-green skin, fin crests, kelp wraps
+        body, trim, legs, head_c = (60, 110, 100), (120, 200, 190), (50, 90, 84), (70, 150, 140)
     else:  # outrider: a long riding coat, a pennant
         body, trim, legs, head_c = shade(SIDES[side][0], 1.2), SIDES[side][1], (60, 50, 40), (96, 70, 44)
     skin, boots, wood, steel = (214, 164, 124), (58, 40, 26), (128, 92, 52), (196, 200, 210)
@@ -120,6 +128,8 @@ def person(d, step, kind, side="crown"):
         skin = (196, 190, 200)
     if kind == "bone_seer":
         skin = (112, 128, 104)
+    if kind == "hesk":
+        skin = (90, 160, 150)
 
     # legs and boots (walking moves them forward/back; seen from the side that spreads them)
     spread = 3.0 * abs(facing) * swing
@@ -131,7 +141,8 @@ def person(d, step, kind, side="crown"):
     # torso / tabard or robe
     bottom = {"guard": 41, "clerk": 54, "serf": 42, "crossbow": 44, "outrider": 48, "kobb": 40, "firebrand": 40,
               "ghorr": 42, "spear": 42, "giant": 44, "magister": 55, "bone_seer": 52, "delver": 40, "basalt": 42,
-              "deep_pike": 42, "slinger": 41, "glimmer": 53, "mycel": 53}[kind]
+              "deep_pike": 42, "slinger": 41, "glimmer": 53, "mycel": 53, "dockhand": 42, "marine": 42,
+              "harpooneer": 43, "weather": 54, "hesk": 41}[kind]
     f.rect(cx - width, 18 + bob, cx + width, bottom + bob, body)
     if front > 0.2 or (kind == "guard" and front < -0.2):
         stripe = cx + facing * 2.5
@@ -145,7 +156,9 @@ def person(d, step, kind, side="crown"):
         f.rect(ax - 1.2, 33 + bob + sw, ax + 1.2, 35 + bob + sw, skin)
     # head
     hy = 11 + bob
-    if kind in ("guard", "crossbow", "basalt", "deep_pike"):
+    if kind == "hesk" and front > -0.6:  # the fin crest
+        f.rect(cx - 0.8, hy - 9, cx + 0.8, hy - 3, (120, 200, 190))
+    if kind in ("guard", "crossbow", "basalt", "deep_pike", "marine"):
         f.ellipse(cx + facing * 0.8, hy, 5.2, 6.2, head_c)                  # helmet
         f.rect(cx - 6, hy + 0.5, cx + 6, hy + 1.2, shade(head_c, 0.75))     # brim
     elif kind == "magister":  # a tall pointed hood
@@ -210,12 +223,20 @@ def person(d, step, kind, side="crown"):
         for y in range(18, 34):
             f.put(sx + (y - 18) * 0.15, y + bob, wood)
         f.rect(sx - 2, 17 + bob, sx + 2, 18 + bob, steel)
-    elif kind in ("magister", "glimmer", "bone_seer", "mycel"):  # a staff with a glowing head
+    elif kind == "harpooneer" or kind == "hesk":  # a harpoon or trident
+        sx = cx - math.cos(a) * (width + 1.2) * 0.9
+        for y in range(2, 50):
+            f.put(sx, y + bob, (128, 92, 52) if kind == "harpooneer" else (200, 200, 190))
+        f.rect(sx - 1.5, 0 + bob, sx + 1.5, 3 + bob, (196, 200, 210))
+    elif kind in ("dockhand", "marine"):  # a cutlass or a boathook
+        sx = cx - math.cos(a) * (width + 1.0)
+        f.rect(sx - 0.6, 24 + bob, sx + 0.6, 36 + bob, (196, 200, 210) if kind == "marine" else (128, 92, 52))
+    elif kind in ("magister", "glimmer", "bone_seer", "mycel", "weather"):  # a staff with a glowing head
         sx = cx - math.cos(a) * (width + 1.2) * 0.9
         for y in range(4, 56):
             f.put(sx, y + bob, wood if kind != "bone_seer" else (236, 230, 210))
         glow = {"magister": (140, 200, 255), "glimmer": (190, 255, 250), "bone_seer": (230, 240, 170),
-                "mycel": (230, 160, 230)}[kind]
+                "mycel": (230, 160, 230), "weather": (220, 240, 255)}[kind]
         f.ellipse(sx, 3 + bob, 2.4, 2.4, glow)
     elif kind == "delver":  # a pick and a glowstone lamp
         sx = cx - math.cos(a) * (width + 1.0)
@@ -269,7 +290,8 @@ def sheet(kind, side="crown"):
 
 MW, MH = 64, 64
 COATS = {"crown": (122, 84, 52), "red": (52, 40, 34), "wolf": (120, 120, 116), "boar": (70, 50, 36),
-         "wyvern": (70, 96, 64), "drake": (128, 52, 36), "beetle": (40, 52, 70)}
+         "wyvern": (70, 96, 64), "drake": (128, 52, 36), "beetle": (40, 52, 70),
+         "crab": (180, 70, 50), "albatross": (230, 230, 225)}
 
 
 def mounted(d, step, rider, side="crown", animal="horse"):
@@ -298,6 +320,10 @@ def mounted(d, step, rider, side="crown", animal="horse"):
         half, by = 9 + 15 * abs(facing), 36 + bob
     elif animal == "beetle":
         half, by = 9 + 11 * abs(facing), 44 + bob
+    elif animal == "crab":
+        half, by = 10 + 6 * abs(facing), 46 + bob
+    elif animal == "albatross":
+        half, by = 4 + 8 * abs(facing), 38 + bob
     # legs: four, at the body's ends, swinging in pairs
     for i, (lx, phase) in enumerate(((-1, 1), (-0.6, -1), (0.6, 1), (1, -1))):
         x = cx + lx * (half - 3) * (1 if abs(facing) > 0.3 else 0.4) + (0 if abs(facing) > 0.3 else (i - 1.5) * 2)
@@ -321,14 +347,18 @@ def mounted(d, step, rider, side="crown", animal="horse"):
         f.ellipse(hx + facing * 4, by - 15, 5, 3.2, coat)              # head
         f.put(hx + facing * 3, by - 16, (20, 16, 12))                  # eye
         f.rect(hx - 1, by - 21, hx + 1, by - 18, dark)                  # ears
+    if animal == "crab":  # a wide shell and two great claws
+        f.ellipse(cx, by - 2, half + 4, 7, shade(coat, 1.15))
+        for sgn in (-1, 1):
+            f.ellipse(cx + sgn * (half + 5), by - 6, 3.5, 2.5, shade(coat, 0.9))
     if animal == "beetle":  # a shell over the back, its sheen
         f.ellipse(cx, by - 3, half + 3, 9, shade(coat, 1.3))
         f.rect(cx - 1, by - 11, cx + 1, by + 4, shade(coat, 0.7))
     if animal == "drake":  # horns, and a howdah on its back
         f.rect(cx - 7, by - 16, cx + 7, by - 8, (120, 92, 52))
         f.rect(cx - 7, by - 18, cx + 7, by - 16, (214, 172, 62))
-    if animal in ("wyvern", "drake"):  # wings spread over the body, a long tail
-        span = (10 + 18 * abs(front)) * (1.35 if animal == "drake" else 1.0)
+    if animal in ("wyvern", "drake", "albatross"):  # wings spread over the body, a long tail
+        span = (10 + 18 * abs(front)) * {"drake": 1.35, "albatross": 1.5}.get(animal, 1.0)
         wing = shade(coat, 0.8)
         beat = 0 if step is None else (-3, 0, 3, 0)[step]
         for k in range(int(span)):
@@ -436,7 +466,9 @@ MOUNTED = (("horse", None, "crown", "Saddled horse", 2.4),
            ("wb_boar", "ghorr", "crown", "Wildborn boar rider", 2.8, "boar"),
            ("wb_wyvern", "kobb", "crown", "Wildborn wyvern rider", 4.5, "wyvern"),
            ("elder_drake", "ghorr", "crown", "Wildborn elder drake with its war howdah", 9.0, "drake"),
-           ("gl_beetle", "durrow", "crown", "Gloam carapace rider on a cave beetle", 3.0, "beetle"))
+           ("gl_beetle", "durrow", "crown", "Gloam carapace rider on a cave beetle", 3.0, "beetle"),
+           ("br_crab", "outrider", "crown", "League crab rider on a giant reef crab", 2.8, "crab"),
+           ("br_albatross", "outrider", "crown", "League albatross rider", 3.5, "albatross"))
 
 
 META = """-- {title}: 8 directions, idle and a 4-frame walk. Generated by tools/gen_sprites.py.
@@ -476,7 +508,12 @@ def main():
             ("gl_pike", "deep_pike", "crown", "Gloam deep pike", 1.5),
             ("gl_slinger", "slinger", "crown", "Gloam slinger", 1.4),
             ("gl_glimmer", "glimmer", "crown", "Gloam glimmer-wright", 1.5),
-            ("gl_mycel", "mycel", "crown", "Gloam mycel keeper", 1.5)):
+            ("gl_mycel", "mycel", "crown", "Gloam mycel keeper", 1.5),
+            ("br_dockhand", "dockhand", "crown", "League dockhand", 1.75),
+            ("br_marine", "marine", "crown", "League marine", 1.8),
+            ("br_harpoon", "harpooneer", "crown", "League harpooneer", 1.8),
+            ("br_weather", "weather", "crown", "League weatherwright", 1.85),
+            ("br_hesk", "hesk", "crown", "Hesk of the League", 1.8)):
         w, h, rgba = sheet(kind, side)
         write_png(os.path.join(OUT, name + ".png"), w, h, rgba)
         with open(os.path.join(OUT, name + ".lua"), "w") as f:

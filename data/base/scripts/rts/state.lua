@@ -22,7 +22,7 @@ end
 -- A fresh match: the units and structures of an earlier one go; the map's mines and trees stay.
 function S.reset()
   local e = prts.entity.find(S.REGISTRY)
-  local resources = {}
+  local resources, places = {}, {}
   if e then
     local old = prts.entity.data(e)
     for _, u in ipairs(old.units) do
@@ -39,14 +39,16 @@ function S.reset()
       end
     end
     resources = S.compact(old.resources)
+    places = S.compact(old.places or {})
     prts.entity.despawn(e)
   end
   local m = S.match()
   m.resources = resources
+  m.places = places -- the map's market towns and lighthouses stay too
   return m
 end
 
-S.RESOURCES = { "gold", "timber", "aether", "powder", "bone", "stone", "glowstone" }
+S.RESOURCES = { "gold", "timber", "aether", "powder", "bone", "stone", "glowstone", "pearls" }
 
 -- cfg = { id, name, faction ("crown" | "wildborn"), color ("crown" | "red"), ai = bool, gold,
 -- timber, aether, powder, bone, enemy = id }
@@ -179,7 +181,7 @@ function S.food(side_id)
     local d = S.alive(e) and S.data(e)
     if d and d.side == side_id and d.built then food = food + (D.structure(d.def).food or 0) end
   end
-  return food
+  return food + require("rts.neutral").food(side_id) -- market towns held
 end
 
 function S.folk(side_id)

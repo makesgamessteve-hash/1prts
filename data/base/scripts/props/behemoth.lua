@@ -113,9 +113,15 @@ function Be.move_all(dt)
           local diff = (want - yaw + math.pi) % (2 * math.pi) - math.pi
           local turn = math.max(-Be.TURN * dt, math.min(Be.TURN * dt, diff))
           yaw = yaw + turn
-          local step = math.abs(diff) < 0.6 and math.min(Be.SPEED * dt, dist) or 0
+          local def = D.structure(d.def)
+          local step = math.abs(diff) < 0.6 and math.min((def.speed or Be.SPEED) * dt, dist) or 0
           local nx, nz = x - math.sin(yaw) * step, z - math.cos(yaw) * step
-          prts.entity.place(e, { nx, prts.scene.height(nx, nz), nz }, yaw)
+          if def.sails and require("rts.water").depth(nx, nz) < 3 then -- a raft-city keeps off the shallows
+            nx, nz = x, z
+            d.dest = nil
+          end
+          local ny = def.sails and (require("rts.water").level() or 0) + (def.freeboard or 0) or prts.scene.height(nx, nz)
+          prts.entity.place(e, { nx, ny, nz }, yaw)
           d.fp = footprint(e)
           n = n + 1
         end

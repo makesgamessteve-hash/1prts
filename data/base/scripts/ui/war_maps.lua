@@ -158,6 +158,10 @@ end
 
 local function status_line(side)
   local sd = S.side(side)
+  if sd.faction == "brine" then
+    return string.format("Gold %d  Timber %d  Pearls %d  Aether %d  Folk %d/%d  Tier %d", sd.gold, sd.timber, sd.pearls or 0,
+                         sd.aether, S.folk(side), S.food(side), require("rts.tiers").tier(side))
+  end
   if sd.faction == "gloam" then
     return string.format("Gold %d  Stone %d  Glow %d  Aether %d  Folk %d/%d  Tier %d", sd.gold, sd.stone or 0,
                          sd.glowstone or 0, sd.aether, S.folk(side), S.food(side), require("rts.tiers").tier(side))
@@ -194,6 +198,8 @@ W.TRAIN = {
                { "wildborn.boar_rider", "Boars" } },
   gloam = { { "gloam.delver", "Delver" }, { "gloam.basalt_guard", "Guard" }, { "gloam.slinger", "Sling" },
             { "gloam.deep_pikes", "Pikes" } },
+  brine = { { "brine.dockhand", "Dock" }, { "brine.pearl_diver", "Diver" }, { "brine.marines", "Marine" },
+            { "brine.harpooneers", "Harpn" } },
 }
 W.BUILD = {
   crown = { { "crown.farmstead", "Farm" }, { "crown.barracks", "Barr." }, { "crown.watchtower", "Tower" },
@@ -202,6 +208,8 @@ W.BUILD = {
                { "wildborn.timber_camp", "Camp" }, { "wildborn.beast_den", "Den" } },
   gloam = { { "gloam.mycel_gardens", "Mycel" }, { "gloam.guard_hall", "Hall" }, { "gloam.glow_tower", "Tower" },
             { "gloam.stonecutters", "Stone" }, { "gloam.beetle_pens", "Pens" } },
+  brine = { { "brine.fishery", "Fish" }, { "brine.muster_house", "Muster" }, { "brine.harpoon_battery", "Batt." },
+            { "brine.timber_yard", "Yard" }, { "brine.pearl_house", "Pearl" } },
 }
 W.WORKS = {
   crown = { { "hq_up", "Raise HQ" }, { "build:crown.aether_well", "Well" }, { "build:crown.smithy", "Smithy" },
@@ -213,6 +221,9 @@ W.WORKS = {
   gloam = { { "hq_up", "Raise HQ" }, { "build:gloam.glowstone_works", "Works" }, { "build:gloam.engine_vault", "Vault" },
             { "build:gloam.wyrm_hollow", "Hollow" }, { "research:gloam.crystal_tips", "Tips" },
             { "build:gloam.echo_pillar", "Pillar" } },
+  brine = { { "hq_up", "Raise HQ" }, { "build:brine.shipwright_yard", "Wright" }, { "build:brine.tide_temple", "Temple" },
+            { "build:brine.reef_pens", "Pens" }, { "research:brine.barbed_harpoons", "Barbs" },
+            { "research:brine.breath_charm", "Charms" } },
 }
 
 -- The second row of works (M6): casters' buildings, far-sight, the sky and a citadel's orders.
@@ -225,6 +236,8 @@ W.WORKS2 = {
   gloam = { { "build:gloam.crystal_sanctum", "Sanctum" }, { "far_sight", "Deep-sight" },
             { "build:gloam.spore_grotto", "Grotto" }, { "build:gloam.moth_spire", "Spire" },
             { "build:gloam.tunnel_gate", "Gate" } },
+  brine = { { "build:brine.storm_tower", "Storm" }, { "far_sight", "Storm-eye" }, { "build:brine.great_dock", "Dock" },
+            { "airship:brine.wind_barque", "Barque" }, { "build:brine.signal_mast", "Mast" } },
 }
 
 local function faction(side) return S.side(side).faction end

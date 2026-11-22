@@ -72,6 +72,7 @@ function C.hubs(side_id)
   for _, e in ipairs(S.structures(side_id, nil, true)) do
     if D.structure(S.data(e).def).hub then out[#out + 1] = e end
   end
+  for _, e in ipairs(require("rts.neutral").hubs(side_id)) do out[#out + 1] = e end -- lighthouses held
   return out
 end
 
@@ -86,7 +87,8 @@ function C.in_reach(c)
     for _, h in ipairs(hubs) do
       local hx, _, hz = S.pos(h)
       if under then
-        if D.structure(S.data(h).def).echo and S.dist(x, z, hx, hz) <= C.ECHO_RANGE then return true end
+        local hd = S.data(h).def and D.structure(S.data(h).def)
+        if hd and hd.echo and S.dist(x, z, hx, hz) <= C.ECHO_RANGE then return true end
       elseif S.dist(x, z, hx, hz) <= D.HUB_RANGE then
         return true
       end

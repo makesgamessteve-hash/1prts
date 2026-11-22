@@ -5,6 +5,8 @@
 local D = require("rts.defs")
 local S = require("rts.state")
 
+local Sp = setmetatable({}, { __index = function(_, k) return require("rts.spells")[k] end })
+
 local P = {}
 P.SEEN_FOR = 90      -- ticks a sighting stays "seen" without being renewed
 P.FORGET = 3600      -- ticks before an old sighting is dropped
@@ -40,6 +42,7 @@ function P.eyes(side_id)
       out[#out + 1] = { x, z, require("rts.citadel").SIGHT }
     end
   end
+  for _, eye in ipairs(require("rts.neutral").eyes(side_id)) do out[#out + 1] = eye end -- lighthouses held
   local Sh = require("props.skyship")
   for _, name in ipairs(Sh.ships) do -- the side's skyships
     local e = prts.entity.find(name)
@@ -62,7 +65,9 @@ function P.update(side_id, now)
       if d.kind == "unit" and d.side ~= side_id then
         local x, _, z = S.pos(e)
         local hidden = D.unit(d.def).hidden -- the hushfoot: seen only close, or by hounds
-        if not hidden or eye[5] or S.dist(eye[1], eye[2], x, z) <= hidden then
+        local fog = Sp.fogged(x, z) or Sp.fogged(eye[1], eye[2]) -- a fog bank: only close, both ways
+        if fog and S.dist(eye[1], eye[2], x, z) > fog then hidden = fog end
+        if not hidden or (eye[5] and not fog) or S.dist(eye[1], eye[2], x, z) <= hidden then
           pic[e] = { x = x, z = z, def = d.def, what = "unit", side = d.side, seen = now }
         end
       end
@@ -91,11 +96,13 @@ function P.update(side_id, now)
       end
     end
   end
-  for _, e in ipairs(S.match().ships or {}) do -- enemy ships
+  for _, e in ipairs(S.match().ships or {}) do -- enemy ships (not through a fog bank)
     if S.alive(e) and S.data(e).side ~= side_id then
       local x, _, z = S.pos(e)
       for _, eye in ipairs(eyes) do
-        if S.dist(eye[1], eye[2], x, z) <= eye[3] then
+        local dist = S.dist(eye[1], eye[2], x, z)
+        local fog = Sp.fogged(x, z) or Sp.fogged(eye[1], eye[2])
+        if dist <= eye[3] and (not fog or dist <= fog) then
           pic[e] = { x = x, z = z, def = S.data(e).def, what = "ship", side = S.data(e).side, seen = now }
           break
         end

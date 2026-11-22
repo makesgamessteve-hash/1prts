@@ -77,6 +77,35 @@ function E.add_grotto(x, z)
   return e
 end
 
+-- A pearl bed (M8): coral and oyster shoals on the seabed, worked by the League's pearl divers
+-- from the nearest stretch of shore (`at`: where the water is 0 deep and the grid is open).
+function E.add_pearl_bed(x, z, pearls)
+  local m = S.match()
+  local y = prts.scene.height(x, z)
+  local e = prts.entity.spawn{ name = "pearl_bed." .. (#m.resources + 1), pos = { x, y, z } }
+  for i = 0, 5 do
+    local a = i / 6 * 2 * math.pi
+    prts.scene.prism{ base = { math.cos(a) * 2.5, 0, math.sin(a) * 2.5 }, radius = 0.6, top_radius = 0.2,
+                      height = 1.2 + (i % 3) * 0.5, sides = 5, material = "coral", entity = e }
+  end
+  prts.scene.box{ min = { -1.2, 0, -1.2 }, max = { 1.2, 0.3, 1.2 }, material = "bone", entity = e, solid = false }
+  local Wa = require("rts.water")
+  local at
+  for r = 4, 200, 4 do
+    for i = 0, 15 do
+      local a = i / 16 * 2 * math.pi
+      local px, pz = x + math.cos(a) * r, z + math.sin(a) * r
+      local ok, open = pcall(prts.nav.walkable, px, pz) -- (no grid yet while the map is built)
+      if Wa.depth(px, pz) == 0 and (not ok or open) then at = { px, pz } break end
+    end
+    if at then break end
+  end
+  local d = prts.entity.data(e)
+  d.kind, d.pearls, d.at = "pearl_bed", pearls or D.PEARL_BED, at or { x, z }
+  m.resources[#m.resources + 1] = e
+  return e
+end
+
 -- Remains where units fell: bone for Kobb to gather, for a few minutes.
 function E.add_remains(x, z, bone)
   local m = S.match()
@@ -105,10 +134,10 @@ function E.decay(now)
   return n
 end
 
-local SOURCE = { gold = "mine", timber = "tree", bone = "remains", stone = "quarry" }
+local SOURCE = { gold = "mine", timber = "tree", bone = "remains", stone = "quarry", pearls = "pearl_bed" }
 
 -- What is left in a source.
-function E.left(d) return d.gold or d.timber or d.bone or d.stone or 0 end
+function E.left(d) return d.gold or d.timber or d.bone or d.stone or d.pearls or 0 end
 
 -- The nearest source of `res` ("gold" | "timber" | "bone") within r of (x, z) not used up.
 function E.nearest_source(res, x, z, r)

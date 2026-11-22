@@ -91,6 +91,8 @@ local function strike(e, d, w, target)
   local now = prts.time.tick()
   if (d.weak_until or 0) > now then damage = damage * 0.5 end -- coughing in a spore cloud
   if td and td.kind == "unit" and w.vs_mounted and D.unit(td.def).mounted then damage = damage * w.vs_mounted end
+  if td and td.kind == "ship" and w.ships then damage = damage * w.ships end
+  if td and td.kind == "unit" and w.pin then require("rts.spells").slow(target, w.pin) end -- a harpoon pins
   if td and w.glow then -- glowstone shot: what it strikes stays lit for the side to see
     td.lit = td.lit or {}
     td.lit[d.side] = now + w.glow * 30
@@ -182,6 +184,7 @@ function K.think(e, ticks)
   if not t then
     local r = order.kind == "hold" and w.range + 1 or u.sight
     t = K.nearest_enemy_unit(d.side, x, z, r) or K.nearest_enemy_structure(d.side, x, z, r, w)
+    if not t and w.ships then t = require("rts.fleet").enemy_ship(d.side, x, z, w.range + 6) end -- hull-borers
     if not t and w.missile then -- bows and javelins reach flyers and ships
       t = require("rts.sky").nearest_enemy(d.side, x, z, w.range) or require("rts.fleet").enemy_ship(d.side, x, z, w.range)
     end

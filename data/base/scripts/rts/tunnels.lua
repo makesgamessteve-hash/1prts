@@ -45,14 +45,13 @@ function Tu.exists() return prts.entity.find(Tu.ENTITY) ~= nil end
 -- A coordinate on the terrain grid's quad centres (4 m), so mouths and shafts cut whole quads.
 function Tu.snap(v) return math.floor(v / 4) * 4 + 2 end
 
-local function setfog(fog)
-  prts.scene.env{ fog_near = fog[1], fog_far = fog[2], fog_color = fog[3] }
-end
+local Fog = require("lib.fog")
 
 -- The map's own fog, to come back to from underground.
 function Tu.setup(cfg)
   local d = Tu.data()
   d.fog = cfg and cfg.fog or { 200, 1100, { 0.66, 0.70, 0.74 } }
+  Fog.base(d.fog[1], d.fog[2], d.fog[3])
   d.rock = cfg and cfg.rock or "rock"
   return d
 end
@@ -711,7 +710,7 @@ function Tu.tick(now)
     local under = Tu.underground(x, y + eye, z)
     if under ~= (d.dark == true) then
       d.dark = under
-      setfog(under and { Tu.FOG.near, Tu.FOG.far, Tu.FOG.color } or d.fog)
+      if under then Fog.set("underground", Tu.FOG.near, Tu.FOG.far, Tu.FOG.color) else Fog.set("underground", nil) end
       prts.events.emit("underground", under)
     end
     local _, g = Tu.gallery_at(x, y, z)

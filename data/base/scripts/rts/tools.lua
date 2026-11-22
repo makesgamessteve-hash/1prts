@@ -139,9 +139,10 @@ end
 function T.furnish(hold, base)
   local hd = S.data(hold)
   if hd.furnished then return false end
-  hd.furnished = true
   local sdef = hd.def and D.structure(hd.def)
+  if sdef and sdef.sails and not base then return require("props.tidehold").furnish(hold) end
   if sdef and sdef.mobile and not base then return require("props.behemoth").furnish(hold) end
+  hd.furnished = true
   if sdef and sdef.underhall and not base then base = require("rts.tunnels").hall_base(hold) end -- the Gloam's hall
   local moving = base ~= nil -- a table set into a frame (a behemoth's howdah, a galleon's chart room)
   base = base or { 0, 0, 0 }

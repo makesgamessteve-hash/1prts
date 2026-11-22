@@ -40,7 +40,7 @@ local function build_hull(e, def)
   b("oak", -hw, bottom, hl, hw, top + 1.6, hl + 0.4)          -- the stern
   local mast = def.length / 6
   b("oak", -0.2, top, -mast - 0.2, 0.2, top + 14, -mast + 0.2, false)
-  b(def.faction == "crown" and "sail" or "sail_red", -hw * 0.9, top + 4, -mast - 0.1, hw * 0.9, top + 12, -mast + 0.1, false)
+  b(def.faction == "crown" and "sail" or (def.faction == "brine" and "sail_blue" or "sail_red"), -hw * 0.9, top + 4, -mast - 0.1, hw * 0.9, top + 12, -mast + 0.1, false)
   if def.length > 30 then
     b("oak", -0.2, top, mast - 0.2, 0.2, top + 12, mast + 0.2, false)
     b("sail", -hw * 0.8, top + 4, mast - 0.1, hw * 0.8, top + 10.5, mast + 0.1, false)
@@ -137,6 +137,7 @@ function Fl.sail(dt)
           local turn = math.max(-def.turn * dt, math.min(def.turn * dt, diff))
           yaw = yaw + turn
           local speed = def.speed * (1 - 0.6 * d.flood)
+          if (d.undertow or 0) > prts.time.tick() then speed = speed * 0.5 end -- caught in an Undertow
           local bx, bz = bow_point(e, 6)
           if Wa.depth(bx, bz) < def.draft + 0.5 and math.abs(diff) < 0.3 then
             -- the shallows ahead, heading for them: as near as she goes (a landing is made from here)
@@ -274,7 +275,7 @@ function Fl.fight(e, seconds)
     else
       local st = enemy_structure(d.side, x, z, def.guns.range)
       if st then
-        require("rts.structures").damage(st, def.guns.damage)
+        require("rts.structures").damage(st, def.guns.damage * (def.guns.structures or 1))
         result = "bombard"
       end
     end
