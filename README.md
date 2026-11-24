@@ -9,7 +9,9 @@ face-to-face orders. Keeps, mines, war galleons, siege towers, skyships, walking
 and floating citadels are built at real size with real crews, and you can walk inside every one
 of them. The look is retro 3D: low-poly models, sprites and voxels.
 
-> **Status: M1 done; M2 (First Command) to M8 (Deep Water) playable; M9 (Every Screen) polish done.** The C engine runs on Windows, Linux, macOS
+> **Status: Release 1.0 (M10): every milestone M1 to M10 is done.** The campaign *The Skyfall Wars*
+> plays from the prologue to its last act, with the Custodians, a first-person map editor,
+> German as a second language and a modding guide with an example mod (see M10 below). The C engine runs on Windows, Linux, macOS
 > and in the browser (WebGL 2, touch controls on phones, WebXR). It loads all content from
 > `data/` and plays two maps in first person. **Harrowmark**, the Crown's border castle, is the
 > story map ([the story](docs/concept/15-story.md)). **Ashford Vale** is the first skirmish. Serfs
@@ -103,13 +105,39 @@ of them. The look is retro 3D: low-poly models, sprites and voxels.
 >   and foe, large map text, crouch and run as toggles, brighter tunnels and deep water, and game
 >   speed.
 >
+> **M10 (Release 1.0)** completes the game:
+> - **the campaign**, *The Skyfall Wars*: the prologue and eight acts in order (the Campaign
+>   screen; Continue), each with its title, briefing over the sending stone and goal, its
+>   progress kept, and the next act a click away in the game menu;
+> - **Act VIII, The Custodians Wake** on the Skyfall Meres: clear Caldrith's core of its
+>   guardians, then choose at the throne hall: steer the citadels for the Crown, share them in a
+>   concord of the four peoples, or break the stone and sink them; three endings;
+> - **the Custodians**, a fifth side of voxel-built constructs without a commander: wardens,
+>   lancers, motes, colossi and spires that guard their wards, reclaim aether wells, rebuild
+>   ruins and wake aboard every citadel; neutral or hostile in skirmish (Options, Game);
+> - **a first-person map editor** (main menu, Map editor): walk the map with the surveyor's rod,
+>   place trees, mines, springs, ruins, props, holdfasts and companies where you look, save it
+>   as text and play it as a match;
+> - **localization**: menus, options, prompts and the campaign's titles in German, a Latin-1
+>   font, and languages that mods add as one file;
+> - **modding**: mods start with the game through an entry point; the
+>   [modding guide](docs/modding/guide.md) walks through the example mod
+>   [Watchfire Hill](examples/mods/watchfire/).
+>
 > The tasks of [`add-command-core`](openspec/changes/add-command-core/tasks.md) (M2),
 > [`add-mounts-and-engines`](openspec/changes/add-mounts-and-engines/tasks.md) (M3) and
 > [`add-economy-and-second-faction`](openspec/changes/add-economy-and-second-faction/tasks.md)
 > (M4), [`add-water-and-sky-theaters`](openspec/changes/add-water-and-sky-theaters/tasks.md)
 > (M5), [`add-high-sky-citadels`](openspec/changes/add-high-sky-citadels/tasks.md) (M6) and
 > [`add-underground-and-gloam-courts`](openspec/changes/add-underground-and-gloam-courts/tasks.md)
-> (M7) list what is done and how each part was verified.
+> (M7), [`add-underwater-and-brine-league`](openspec/changes/add-underwater-and-brine-league/tasks.md)
+> (M8), [`polish-touch-and-xr`](openspec/changes/polish-touch-and-xr/tasks.md) (M9) and the M10
+> changes [`add-custodians`](openspec/changes/add-custodians/tasks.md),
+> [`add-skyfall-wars-campaign`](openspec/changes/add-skyfall-wars-campaign/tasks.md),
+> [`add-scenario-editor`](openspec/changes/add-scenario-editor/tasks.md),
+> [`add-localization`](openspec/changes/add-localization/tasks.md) and
+> [`release-1-0`](openspec/changes/release-1-0/tasks.md) list what is done and how each part was
+> verified.
 
 ![Harrowmark at dusk](docs/screenshots/01_approach_at_dusk.png)
 
@@ -133,7 +161,8 @@ of them. The look is retro 3D: low-poly models, sprites and voxels.
 | ![The Tidehold beyond the reef](docs/screenshots/90_tidehold_beyond_the_reef.png) | ![On the Tidehold's council deck](docs/screenshots/91_tidehold_council_deck.png) | ![A pearl bed under the water](docs/screenshots/92_pearl_bed.png) |
 | ![The sunken sky-barge](docs/screenshots/93_sunken_sky_barge.png) | ![The diving bell's shell table](docs/screenshots/94_diving_bell.png) | ![Saltwick market town](docs/screenshots/95_saltwick_market.png) |
 | ![The war table in the deuteranopia palette](docs/screenshots/96_war_table_deuteranopia.png) | ![The war table in high contrast](docs/screenshots/97_war_table_high_contrast.png) | ![Left-handed touch buttons](docs/screenshots/98_touch_left_handed.png) |
-| ![The Access options](docs/screenshots/99_options_access.png) | | |
+| ![The Access options](docs/screenshots/99_options_access.png) | ![The Custodians at a ruin of the Imperium](docs/screenshots/100_custodians_at_a_ruin.png) | ![The council of the four peoples in Caldrith's throne hall](docs/screenshots/101_council_of_four_peoples.png) |
+| ![The Concord of the Meres](docs/screenshots/102_the_concord_of_the_meres.png) | ![The campaign screen](docs/screenshots/103_campaign_screen.png) | ![The map editor](docs/screenshots/104_map_editor.png) |
 | ![Great hall](docs/screenshots/12_hall_benches_braziers.png) | ![Forge](docs/screenshots/05_forge.png) | ![Front-end menu](docs/screenshots/13_front_end_menu.png) |
 
 ## Read this first
@@ -144,6 +173,7 @@ of them. The look is retro 3D: low-poly models, sprites and voxels.
 | 🏗️ **Architecture** | [`docs/architecture/`](docs/architecture/README.md): engine and script split, simulation, rendering, data and Lua API, quality and build |
 | 📐 **Specs** | [`openspec/`](openspec/): spec-driven development with [OpenSpec](https://github.com/Fission-AI/OpenSpec). Changes: [`add-engine-foundation`](openspec/changes/archive/2026-11-21-add-engine-foundation/proposal.md) (M1), [`add-harrowmark-and-story`](openspec/changes/archive/2026-11-21-add-harrowmark-and-story/proposal.md) (the castle, the story and the title) and [`improve-feel-and-goals`](openspec/changes/archive/2026-11-21-improve-feel-and-goals/proposal.md) (what the fun audit found: movement feel, feedback, goals, a blocked stair, load time) |
 | 🎲 **Fun audit** | [`tools/fun/`](tools/fun/README.md): bots with human limits play Harrowmark and the six pillars of the game-fun-evaluator skill are scored. [Results](docs/fun-audit/README.md): 51.5 → 80.5 / 100 after the fixes it led to |
+| 🧩 **Modding** | [`docs/modding/guide.md`](docs/modding/guide.md): the modding guide and its example mod; [`docs/modding/api-m1.md`](docs/modding/api-m1.md): the scripting API reference |
 | ❓ **Open questions** | [`docs/concept/13-open-questions.md`](docs/concept/13-open-questions.md) |
 
 ## Key facts

@@ -49,6 +49,9 @@ int prts_engine_run(prts_engine *e);
 /* True if this configuration runs to completion without a window loop. */
 bool prts_engine_is_batch(const prts_engine *e);
 int prts_engine_exit_code(const prts_engine *e);
+/* The map prts.app.restart asked to start the game again on, or NULL. Interactive runs stop
+ * their frame loop after the request; the launcher then creates the engine again on that map. */
+const char *prts_engine_restart_map(const prts_engine *e);
 uint64_t prts_engine_hash(const prts_engine *e);
 
 /* One run the batch way: a frame at the fixed tick length. Returns false once the run is

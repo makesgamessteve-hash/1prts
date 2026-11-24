@@ -273,3 +273,26 @@ is missing. References are C unit tests (`suite.case`), test files and scripts (
 | accessibility | Toggle crouch | `tests/game/scenarios/accessibility_play.lua`, `engine/tests/test_input.c` (`input.toggled_actions_latch`) |
 | accessibility | Brightness under the ground | `tests/game/scenarios/accessibility_play.lua` |
 | accessibility | Faster game | `engine/tests/test_engine.c` (`engine.game_speed_scales_ticks`), `tests/game/scenarios/accessibility_play.lua` |
+| custodians | A warden made of voxels | `tests/game/scenarios/custodians.lua` |
+| custodians | Custodians do not end a match | `tests/game/scenarios/custodians.lua` |
+| custodians | Driven from the ward | `tests/game/scenarios/custodians.lua` |
+| custodians | A hostile raid | `tests/game/scenarios/custodians.lua` |
+| custodians | Reclaiming a well | `tests/game/scenarios/custodians_land.lua` |
+| custodians | Rebuilding a ruin | `tests/game/scenarios/custodians_land.lua` |
+| custodians | Guardians aboard a citadel | `tests/game/scenarios/custodians_citadel.lua` |
+| custodians | Hostile Custodians in a skirmish | `tests/game/scenarios/custodians_skirmish.lua` |
+| campaign | The campaign screen | `tests/game/scenarios/campaign_menu.lua` |
+| campaign | An act is won | `tests/game/scenarios/campaign_acts.lua` |
+| campaign | An act is lost | `tests/game/scenarios/campaign_acts.lua` |
+| campaign | The next act | `engine/tests/test_engine.c` (`engine.restart_on_another_map`), `tests/game/scenarios/campaign_acts.lua` |
+| campaign | The core is held | `tests/game/scenarios/custodians_wake.lua` |
+| campaign | Sinking the citadels | `tests/game/scenarios/custodians_wake.lua` |
+| campaign | Steering or sharing | `tests/game/scenarios/custodians_wake_endings.lua` |
+| editor | A broken map file | `data/base/scripts/tests/test_mapfile.lua`, `tests/game/scenarios/custom_map.lua` |
+| editor | Placing in first person | `tests/game/scenarios/editor.lua` |
+| editor | Saving a map | `engine/tests/test_engine.c` (`engine.player_text_files`), `tests/game/scenarios/editor.lua` |
+| editor | Playing a map | `tests/game/scenarios/custom_map.lua` |
+| localization | Switching the language | `tests/game/scenarios/localization.lua` |
+| localization | A missing translation | `tests/game/scenarios/localization.lua`, `data/base/scripts/tests/test_i18n.lua` |
+| modding-guide | A mod starts with the game | `tests/game/scenarios/example_mod.lua` |
+| modding-guide | The example mod works | `tests/game/scenarios/example_mod.lua` |

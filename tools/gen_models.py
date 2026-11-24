@@ -367,6 +367,101 @@ def anvil():
                     [(0, (0, 0, 4), None, False, 0), (1, (0, 0, 12), None, False, 0)], [(0, False)])
 
 
+# --- the Custodians (M10): constructs of pale stone with glowing aether seams ------------
+
+CUSTODIAN_PALETTE = [(206, 200, 184, 255), (156, 150, 138, 255), (112, 232, 255, 255), (58, 168, 222, 255),
+                     (44, 46, 56, 255)]
+STONE, DARK_STONE, GLOW, SEAM, CORE = 1, 2, 3, 4, 5
+
+
+def fill(vox, x0, y0, z0, x1, y1, z1, c):
+    """Fills the box of voxels [x0, x1) x [y0, y1) x [z0, z1) with colour c."""
+    for x in range(x0, x1):
+        for y in range(y0, y1):
+            for z in range(z0, z1):
+                vox[(x, y, z)] = c
+
+
+def custodian(size, vox):
+    return vox_file([(size, vox)], CUSTODIAN_PALETTE)
+
+
+def warden():
+    """A warden (12 x 8 x 28): pillar legs, a broad chest with an aether seam, a visored head and
+    a blade of stone on its right arm."""
+    v = {}
+    fill(v, 3, 2, 0, 5, 6, 11, DARK_STONE)    # legs
+    fill(v, 7, 2, 0, 9, 6, 11, DARK_STONE)
+    fill(v, 2, 1, 11, 10, 7, 21, STONE)       # chest
+    fill(v, 5, 0, 13, 7, 1, 19, GLOW)         # the seam down the chest
+    fill(v, 0, 2, 18, 12, 6, 21, STONE)       # shoulders
+    fill(v, 0, 2, 10, 2, 6, 18, DARK_STONE)   # arms
+    fill(v, 10, 2, 10, 12, 6, 18, DARK_STONE)
+    fill(v, 10, 0, 2, 12, 2, 12, SEAM)        # the blade
+    fill(v, 4, 2, 21, 8, 6, 26, STONE)        # head
+    fill(v, 4, 1, 23, 8, 2, 24, GLOW)         # visor
+    fill(v, 5, 3, 26, 7, 5, 28, CORE)         # crest
+    return custodian((12, 8, 28), v)
+
+
+def lancer():
+    """A lancer (10 x 8 x 30): slimmer, with a long lance tipped with aether."""
+    v = {}
+    fill(v, 3, 3, 0, 4, 5, 12, DARK_STONE)
+    fill(v, 6, 3, 0, 7, 5, 12, DARK_STONE)
+    fill(v, 2, 2, 12, 8, 6, 21, STONE)
+    fill(v, 4, 1, 14, 6, 2, 20, GLOW)
+    fill(v, 3, 3, 21, 7, 6, 25, STONE)
+    fill(v, 3, 2, 22, 7, 3, 23, GLOW)
+    fill(v, 8, 3, 2, 9, 5, 28, SEAM)          # the lance
+    fill(v, 8, 3, 28, 9, 5, 30, GLOW)
+    return custodian((10, 8, 30), v)
+
+
+def mote():
+    """A mote (9 x 9 x 9): a stone shell round a glowing core, a double pyramid."""
+    v = {}
+    for z in range(9):
+        r = 4 - abs(z - 4)
+        for x in range(4 - r, 5 + r):
+            for y in range(4 - r, 5 + r):
+                inner = abs(x - 4) + abs(y - 4) + abs(z - 4) <= 2
+                v[(x, y, z)] = GLOW if inner else (STONE if (x + y + z) % 3 else SEAM)
+    return custodian((9, 9, 9), v)
+
+
+def colossus():
+    """The colossus (24 x 16 x 40): a walking siege engine of stacked slabs with a glowing heart."""
+    v = {}
+    fill(v, 3, 4, 0, 9, 12, 16, DARK_STONE)   # legs
+    fill(v, 15, 4, 0, 21, 12, 16, DARK_STONE)
+    fill(v, 2, 2, 16, 22, 14, 32, STONE)      # body
+    fill(v, 9, 1, 21, 15, 2, 28, GLOW)        # heart
+    fill(v, 0, 3, 18, 2, 13, 30, DARK_STONE)  # arms
+    fill(v, 22, 3, 18, 24, 13, 30, DARK_STONE)
+    fill(v, 0, 3, 8, 2, 13, 18, SEAM)         # fists, the rams
+    fill(v, 22, 3, 8, 24, 13, 18, SEAM)
+    fill(v, 7, 4, 32, 17, 12, 38, STONE)      # head
+    fill(v, 8, 3, 34, 16, 4, 36, GLOW)        # eye band
+    fill(v, 10, 6, 38, 14, 10, 40, CORE)
+    return custodian((24, 16, 40), v)
+
+
+def spire():
+    """A spire (12 x 12 x 60): a tapering obelisk with aether seams and a floating cap stone."""
+    v = {}
+    for z in range(50):
+        r = 6 - z // 10
+        for x in range(6 - r, 6 + r):
+            for y in range(6 - r, 6 + r):
+                edge = x in (6 - r, 6 + r - 1) or y in (6 - r, 6 + r - 1)
+                seam = edge and (x == 6 or y == 6 or x == 5 or y == 5)
+                v[(x, y, z)] = GLOW if seam else (DARK_STONE if z < 4 else STONE)
+    fill(v, 4, 4, 53, 8, 8, 58, GLOW)         # the cap stone, floating
+    fill(v, 5, 5, 58, 7, 7, 60, CORE)
+    return custodian((12, 12, 60), v)
+
+
 # --- fixtures ----------------------------------------------------------------------------
 
 def fixtures():
@@ -439,7 +534,9 @@ def main():
         return
     os.makedirs(OUT, exist_ok=True)
     files = {"bench.glb": bench(), "brazier.glb": brazier(), "banner_stand.glb": banner_stand(),
-             "crate.vox": crate(), "anvil.vox": anvil()}
+             "crate.vox": crate(), "anvil.vox": anvil(),
+             "cu_warden.vox": warden(), "cu_lancer.vox": lancer(), "cu_mote.vox": mote(),
+             "cu_colossus.vox": colossus(), "cu_spire.vox": spire()}
     for name, data in files.items():
         with open(os.path.join(OUT, name), "wb") as f:
             f.write(data)

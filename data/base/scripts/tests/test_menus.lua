@@ -18,6 +18,14 @@ T.case("the front-end menu offers the map, options, credits and quit", function(
   -- the map is already loaded in test runs: starting another one is refused, the menu stays
   T.ui_click("Harrowmark")
   T.eq(menu.screen, "main")
+  -- the other maps are on the Battles screen
+  T.ui_click("Battles: skirmish and scenarios")
+  T.eq(menu.screen, "battles")
+  T.is_true(T.ui_has("Scenario: The Reef War"), "a scenario")
+  T.ui_click("Back")
+  T.eq(menu.screen, "pause", "back leads to the pause menu while playing")
+  menu.open("main")
+  T.ui_frame()
   T.ui_click("Credits")
   T.eq(menu.screen, "credits")
   T.is_true(T.ui_has("== Base game =="), "credits list")

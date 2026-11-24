@@ -3,6 +3,7 @@
  * licenses (prts.licenses), map post-load (prts.scene.finish), the commander's interaction
  * target (prts.commander.target) and developer tools (prts.dev). MIT License. */
 #include <lauxlib.h>
+#include <stdio.h>
 #include <string.h>
 
 #include "app/engine_internal.h"
@@ -44,6 +45,33 @@ static int l_app_quit(lua_State *L)
 {
     prts_engine_from_lua(L)->quit = true;
     return 0;
+}
+
+/* prts.app.restart(map): starts the game again on a map (the campaign's next act, the editor's
+ * play test). Interactive runs stop after this frame and the launcher starts again; test, batch
+ * and scenario runs only keep the request (prts.app.restart_pending). */
+static int l_app_restart(lua_State *L)
+{
+    prts_engine *e = prts_engine_from_lua(L);
+    const char *map = luaL_checkstring(L, 1);
+    size_t n = strlen(map);
+    bool ok = n > 0 && n < sizeof(e->restart_map);
+    for (const char *p = map; *p && ok; p++) {
+        ok = (*p >= 'a' && *p <= 'z') || (*p >= '0' && *p <= '9') || *p == '_';
+    }
+    if (!ok) return luaL_error(L, "invalid map id '%s' (use 1-63 lowercase letters, digits or '_')", map);
+    snprintf(e->restart_map, sizeof(e->restart_map), "%s", map);
+    if (!e->cfg.headless && !e->cfg.test_lua && !e->cfg.scenario && !e->cfg.replay) e->quit = true;
+    lua_pushboolean(L, 1);
+    return 1;
+}
+
+static int l_app_restart_pending(lua_State *L)
+{
+    const char *map = prts_engine_restart_map(prts_engine_from_lua(L));
+    if (map) lua_pushstring(L, map);
+    else lua_pushnil(L);
+    return 1;
 }
 
 /* prts.vfs.mounts() -> { { id = "base" }, ... } in load order (later ones override) */
@@ -154,7 +182,10 @@ void prts_engine_open_app_api(prts_engine *e)
     lua_pop(L, 1);
 
     static const prts_script_fn root[] = {{"licenses", l_licenses}, {NULL, NULL}};
-    static const prts_script_fn app[] = {{"quit", l_app_quit}, {NULL, NULL}};
+    static const prts_script_fn app[] = {{"quit", l_app_quit},
+                                             {"restart", l_app_restart},
+                                             {"restart_pending", l_app_restart_pending},
+                                             {NULL, NULL}};
     static const prts_script_fn vfs[] = {{"mounts", l_vfs_mounts}, {"read_from", l_vfs_read_from}, {NULL, NULL}};
     static const prts_script_fn scene[] = {{"finish", l_scene_finish}, {NULL, NULL}};
     static const prts_script_fn commander[] = {{"target", l_commander_target}, {NULL, NULL}};

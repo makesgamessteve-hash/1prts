@@ -1,7 +1,7 @@
 -- The story told at Harrowmark (the Proving Ground map): the prologue, the people of the
 -- castle and what they say, and the castellan's orders on the great hall's notice board.
 -- Everything is heard or read through the commander's eyes and ears (docs/concept/15-story.md).
--- Text uses plain ASCII: the UI font has no other glyphs. MIT License.
+-- Text is English; translations go through lib/i18n.lua. MIT License.
 local subtitles = require("ui.subtitles")
 local progress = require("story.progress")
 local banner = require("ui.banner")

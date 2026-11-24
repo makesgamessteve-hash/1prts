@@ -11,6 +11,7 @@ M.ID = "thornmere"
 M.WEST = { x = -600, z = 0 }
 M.EAST = { x = 600, z = 0 }
 M.HALF = { x = 780, z = 460 }
+M.RUINS = { { x = 0, z = 300 }, { x = 0, z = -300 } } -- ruins of the Imperium (the Custodians' option)
 M.music = "music/proving_ground.ogg"
 -- M6: a dormant citadel, Vael Tor, drifts high over the field on a slow track round the old stones
 M.CITADEL = { name = "Vael Tor", y = 140, track = { { -320, -220 }, { 320, -220 }, { 320, 220 }, { -320, 220 } } }
@@ -111,7 +112,7 @@ function M.on_started(id, opts)
   prts.nav.build{ min = { -M.HALF.x, -M.HALF.z }, max = { M.HALF.x, M.HALF.z }, cell = 2 }
   require("rts.command").AREA = { -800, -435, 800, 435 } -- what the war table shows
   if not (opts and opts.no_match) then
-    require("rts.match").start{ sides = M.SIDES, serfs = 5 }
+    require("rts.match").start{ sides = M.SIDES, serfs = 5, custodians = require("game.settings").game().custodians, ruins = M.RUINS }
     local c = M.CITADEL
     require("rts.citadel").spawn{ name = c.name, x = c.track[4][1], z = c.track[4][2], y = c.y, track = c.track }
   end

@@ -102,6 +102,9 @@ Full specification: [`openspec/changes/archive/2026-11-21-add-engine-foundation/
 - Touch interface usability pass; WebXR hand tracking; comfort options for riding and flying;
   performance work for mobile and standalone headsets; full accessibility pass.
 
-## M10 · Release 1.0
+## M10 · Release 1.0 (done)
 - *The Skyfall Wars* campaign (prologue and acts in [15](15-story.md)); the Custodians;
   first-person map and scenario editor; modding guide and API reference; localization framework.
+- OpenSpec changes: `add-custodians`, `add-skyfall-wars-campaign`, `add-scenario-editor`,
+  `add-localization`, `release-1-0`. The other sides' own missions on the same events (§6 of the
+  story) and more translations are left for after 1.0.

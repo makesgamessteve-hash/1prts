@@ -189,7 +189,9 @@ local function build_shape(e, def, color)
   local w, d = def.size[1], def.size[2]
   local kind = def.id:match("%.(.+)$")
   local banner = color == "red" and "banner_red" or "banner"
-  if def.mobile then return -- the behemoth carries its own beast (props/behemoth.lua)
+  if def.model then -- a Custodian spire: a voxel model
+    prts.scene.model{ path = def.model, entity = e, pos = { 0, 0, 0 }, scale = def.voxel }
+  elseif def.mobile then return -- the behemoth carries its own beast (props/behemoth.lua)
   elseif def.hq and D.faction_of(def.id) == "crown" then SHAPES.holdfast(e, w, d, banner)
   elseif def.underhall then -- the Gloam's gatehouse; its hall lies under the ground
     SHAPES.hall(e, w * 0.7, d * 0.5, 6, "stone")
@@ -567,7 +569,10 @@ function B.produce(e, seconds)
   local side = S.side(d.side)
   d.acc = (d.acc or 0) + seconds
   local made
-  if def.aether then
+  if d.reclaimed then -- a Custodian spire has taken the spring (rts/custodians.lua)
+    d.acc = 0
+    return nil
+  elseif def.aether then
     while d.acc >= D.AETHER_EVERY do
       d.acc = d.acc - D.AETHER_EVERY
       side.aether = side.aether + 1

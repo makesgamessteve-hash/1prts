@@ -38,6 +38,11 @@ shell table on the seabed, and the market town of Saltwick.
 (rings mark your own companies, squares the enemy's), the touch buttons laid out left-handed, and
 the Access tab of the options menu.
 
+`100`–`105` show Release 1.0 (M10): the Custodians holding a ruin of the Imperium (wardens,
+lancers, a colossus and a spire, built from voxels), the chiefs of the four peoples in
+Caldrith's throne hall, the Concord of the Meres (one of Act VIII's three endings), the
+campaign screen, the map editor with the surveyor's rod's readout, and the options in German.
+
 These images show Banner & Bastion art and are licensed under CC BY 4.0 like the rest of the
 art (see `LICENSING.md`). Credit: "Banner & Bastion screenshot" by The Banner & Bastion
 Contributors.

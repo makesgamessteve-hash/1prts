@@ -64,7 +64,10 @@ function M.xr_video() return read("xr.video.", M.XR_VIDEO) end
 -- toggles, a brightness boost in dark places, game speed, and the performance profile (nil:
 -- low on touch screens and in headsets, high elsewhere, until the player picks one).
 M.GAME = { prologue = true, camera_motion = 1.0, palette = "default", map_text = 1, toggle_crouch = false,
-           toggle_run = false, dark_boost = false, speed = 1.0 }
+           toggle_run = false, dark_boost = false, speed = 1.0, custodians = "off", language = "en" }
+-- M10: the Custodians in skirmish (off, neutral or hostile).
+M.CUSTODIANS = { "off", "neutral", "hostile" }
+M.CUSTODIAN_NAMES = { off = "Off", neutral = "Neutral", hostile = "Hostile" }
 M.PALETTES = { "default", "deuteranopia", "protanopia", "tritanopia", "high_contrast" }
 M.PALETTE_NAMES = { default = "Default", deuteranopia = "Deuteranopia", protanopia = "Protanopia",
                     tritanopia = "Tritanopia", high_contrast = "High contrast" }
@@ -85,6 +88,7 @@ end
 -- Applies the M9 game options: toggles, speed, the dark boost, the profile's draw distance.
 function M.apply_game()
   local g = M.game()
+  require("lib.i18n").set(g.language) -- M10: the language the game's text is shown in
   prts.input.toggle("crouch", g.toggle_crouch)
   prts.input.toggle("run", g.toggle_run)
   prts.time.scale(g.speed)

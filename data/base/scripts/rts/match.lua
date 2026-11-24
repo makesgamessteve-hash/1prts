@@ -29,6 +29,7 @@ require("props.bell")
 require("rts.neutral")
 require("props.skyship")
 require("rts.tools")
+require("rts.custodians")
 require("ui.war_maps")
 
 local M = {}
@@ -58,6 +59,8 @@ function M.start(cfg)
       if sc.ai then E.gather(serf, i % 3 == 0 and "timber" or "gold") end
     end
   end
+  -- M10: the Custodians as a fifth side (a skirmish option, or a map's own)
+  if cfg.custodians and cfg.custodians ~= "off" then require("rts.custodians").join(cfg.custodians, cfg.ruins) end
   prts.events.emit("rts_match_started")
   return m
 end
@@ -81,7 +84,7 @@ function M.tick(now)
       end
       local moving = d.flying or (prts.agent.info(e) and prts.agent.info(e).moving)
       local anim = moving and "walk" or "idle"
-      if S.alive(e) and d.anim ~= anim then
+      if S.alive(e) and d.anim ~= anim and d.sprite then
         d.anim = anim
         prts.scene.sprite_anim(d.sprite, anim)
       end
@@ -121,7 +124,7 @@ end
 function M.check_end(now)
   local m = S.match()
   for id, side in prts.sorted_pairs(m.sides) do
-    if not side.lost and (#S.hqs(id) == 0 or side.defeated) then
+    if not side.lost and not side.custodians and (#S.hqs(id) == 0 or side.defeated) then
       side.lost = true
       S.dispatch(id, "Marshal", "Our holdfast has fallen. The day is lost.")
       prts.events.emit("rts_side_lost", id)
@@ -129,7 +132,7 @@ function M.check_end(now)
   end
   local left = {}
   for id, side in prts.sorted_pairs(m.sides) do
-    if not side.lost then left[#left + 1] = id end
+    if not side.lost and not side.custodians then left[#left + 1] = id end -- the Custodians never end a match
   end
   local lost_any = false
   for _, side in prts.sorted_pairs(m.sides) do lost_any = lost_any or side.lost end

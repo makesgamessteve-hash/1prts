@@ -11,6 +11,7 @@ local Tu = require("rts.tunnels")
 local M = {}
 M.ID = "hollowfell"
 M.HALF = { x = 800, z = 800 }
+M.RUINS = { { x = 300, z = 0 }, { x = -300, z = 0 } } -- ruins of the Imperium (the Custodians' option)
 M.CORNERS = {
   { x = -542, z = 542 }, { x = -542, z = -542 }, { x = 542, z = -542 }, { x = 542, z = 542 },
 }
@@ -97,7 +98,7 @@ function M.on_started(id, opts)
   if id ~= M.ID then return false end
   prts.nav.build{ min = { -M.HALF.x, -M.HALF.z }, max = { M.HALF.x, M.HALF.z }, cell = 2 }
   require("rts.command").AREA = { -760, -760, 760, 760 }
-  if not (opts and opts.no_match) then require("rts.match").start{ sides = M.SIDES, serfs = 5 } end
+  if not (opts and opts.no_match) then require("rts.match").start{ sides = M.SIDES, serfs = 5, custodians = require("game.settings").game().custodians, ruins = M.RUINS } end
   return true
 end
 

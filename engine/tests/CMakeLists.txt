@@ -33,6 +33,7 @@ foreach(scenario ${PRTS_SCENARIOS})
   string(REPLACE "-- ctest-args: " "" extra "${extra}")
   separate_arguments(extra)
   file(COPY ${CMAKE_SOURCE_DIR}/tests/game/mods DESTINATION ${CMAKE_BINARY_DIR}/test-user/${name})
+  file(COPY ${CMAKE_SOURCE_DIR}/examples/mods DESTINATION ${CMAKE_BINARY_DIR}/test-user/${name}) # the guide's example mod
   add_test(NAME scenario_${name}
     COMMAND 1stprts --headless --scenario ${scenario} --user ${CMAKE_BINARY_DIR}/test-user/${name} ${extra} ${cov}
             --junit ${PRTS_JUNIT_DIR}/scenario_${name}.xml)

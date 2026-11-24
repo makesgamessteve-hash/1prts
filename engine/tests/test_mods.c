@@ -94,11 +94,11 @@ UTEST(mods, dependencies_and_load_order)
     const char *want[] = {"base", "m_beta", "m_core", "m_alpha", "m_zeta"};
     ASSERT_EQ(PRTS_ARRAY_COUNT(want), prts_vfs_mount_count(e->vfs));
     for (size_t i = 0; i < PRTS_ARRAY_COUNT(want); i++) ASSERT_STREQ(want[i], prts_vfs_mount_id(e->vfs, i));
-    ASSERT_STREQ("0.1.0", e->mod_versions[0]);
+    ASSERT_STREQ("1.0.0", e->mod_versions[0]);
     ASSERT_STREQ("1.2.0", e->mod_versions[2]);
     ASSERT_TRUE(logged("mod load order: m_beta, m_core, m_alpha, m_zeta"));
     ASSERT_TRUE(logged("mod 'm_old' needs 'm_core >= 2.0', but 'm_core' 1.2.0 is installed"));
-    ASSERT_TRUE(logged("mod 'm_newbase' needs 'base >= 9', but 'base' 0.1.0 is installed"));
+    ASSERT_TRUE(logged("mod 'm_newbase' needs 'base >= 9', but 'base' 1.0.0 is installed"));
     ASSERT_TRUE(logged("mod 'm_missing' needs 'm_nowhere', which is not enabled or not installed"));
     ASSERT_TRUE(logged("mod 'm_chain' needs 'm_missing', which is skipped"));
     ASSERT_TRUE(logged("mods 'm_cycle_a', 'm_cycle_b' depend on each other in a cycle"));

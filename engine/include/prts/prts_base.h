@@ -6,7 +6,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define PRTS_ENGINE_VERSION "0.1.0"
+#define PRTS_ENGINE_VERSION "1.0.0"
 /* Major version of the Lua scripting API (prts.api_version). */
 #define PRTS_API_VERSION 1
 

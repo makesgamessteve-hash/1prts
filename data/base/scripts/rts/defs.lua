@@ -106,6 +106,8 @@ require("rts.skyfall")(D)
 require("rts.gloam")(D)
 -- The Brine League (M8).
 require("rts.brine")(D)
+-- The Custodians, the citadels' guardians (M10).
+require("rts.custodian_defs")(D)
 
 -- Gold mines and trees.
 D.MINE_GOLD = 4000

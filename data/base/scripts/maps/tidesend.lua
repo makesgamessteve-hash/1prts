@@ -18,6 +18,7 @@ M.SPOTS = {
   brine = { x = 330, z = 330 },
 }
 M.MARKET = { x = -40, z = 620 }
+M.RUINS = { { x = -700, z = 0 }, { x = 0, z = -700 } } -- ruins of the Imperium (the Custodians' option)
 M.music = "music/proving_ground.ogg"
 
 local function materials()
@@ -103,7 +104,7 @@ function M.on_started(id, opts)
   require("rts.command").AREA = { -880, -880, 880, 880 }
   Wa.close_grid()
   if opts and opts.no_match then return true end
-  require("rts.match").start{ sides = M.SIDES, serfs = 5 }
+  require("rts.match").start{ sides = M.SIDES, serfs = 5, custodians = require("game.settings").game().custodians, ruins = M.RUINS }
   -- the League starts with two pearl divers at the beds
   local b = M.SPOTS.brine
   for i = 1, 2 do

@@ -10,6 +10,7 @@ M.ID = "ashford_vale"
 M.WEST = { x = -380, z = 0 }  -- the Crown (the player in a skirmish)
 M.EAST = { x = 380, z = 0 }   -- the rival lord
 M.HALF = { x = 500, z = 300 } -- the playing area
+M.RUINS = { { x = 0, z = 210 }, { x = 0, z = -210 } } -- ruins of the Imperium (the Custodians' option)
 M.music = "music/proving_ground.ogg"
 
 local function materials()
@@ -96,7 +97,7 @@ function M.on_started(id, opts)
   prts.nav.build{ min = { -M.HALF.x, -M.HALF.z }, max = { M.HALF.x, M.HALF.z }, cell = 2 }
   require("rts.command").AREA = { -500, -300, 500, 300 }
   if not (opts and opts.no_match) then
-    require("rts.match").start{ sides = M.SIDES, serfs = 4 }
+    require("rts.match").start{ sides = M.SIDES, serfs = 4, custodians = require("game.settings").game().custodians, ruins = M.RUINS }
   end
   return true
 end

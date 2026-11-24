@@ -148,6 +148,19 @@ function O.draw_game()
     if changed then settings.set_game(o.key, value) end
   end
   prts.ui.row({ 160, -1 })
+  prts.ui.label("Language")
+  local I = require("lib.i18n")
+  local langs, name = I.available(), g.language
+  for _, l in ipairs(langs) do if l.code == g.language then name = l.name end end
+  if prts.ui.button(name, "game.language") then
+    local codes = {}
+    for _, l in ipairs(langs) do codes[#codes + 1] = l.code end
+    settings.set_game("language", O.cycle(codes, g.language))
+  end
+  prts.ui.label("Custodians in skirmish")
+  if prts.ui.button(settings.CUSTODIAN_NAMES[g.custodians] or g.custodians, "game.custodians") then
+    settings.set_game("custodians", O.cycle(settings.CUSTODIANS, g.custodians))
+  end
   prts.ui.label("Camera motion (bob, dips, shake)")
   local v, moved = prts.ui.slider("game.camera_motion", g.camera_motion, 0, 1, 0.25)
   if moved then

@@ -82,6 +82,7 @@ struct prts_engine {
     float time_scale; /* game speed (prts.time.scale): real seconds are multiplied by it */
     prts_render_settings render;
     bool quit;
+    char restart_map[64]; /* prts.app.restart: start the game again on this map ("" none) */
     int exit_code;
     double time;
     uint64_t frames; /* prts_engine_frame calls */
@@ -160,6 +161,9 @@ void prts_engine_finish_scene(prts_engine *e);
 /* api_ui.c, api_app.c, api_settings.c */
 void prts_engine_open_ui_api(prts_engine *e);
 void prts_engine_open_app_api(prts_engine *e);
+/* prts.files (api_files.c): the player's text files in the user folder. */
+void prts_engine_open_files_api(prts_engine *e);
+bool prts_files_name_valid(const char *name);
 void prts_engine_open_settings_api(prts_engine *e);
 /* api_nav.c: prts.nav and prts.agent */
 void prts_engine_open_nav_api(prts_engine *e);

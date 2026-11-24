@@ -370,6 +370,20 @@ tick and every entity's script data) on top of the booted map. Slot names use 1�
 | `prts.save.write(slot)` | Saves now. Returns `true`, or `nil` and the reason (for example a field of entity data that is a function). |
 | `prts.save.load(slot)` | Checks the save and loads it at the start of the next tick. Returns `true`, or `nil` and the reason. Refused while a replay is recorded or played. |
 
+## `prts.files`
+
+The player's plain text files in the user data folder (`files/<name>`), such as maps made with the
+editor (`game/mapfile.lua`). Scripts reach only this folder, and only by name: 1–64 letters,
+digits, `_` or `-`, with an optional extension of 1–8 lowercase letters or digits after one dot
+(`keep_test.map`). Any other name is an error. On the web the user folder is kept in IndexedDB.
+
+| Function | What it does |
+|---|---|
+| `prts.files.write(name, text)` | Writes the file (at most 1 MB). Returns `true`, or `nil` and the reason. |
+| `prts.files.read(name)` | The file's text, or `nil` and the reason (`"not found"`). |
+| `prts.files.list()` | Sorted array of the files' names (files with other names are left out). |
+| `prts.files.remove(name)` | Removes the file; `true` if there was one. |
+
 ## `prts.app` and `prts.dev`
 
 `prts.dev` exists only in developer builds, and not with `--no-dev` (`prts.boot.developer` says
@@ -378,6 +392,8 @@ which). Release builds have no developer console and no observer camera (First-P
 | Function | What it does |
 |---|---|
 | `prts.app.quit()` | Stops the frame loop after the current frame (the menus' Quit button). Lua unit tests, which do not run the frame loop, carry on. |
+| `prts.app.restart(map)` | Starts the game again on another map (only one map is loaded per run): the campaign's next act, the editor's play test. Interactive runs stop the frame loop after the current frame, and the launcher creates the engine again from the same command line with `--start <map>`; test, batch and scenario runs only keep the request. `map` uses 1–63 lowercase letters, digits or `_`; anything else is an error. Returns `true`. Scripts hand state to the new run in the settings (`game/campaign.lua` writes `campaign.pending`). |
+| `prts.app.restart_pending()` | The map a restart was asked for, or `nil`. |
 | `prts.dev.console([open])` | Opens or closes the developer console (the backquote key does the same) and returns whether it is open. |
 | `prts.dev.observer([on])` | Turns the observer camera on or off and returns whether it is on: a free camera labeled "DEVELOPER VIEW" on screen, moved with the mouse, W/A/S/D, Space, Left Ctrl and Left Shift, while game input is blocked. |
 | `prts.dev.run(line)` | Runs a console command as if it was typed: `help`, `clear`, `reload` (hot reload, where the build has it), `observer` (toggles the camera), or any other line as Lua in the shared script environment (the values of an expression are printed to the console). |
@@ -441,6 +457,10 @@ These are Lua modules of the base game (`data/base/scripts/`), not engine functi
 | `rts.brine`, `props.tidehold`, `props.wreck`, `props.bell` | The Brine League as data (units, buildings, ships, the wind-barque, upgrades, charters, spells; pearls; `E.add_pearl_bed`; `B.shore_at`). The Tidehold: `spawn(side, x, z)`, `order(e, x, z)`, `furnish(e)`, `council_point(e)`. The wreck: `spawn{ name, x, z, yaw }`, `open(chest)` (event `wreck_relic`). The diving bell: `make{ name, x, z, yaw, top }`, `toggle(e)`, `at_bottom(e)`, `furnish(e)` (event `bell`). Spells add `Sp.slow(e, seconds)` and `Sp.fogged(x, z)`. |
 | `rts.neutral` | Market towns and lighthouses: `market{ name, x, z }`, `lighthouse{ name, x, z }`, `places()`, `holder(e)`, `trade(side, town, res, amount)` (amount > 0 sells for gold, < 0 buys), `price(town, side, res, amount)`, `rumours(town)`, `food(side)`, `eyes(side)`, `hubs(side)`. Events `rts_place_held`, `rts_trade`, `rts_rumours`. A map side may start with `no_hq = true` (the map gives it its own, such as a Tidehold). |
 | `game.settings` (M9), `ui.touch`, `ui.war_maps` | Accessibility and performance options: `game()` (`palette`, `map_text`, `toggle_crouch`, `toggle_run`, `dark_boost`, `speed`), `performance()` (`low`, `medium`, `high`; low on touch screens and in headsets until chosen), `apply_game()`, `touch()` / `set_touch(key, value)` (`scale`, `left_handed`). `ui.touch`: `layout(opts)`, `label(id)` (what a button says now: Rise, Dive, Dismount, Lower). `ui.war_maps`: `PALETTES`, `set_palette(name)`, `SIGILS`, `text_scale()`. `lib.fog`: `boost(on)` (the brightness boost for dark places). |
+| `rts.custodians` (M10) | The Custodians, a fifth side without a commander (`SIDE` 9): `join(stance, ruins)` (`"neutral"` or `"hostile"`; `ruins = { { x, z } }`), `active()`, `ruin(x, z, spire)`, `wake(x, z, label, list)`, `wake_aboard(citadel, list)`, `leash()`, `raid()`, `reclaim()`, `rebuild(seconds)`, constants `WARD`, `RAID`, `RECLAIM`, `REBUILD`, `GUARD`. Their units and spire are drawn from voxel models: any unit or structure definition with `model` (a `.vox` path) and `voxel` (metres per voxel) is. A side with `custodians = true` never wins or loses and is no AI's war foe; a reclaimed well (`reclaimed` in its data) gives nothing. `match.start{ custodians, ruins }` adds them. Events `custodians_joined`, `custodians_woken`, `custodians_woken_aboard`, `custodians_raid`, `custodians_reclaimed`, `custodians_rebuilt`. |
+| `game.campaign` (M10) | The Skyfall Wars: `ACTS` (`{ id, title, map, goal, briefing, won = "match" \| "orders" \| "ending" }`), `act(id)`, `done(id)`, `open(id)`, `next_act()`, `after(id)`, `start(id)`, `pending(map)`, `begin(id)`, `complete([ending])`, `fail()`, `offer()`. Progress is in the settings (`campaign.done.<id>`, `campaign.ending`, `campaign.pending`). A session started with `{ campaign = id }` begins that act. Events `campaign_act_begun`, `campaign_act_done`, `campaign_act_failed`; `campaign_ending(choice)` ends the last act. |
+| `game.mapfile`, `game.mapbuild`, `ui.editor` (M10) | The editor's maps: `Mf.new(name)`, `parse(text)` (the map, or `nil` and `"line N: why"`), `write(map)`, `sides(map)`, `load(name)`, `save(name, map)`, with `PROPS`, `HOLDFASTS`, `KINDS`, `TIMES`. `Mb.ground(map)`, `stand_in(o, name)`, `play(map)`, `match(map)`, `start(map)`. `Ed.open(map, name)`, `place([x, z])`, `remove([x, z])`, `turn([x, z])`, `next(step)`, `item()`, `save()`, `play()`, `set(key, value)`, `files()`, `new_name()`, `PALETTE`. Event `editor_placed`. The format is described in the [modding guide](guide.md#maps-made-with-the-editor). |
+| `lib.i18n` (M10) | Localization: `t(text [, vars])`, `set(code)`, `available()`, `table(code)`, `add(code, strings, patterns)`, `install()`. See the [modding guide](guide.md#languages). |
 | `props.wagon`, `props.siege_tower`, `props.mine` | The wagon on its road with a driver's seat; the siege tower with push bar, bridge lever, crew and rooms (`damage(e, room, n)`, `push_speed(e)`, `lower_bridge(e)`); the gold mine's galleries and lift cage. Events `siege_push`, `siege_halt`, `siege_tower_at_wall` and `siege_bridge_lowered` (tower name). |
 
 ## Scenario tests (`t`)

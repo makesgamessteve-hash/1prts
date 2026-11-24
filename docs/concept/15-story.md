@@ -149,5 +149,14 @@ Nothing is shown from outside the commander's eyes.
 | Title cards the first time the Marshal reaches each part of the castle: the Outer Ward, the Inner Ward, the Great Keep, the War Room, the Wall-walk, the Raven Tower | `scripts/story/harrowmark.lua` (`places`), `ui/banner.lua` |
 | People at their posts turn to the Marshal while they talk, with a murmur of a voice, and turn back afterwards | `props/npc.lua` |
 
-Story text is plain data in Lua, so mods can replace it like any other script. It is written in
-plain ASCII, because the UI font has no other glyphs.
+## 9. The campaign in the game (M10)
+
+| What | Where |
+|---|---|
+| The campaign: the prologue and eight acts in order, each unlocked by the one before; Continue; progress kept in the settings | `scripts/game/campaign.lua`, the Campaign screen in `ui/menu.lua` |
+| Each act's title card, goal and briefing over the sending stone; won when the Crown wins (the prologue: the castellan's orders; Act VIII: an ending chosen) | `game/campaign.lua` (`ACTS`) |
+| Act VIII on the Skyfall Meres: Caldrith woken over the Caldmere, the Custodians on the shores and in its core, the chiefs of the four peoples in the throne hall, and the three endings: *The Crown's Sky*, *The Concord of the Meres*, *The Long Calm* | `scripts/maps/skyfall_meres.lua` |
+| The Custodians | `scripts/rts/custodians.lua`, `rts/custodian_defs.lua` |
+
+Story text is plain data in Lua, so mods can replace it like any other script. It is UTF-8: the
+UI font draws the Latin-1 letters, and translations go through `lib/i18n.lua` (M10).

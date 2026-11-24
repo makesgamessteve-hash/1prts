@@ -406,7 +406,9 @@ function Ci.second(e, seconds)
     end
   end
   -- boarders alone at a citadel they did not wake break its stone in the end
-  if d.state ~= "broken" and #sides == 1 and sides[1] ~= d.side and d.state ~= "rising" then
+  -- (the Custodians are its guardians, not boarders: they never break it)
+  if d.state ~= "broken" and #sides == 1 and sides[1] ~= d.side and d.state ~= "rising"
+     and not S.side(sides[1]).custodians then
     d.held_for = d.held_for + seconds
     if d.held_for >= Ci.BREAK_SECONDS then Ci.shatter(e, sides[1]) end
   else

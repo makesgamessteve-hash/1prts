@@ -96,7 +96,7 @@ function S.enemies(side_id)
   local side = S.side(side_id)
   local out = {}
   for id, o in prts.sorted_pairs(S.match().sides) do
-    if id ~= side_id and not o.lost and (side.enemy == nil or side.enemy == id or not side.named_enemy) then
+    if id ~= side_id and not o.lost and not o.custodians and (side.enemy == nil or side.enemy == id or not side.named_enemy) then
       out[#out + 1] = id
     end
   end
@@ -249,7 +249,11 @@ function S.spawn_unit(side_id, def_id, x, z, company)
   local e = prts.entity.spawn{ name = string.format("unit.%d.%d", side_id, #m.units + 1), pos = { x, y, z } }
   local d = prts.entity.data(e)
   d.kind, d.side, d.def, d.hp, d.cd, d.anim = "unit", side_id, def_id, u.hp, 0, "idle"
-  d.sprite = prts.scene.sprite{ sprite = S.sprite_for(side_id, u), entity = e, anim = "idle" }
+  if u.model then -- a construct of voxels (the Custodians): a model, not a sprite
+    prts.scene.model{ path = u.model, entity = e, pos = { 0, 0, 0 }, scale = u.voxel }
+  else
+    d.sprite = prts.scene.sprite{ sprite = S.sprite_for(side_id, u), entity = e, anim = "idle" }
+  end
   d.company = company and company.id or nil
   if u.flying then -- flyers keep off the ground grid (rts/sky.lua flies them)
     d.flying = true

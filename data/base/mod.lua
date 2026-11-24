@@ -3,7 +3,7 @@ return {
   id      = "base",
   name    = "Banner & Bastion base game",
   title   = "Banner & Bastion", -- the game's name: the engine names its window after it
-  version = "0.1.0",
+  version = "1.0.0",
   api     = "1",
   authors = { "The Banner & Bastion Contributors" },
   license = { code = "MIT", art = "CC-BY-4.0" },

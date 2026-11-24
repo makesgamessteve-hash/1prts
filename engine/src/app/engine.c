@@ -122,6 +122,7 @@ prts_engine *prts_engine_create(const prts_engine_config *cfg, char *err, size_t
     prts_engine_open_game_api(e);
     prts_engine_open_audio_api(e);
     prts_engine_open_save_api(e);
+    prts_engine_open_files_api(e);
     prts_engine_open_xr_api(e);
 #if defined(PRTS_DEV) && !defined(__EMSCRIPTEN__)
     /* developer builds on desktop: on for interactive runs, opt-in for tests */
@@ -338,6 +339,7 @@ int prts_engine_run(prts_engine *e)
 }
 
 int prts_engine_exit_code(const prts_engine *e) { return e->exit_code; }
+const char *prts_engine_restart_map(const prts_engine *e) { return e->restart_map[0] ? e->restart_map : NULL; }
 
 void prts_engine_get_status(const prts_engine *e, prts_engine_status *out)
 {

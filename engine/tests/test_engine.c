@@ -584,3 +584,70 @@ UTEST(engine, game_speed_scales_ticks)
     ASSERT_STREQ("120.0", lua_eval(e, "prts.render.settings{ draw_distance = 120 }.draw_distance"));
     prts_engine_destroy(e);
 }
+
+UTEST(engine, restart_on_another_map)
+{
+    /* Spec (campaign): The next act. prts.app.restart keeps the map to start the game again on;
+     * a test run only keeps the request, an interactive run also stops its frame loop. */
+    char err[1024];
+    prts_engine *e = boot(PRTS_TEST_DATA, NULL, NULL, true, err);
+    ASSERT_TRUE(e != NULL);
+    ASSERT_TRUE(prts_engine_restart_map(e) == NULL);
+    ASSERT_STREQ("nil", lua_eval(e, "prts.app.restart_pending()"));
+    ASSERT_STREQ("<error>", lua_eval(e, "prts.app.restart('Bad Map')"));
+    ASSERT_STREQ("<error>", lua_eval(e, "prts.app.restart('')"));
+    ASSERT_STREQ("true", lua_eval(e, "prts.app.restart('caldmere')"));
+    ASSERT_STREQ("caldmere", prts_engine_restart_map(e));
+    ASSERT_STREQ("caldmere", lua_eval(e, "prts.app.restart_pending()"));
+    ASSERT_FALSE(e->quit); /* a test run carries on */
+    e->cfg.headless = false; /* as an interactive run: the frame loop stops */
+    ASSERT_STREQ("true", lua_eval(e, "prts.app.restart('skyfall_meres')"));
+    ASSERT_TRUE(e->quit);
+    e->cfg.headless = true;
+    prts_engine_destroy(e);
+}
+
+UTEST(engine, player_text_files)
+{
+    /* Spec (editor): Saving a map. prts.files keeps the player's text files in files/ of the
+     * user folder, by name only. */
+    char err[1024];
+    prts_fs_remove_tree(TMP "/user_files");
+    prts_engine *e = boot(PRTS_TEST_DATA, TMP "/user_files", NULL, true, err);
+    ASSERT_TRUE(e != NULL);
+    ASSERT_STREQ("0", lua_eval(e, "#prts.files.list()"));
+    ASSERT_STREQ("true", lua_eval(e, "prts.files.write('keep_test.map', 'return { format = 1 }')"));
+    ASSERT_STREQ("true", lua_eval(e, "prts.files.write('Another-1', 'two')"));
+    ASSERT_TRUE(prts_fs_is_file(TMP "/user_files/files/keep_test.map"));
+    ASSERT_STREQ("return { format = 1 }", lua_eval(e, "prts.files.read('keep_test.map')"));
+    ASSERT_STREQ("Another-1 keep_test.map", lua_eval(e, "table.concat(prts.files.list(), ' ')"));
+    ASSERT_STREQ("not found", lua_eval(e, "select(2, prts.files.read('nothing'))"));
+    ASSERT_STREQ("true", lua_eval(e, "prts.files.remove('Another-1')"));
+    ASSERT_STREQ("false", lua_eval(e, "prts.files.remove('Another-1')"));
+    ASSERT_STREQ("1", lua_eval(e, "#prts.files.list()"));
+    ASSERT_STREQ("too large (at most 1 MB)", lua_eval(e, "select(2, prts.files.write('big', string.rep('x', 1048577)))"));
+    /* names: never a path */
+    ASSERT_STREQ("<error>", lua_eval(e, "prts.files.write('../escape', 'x')"));
+    ASSERT_STREQ("<error>", lua_eval(e, "prts.files.read('a/b')"));
+    ASSERT_STREQ("<error>", lua_eval(e, "prts.files.remove('')"));
+    ASSERT_FALSE(prts_files_name_valid(".map"));
+    ASSERT_FALSE(prts_files_name_valid("map."));
+    ASSERT_FALSE(prts_files_name_valid("a.MAP"));
+    ASSERT_FALSE(prts_files_name_valid("a.toolongext"));
+    ASSERT_FALSE(prts_files_name_valid("a b"));
+    ASSERT_TRUE(prts_files_name_valid("ok_name-2.lua"));
+    char long_name[80];
+    memset(long_name, 'a', 65);
+    long_name[65] = '\0';
+    ASSERT_FALSE(prts_files_name_valid(long_name));
+    prts_engine_destroy(e);
+    /* files with other names in the folder are not listed; a missing folder lists nothing */
+    prts_fs_write_file(TMP "/user_files/files/bad name.txt", "x", 1);
+    e = boot(PRTS_TEST_DATA, TMP "/user_files", NULL, true, err);
+    ASSERT_STREQ("keep_test.map", lua_eval(e, "table.concat(prts.files.list(), ' ')"));
+    prts_engine_destroy(e);
+    prts_fs_remove_tree(TMP "/user_files");
+    e = boot(PRTS_TEST_DATA, TMP "/user_files", NULL, true, err);
+    ASSERT_STREQ("0", lua_eval(e, "#prts.files.list()"));
+    prts_engine_destroy(e);
+}
