@@ -7,18 +7,24 @@ The script is MIT-licensed code. The glyph shapes below are an original design m
 credited in data/base/CREDITS.md. Only the standard library is used and the output is
 deterministic.
 
-Atlas layout (128 x 128, white on transparent):
+Atlas layout (128 x 256, white on transparent):
   - printable ASCII 32..126 in 16 columns of 8 x 12 pixel cells, from (0, 0)
   - UI icons (check, close, collapsed, expanded, a white block) on the row at y = 80
-  - touch overlay shapes (disc and ring, 32 x 32) on the row at y = 96"""
+  - touch overlay shapes (disc and ring, 32 x 32) on the row at y = 96
+  - Latin-1 Supplement U+00A0..U+00FF in the same cells, from (0, 128)
+
+The metrics list each block as a range ({ first, x, y, advance }); the engine maps UTF-8
+code points in a range to its glyphs and draws '?' for anything else."""
 import os
 import struct
 import sys
 import zlib
 
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data", "base", "fonts")
-ATLAS = 128
-CELL_W, CELL_H, COLUMNS, FIRST = 8, 12, 16, 32
+ATLAS_W, ATLAS_H = 128, 256
+CELL_W, CELL_H, COLUMNS = 8, 12, 16
+# (first code point, count, x, y) of each block of glyphs in the atlas
+RANGES = ((32, 95, 0, 0), (160, 96, 0, 128))
 HEIGHT, LINE_HEIGHT = 9, 11
 
 # Each glyph is up to 5 columns wide and 9 rows tall: rows 0-6 sit on the baseline (row 6),
@@ -120,6 +126,90 @@ z .....|.....|#####|...#.|..#..|.#...|#####
 ~ .....|.....|.#...|#.#.#|...#.
 """
 
+# Latin-1 Supplement (U+00A0..U+00FF). Symbols are drawn here, one per line as above (the
+# key is the character itself); accented letters are composed below from a base letter and
+# an accent mark.
+LATIN1 = r"""
+¡ .|.|#|.|#|#|#|#|#
+¢ .....|..#..|.###.|#.#..|#.#..|#.#..|.###.|..#..
+£ ..##.|.#..#|.#...|###..|.#...|.#...|#####
+¤ .....|#...#|.###.|.#.#.|.###.|#...#
+¥ #...#|.#.#.|..#..|#####|..#..|#####|..#..
+¦ #|#|#|.|.|#|#|#
+§ .###|#...|.##.|#..#|.##.|...#|###.
+¨ #.#
+© .#####.|#.....#|#.###.#|#.#...#|#.###.#|#.....#|.#####.
+ª ##.|..#|.##|#.#|.##|...|###
+« .....|..#.#|.#.#.|#.#..|.#.#.|..#.#
+¬ ....|....|....|####|...#
+­ ....|....|....|####
+® .#####.|#.....#|#.##..#|#.#.#.#|#.##..#|#.#.#.#|.#####.
+¯ #####
+° .#.|#.#|.#.
+± .....|..#..|..#..|#####|..#..|..#..|#####
+² ##.|..#|.#.|###
+³ ###|..#|.##|..#|###
+´ .#|#.
+µ .....|.....|#...#|#...#|#...#|##..#|#.##.|#....|#....
+¶ .####|###.#|###.#|.##.#|..#.#|..#.#|..#.#
+· .|.|.|#
+¸ ..|..|..|..|..|..|..|.#|##
+¹ .#.|##.|.#.|.#.|###
+º .#.|#.#|#.#|.#.|...|###
+» .....|#.#..|.#.#.|..#.#|.#.#.|#.#..
+¼ #....#.|#...#..|#..#...|..#.#.#|.#..###|#.....#|......#
+½ #....#.|#...#..|#..#...|..#.##.|.#....#|#....#.|....###
+¾ ##...#.|.#..#..|##.#...|..#.#.#|.#..###|#.....#|......#
+¿ ..#..|.....|..#..|.##..|#....|#...#|.###.
+Æ .####|#.#..|#.#..|####.|#.#..|#.#..|#.###
+Ð ###..|#..#.|#...#|###.#|#...#|#..#.|###..
+× .....|.....|#...#|.#.#.|..#..|.#.#.|#...#
+Ø .####|#..##|#.#.#|#.#.#|#.#.#|##..#|####.
+Þ #....|####.|#...#|#...#|####.|#....|#....
+ß .###.|#...#|#..#.|#.#..|#..#.|#...#|#.##.
+Å ..#..|.#.#.|..#..|.#.#.|#...#|#####|#...#
+æ .....|.....|##.#.|..#.#|.####|#.#..|.#.##
+ð .#.#.|..#..|.#.#.|....#|.####|#...#|.###.
+å ..#..|.#.#.|.###.|....#|.####|#...#|.####
+÷ .....|..#..|.....|#####|.....|..#..
+ø .....|.....|.###.|#..##|#.#.#|##..#|.###.
+þ #....|#....|####.|#...#|#...#|#...#|####.|#....|#....
+"""
+
+# Capitals that carry an accent are shortened to five rows (2-6) under a two-row accent.
+SHORT_CAPS = {
+    "A": ".###.|#...#|#####|#...#|#...#",
+    "C": ".###.|#...#|#....|#...#|.###.",
+    "E": "#####|#....|####.|#....|#####",
+    "I": "###|.#.|.#.|.#.|###",
+    "N": "#...#|##..#|#.#.#|#..##|#...#",
+    "O": ".###.|#...#|#...#|#...#|.###.",
+    "U": "#...#|#...#|#...#|#...#|.###.",
+    "Y": "#...#|.#.#.|..#..|..#..|..#..",
+}
+# Accent marks on rows 0-1, centered over the letter (one form per letter width).
+ACCENTS = {
+    "grave": {5: ".#...|..#..", 3: "#..|.#."},
+    "acute": {5: "...#.|..#..", 3: "..#|.#."},
+    "circumflex": {5: "..#..|.#.#.", 3: ".#.|#.#"},
+    "tilde": {5: ".##.#|#..#.", 3: "###|..."},
+    "diaeresis": {5: ".#.#.|.....", 3: "#.#|..."},
+}
+# Composed letters: code point -> (base letter, accent); "cedilla" hangs below the baseline.
+COMPOSED = {}
+for _base, _first in (("A", 0xC0), ("a", 0xE0)):
+    for _i, _acc in enumerate(("grave", "acute", "circumflex", "tilde", "diaeresis")):
+        COMPOSED[_first + _i] = (_base, _acc)
+for _base, _first in (("E", 0xC8), ("e", 0xE8), ("I", 0xCC), ("i", 0xEC), ("U", 0xD9), ("u", 0xF9)):
+    for _i, _acc in enumerate(("grave", "acute", "circumflex", "diaeresis")):
+        COMPOSED[_first + _i] = (_base, _acc)
+for _base, _first in (("O", 0xD2), ("o", 0xF2)):
+    for _i, _acc in enumerate(("grave", "acute", "circumflex", "tilde", "diaeresis")):
+        COMPOSED[_first + _i] = (_base, _acc)
+COMPOSED.update({0xC7: ("C", "cedilla"), 0xE7: ("c", "cedilla"), 0xD1: ("N", "tilde"), 0xF1: ("n", "tilde"),
+                 0xDD: ("Y", "acute"), 0xFD: ("y", "acute"), 0xFF: ("y", "diaeresis")})
+CEDILLA = {5: "..#..|.##..", 4: "..#.|.##."}
+
 ICONS = {
     # name: (x, y, rows)
     "check": (8, 80, ["......#", ".....##", "#...##.", "##.##..", ".###...", "..#...."]),
@@ -130,11 +220,37 @@ ICONS = {
 }
 
 
-def parse_glyphs():
+def parse_table(text):
     glyphs = {}
-    for line in GLYPHS.strip("\n").split("\n"):
+    for line in text.strip("\n").split("\n"):
         ch, rows = line[0], line[2:].split("|")
         glyphs[ord(ch)] = rows
+    return glyphs
+
+
+def compose(glyphs, base, accent):
+    """An accented letter: the base letter (shortened if it is a capital) under an accent."""
+    full = glyphs[ord(base)]
+    if accent == "cedilla":
+        width = len(full[0])
+        return full[:7] + CEDILLA[width].split("|")
+    if base == "i":
+        body = ["...", ".#.", ".#.", ".#.", ".#."]  # a dotless stem, one row below the accent
+    elif base.isupper():
+        body = SHORT_CAPS[base].split("|")
+    else:
+        body = full[2:]  # lowercase letters sit on rows 2-6 below an empty x-height cap
+    width = len(body[0])
+    return ACCENTS[accent][width].split("|") + body
+
+
+def parse_glyphs():
+    glyphs = parse_table(GLYPHS)
+    glyphs[0xA0] = []  # no-break space
+    glyphs.update(parse_table(LATIN1))
+    for code, (base, accent) in sorted(COMPOSED.items()):
+        assert code not in glyphs, hex(code)
+        glyphs[code] = compose(glyphs, base, accent)
     return glyphs
 
 
@@ -153,10 +269,10 @@ def write_png(path, w, h, rgba):
 
 def main():
     glyphs = parse_glyphs()
-    px = [0] * (ATLAS * ATLAS * 4)
+    px = [0] * (ATLAS_W * ATLAS_H * 4)
 
     def plot(x, y):
-        i = (y * ATLAS + x) * 4
+        i = (y * ATLAS_W + x) * 4
         px[i:i + 4] = [255, 255, 255, 255]
 
     def blit(x0, y0, rows):
@@ -165,16 +281,18 @@ def main():
                 if c == "#":
                     plot(x0 + x, y0 + y)
 
-    advances = []
-    for code in range(FIRST, 127):
-        col, row = (code - FIRST) % COLUMNS, (code - FIRST) // COLUMNS
-        rows = glyphs.get(code, [])
-        assert len(rows) <= HEIGHT and all(len(r) <= CELL_W - 1 for r in rows), chr(code)
-        blit(col * CELL_W, row * CELL_H, rows)
-        width = max((len(r.rstrip(".")) for r in rows), default=0)
-        advances.append(width + 1 if code != 32 else 4)
-    missing = [chr(c) for c in range(FIRST + 1, 127) if c not in glyphs]
-    assert not missing, "glyphs missing: %s" % "".join(missing)
+    advances = []  # one list per range
+    for first, count, x0, y0 in RANGES:
+        advances.append([])
+        for code in range(first, first + count):
+            col, row = (code - first) % COLUMNS, (code - first) // COLUMNS
+            assert code == 32 or code in glyphs, "glyph missing: U+%04X" % code
+            rows = glyphs.get(code, [])
+            assert len(rows) <= HEIGHT and all(len(r) <= CELL_W - 1 for r in rows), "U+%04X" % code
+            blit(x0 + col * CELL_W, y0 + row * CELL_H, rows)
+            width = max((len(r.rstrip(".")) for r in rows), default=0)
+            advances[-1].append(width + 1 if code not in (32, 0xA0) else 4)
+    assert set(glyphs) <= {c for f, n, _, _ in RANGES for c in range(f, f + n)}
 
     icon_rects = {}
     for name, (x, y, rows) in ICONS.items():
@@ -190,27 +308,32 @@ def main():
         icon_rects[name] = (x0, 96, 32, 32)
 
     os.makedirs(ROOT, exist_ok=True)
-    write_png(os.path.join(ROOT, "ui.png"), ATLAS, ATLAS, px)
+    write_png(os.path.join(ROOT, "ui.png"), ATLAS_W, ATLAS_H, px)
     lines = [
         "-- 1stPRTS UI bitmap font metrics. Generated by tools/gen_font.py; do not edit.",
         "-- CC BY 4.0, see CREDITS.md.",
         "return {",
         '  texture = "fonts/ui.png",',
-        "  atlas = { %d, %d }," % (ATLAS, ATLAS),
+        "  atlas = { %d, %d }," % (ATLAS_W, ATLAS_H),
         "  height = %d," % HEIGHT,
         "  line_height = %d," % LINE_HEIGHT,
         "  cell = { %d, %d }," % (CELL_W, CELL_H),
         "  columns = %d," % COLUMNS,
-        "  first = %d," % FIRST,
-        "  advance = { %s }," % ", ".join(str(a) for a in advances),
-        "  icons = {",
+        "  -- blocks of glyphs: the first code point, the top-left cell in the atlas and the",
+        "  -- advance of each character (its count is the number of characters)",
+        "  ranges = {",
     ]
+    for (first, _, x0, y0), adv in zip(RANGES, advances):
+        lines.append("    { first = %d, x = %d, y = %d," % (first, x0, y0))
+        lines.append("      advance = { %s } }," % ", ".join(str(a) for a in adv))
+    lines += ["  },", "  icons = {"]
     for name in sorted(icon_rects):
         lines.append("    %s = { %d, %d, %d, %d }," % ((name,) + icon_rects[name]))
     lines += ["  },", "}", ""]
     with open(os.path.join(ROOT, "ui.lua"), "w", encoding="utf-8", newline="\n") as f:
         f.write("\n".join(lines))
-    print("wrote %d glyphs and %d icons to %s" % (len(advances), len(icon_rects), os.path.normpath(ROOT)))
+    total = sum(len(a) for a in advances)
+    print("wrote %d glyphs and %d icons to %s" % (total, len(icon_rects), os.path.normpath(ROOT)))
     return 0
 
 

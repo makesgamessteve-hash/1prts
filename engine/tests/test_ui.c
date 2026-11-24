@@ -36,10 +36,38 @@ UTEST(ui, font_metrics_and_icons)
     prts_ui_font_default(&f);
     ASSERT_EQ(12, prts_ui_text_width(&f, "ab", -1));
     ASSERT_EQ(6, prts_ui_text_width(&f, "ab", 1));
-    /* a two-byte UTF-8 character counts once, as '?' */
-    ASSERT_EQ(12, prts_ui_text_width(&f, "a\xc3\xa9", -1));
-    ASSERT_EQ(6, prts_ui_text_width(&f, "\x01", -1));
-    f.count = 10; /* a font without '?' */
+    ASSERT_EQ(12, prts_ui_text_width(&f, "a\xc3\xa9", -1)); /* a two-byte character counts once */
+    ASSERT_EQ(6, prts_ui_text_width(&f, "\x01", -1));        /* not in the font: '?' */
+    /* Latin-1 letters have their own glyphs after the 95 ASCII ones, in a block at y = 128 */
+    ASSERT_EQ(2, f.range_count);
+    int src[4];
+    ASSERT_EQ(95 + 0xe4 - 160, prts_ui_font_glyph(&f, 0xe4, src)); /* a with diaeresis */
+    ASSERT_EQ(4 * 8, src[0]); /* column 4 of row 4 */
+    ASSERT_EQ(128 + 4 * 12, src[1]);
+    ASSERT_EQ(6, src[2]);
+    ASSERT_EQ(9, src[3]);
+    ASSERT_EQ('A' - 32, prts_ui_font_glyph(&f, 'A', NULL));
+    ASSERT_EQ(-1, prts_ui_font_glyph(&f, 0x100, NULL));
+    ASSERT_EQ(-1, prts_ui_font_glyph(&f, 31, NULL));
+    /* "Gruesse" with u-umlaut and sharp s: the sum of the advances of its five characters */
+    f.advance[prts_ui_font_glyph(&f, 0xfc, NULL)] = 7;
+    f.advance[prts_ui_font_glyph(&f, 0xdf, NULL)] = 5;
+    ASSERT_EQ(6 + 6 + 7 + 5 + 6, prts_ui_text_width(&f, "Gr\xc3\xbc\xc3\x9f" "e", -1));
+    ASSERT_EQ(6 + 6 + 7, prts_ui_text_width(&f, "Gr\xc3\xbc\xc3\x9f" "e", 4));
+    /* only part of a character within len: one '?' */
+    ASSERT_EQ(6 + 6 + 6, prts_ui_text_width(&f, "Gr\xc3\xbc", 3));
+    /* characters beyond the font (here 3 and 4 bytes long) are one '?' each */
+    ASSERT_EQ(6, prts_ui_text_width(&f, "\xe2\x82\xac", -1));     /* euro sign */
+    ASSERT_EQ(6, prts_ui_text_width(&f, "\xf0\x9f\x98\x80", -1)); /* an emoji */
+    /* malformed text: a '?' for each stray byte and for each cut-off sequence */
+    ASSERT_EQ(12, prts_ui_text_width(&f, "\xbc\xbc", -1));
+    ASSERT_EQ(12, prts_ui_text_width(&f, "\xc3" "a", -1));
+    ASSERT_EQ(12, prts_ui_text_width(&f, "\xe2\x82" "a", -1));
+    ASSERT_EQ(6, prts_ui_text_width(&f, "\xff", -1));
+    ASSERT_EQ(12, prts_ui_text_width(&f, "\xc0\x80", -1)); /* overlong NUL */
+    f.range_count = 1; /* ASCII only, as an older font */
+    ASSERT_EQ(6, prts_ui_text_width(&f, "\xc3\xa4", -1));
+    f.ranges[0].count = 10; /* a font without '?' */
     ASSERT_EQ(0, prts_ui_text_width(&f, "~", -1));
     prts_ui_icon icon;
     ASSERT_TRUE(prts_ui_icon_parse("disc", &icon));
@@ -50,6 +78,110 @@ UTEST(ui, font_metrics_and_icons)
     ASSERT_EQ(1, prts_ui_scale_for(100));
     ASSERT_EQ(2, prts_ui_scale_for(720));
     ASSERT_EQ(3, prts_ui_scale_for(1080));
+}
+
+UTEST(ui, utf8_decoding)
+{
+    int cp;
+    ASSERT_EQ(0, prts_utf8_decode("", -1, &cp));
+    ASSERT_EQ(-1, cp);
+    ASSERT_EQ(0, prts_utf8_decode("a", 0, &cp));
+    ASSERT_EQ(1, prts_utf8_decode("a", -1, &cp));
+    ASSERT_EQ('a', cp);
+    ASSERT_EQ(2, prts_utf8_decode("\xc3\xa9", -1, &cp));
+    ASSERT_EQ(0xe9, cp);
+    ASSERT_EQ(3, prts_utf8_decode("\xe2\x82\xac", -1, &cp));
+    ASSERT_EQ(0x20ac, cp);
+    ASSERT_EQ(4, prts_utf8_decode("\xf0\x9f\x98\x80", -1, &cp));
+    ASSERT_EQ(0x1f600, cp);
+    ASSERT_EQ(4, prts_utf8_decode("\xf4\x8f\xbf\xbf", 4, &cp));
+    ASSERT_EQ(0x10ffff, cp);
+    /* cut off by the length: the bytes that fit, as one malformed character */
+    ASSERT_EQ(1, prts_utf8_decode("\xc3\xa9", 1, &cp));
+    ASSERT_EQ(-1, cp);
+    ASSERT_EQ(3, prts_utf8_decode("\xf0\x9f\x98\x80", 3, &cp));
+    ASSERT_EQ(-1, cp);
+    /* overlong forms, surrogates, code points beyond U+10FFFF and bytes UTF-8 never uses */
+    ASSERT_EQ(1, prts_utf8_decode("\xe0\x80\x80", -1, &cp));
+    ASSERT_EQ(-1, cp);
+    ASSERT_EQ(1, prts_utf8_decode("\xf0\x80\x80\x80", -1, &cp));
+    ASSERT_EQ(-1, cp);
+    ASSERT_EQ(1, prts_utf8_decode("\xed\xa0\x80", -1, &cp));
+    ASSERT_EQ(-1, cp);
+    ASSERT_EQ(3, prts_utf8_decode("\xed\x9f\xbf", -1, &cp));
+    ASSERT_EQ(0xd7ff, cp);
+    ASSERT_EQ(1, prts_utf8_decode("\xf4\x90\x80\x80", -1, &cp));
+    ASSERT_EQ(-1, cp);
+    ASSERT_EQ(1, prts_utf8_decode("\xf5\x80", -1, &cp));
+    ASSERT_EQ(-1, cp);
+    ASSERT_EQ(1, prts_utf8_decode("\xc1\xbf", -1, &cp));
+    ASSERT_EQ(-1, cp);
+    ASSERT_EQ(2, prts_utf8_decode("\xe2\x82" "a", -1, &cp));
+    ASSERT_EQ(-1, cp);
+}
+
+UTEST(ui, font_ranges_have_limits)
+{
+    prts_ui_font f;
+    prts_ui_font_default(&f);
+    ASSERT_FALSE(prts_ui_font_add_range(&f, 300, 0, 0, 0, NULL));  /* no characters */
+    ASSERT_FALSE(prts_ui_font_add_range(&f, -1, 4, 0, 0, NULL));   /* not a code point */
+    ASSERT_FALSE(prts_ui_font_add_range(&f, 300, 66, 0, 0, NULL)); /* 95 + 96 + 66 > 256 */
+    const unsigned char adv[2] = {3, 4};
+    ASSERT_TRUE(prts_ui_font_add_range(&f, 0x2018, 2, 0, 200, adv));
+    ASSERT_EQ(95 + 96, prts_ui_font_glyph(&f, 0x2018, NULL));
+    ASSERT_EQ(3 + 4, prts_ui_text_width(&f, "\xe2\x80\x98\xe2\x80\x99", -1)); /* quotes */
+    while (f.range_count < PRTS_UI_FONT_RANGES) ASSERT_TRUE(prts_ui_font_add_range(&f, 0x3000, 1, 0, 0, NULL));
+    ASSERT_FALSE(prts_ui_font_add_range(&f, 0x4000, 1, 0, 0, NULL)); /* no range left */
+}
+
+UTEST(ui, latin1_text_is_drawn_from_its_block)
+{
+    prts_ui *ui = prts_ui_create();
+    const unsigned char c[4] = {255, 255, 255, 255};
+    prts_ui_begin(ui, PRTS_UI_SCREEN);
+    ASSERT_TRUE(prts_ui_draw_text(ui, "\xc3\xa9\xff", 0, 0, PRTS_UI_ALIGN_LEFT, 1, c));
+    prts_ui_end(ui);
+    const prts_ui_batch *b = prts_ui_batch_of(ui, PRTS_UI_SCREEN);
+    ASSERT_EQ((size_t)12, b->verts.len); /* the e with acute and one '?' */
+    const prts_ui_vertex *v = prts_array_at(&b->verts, 0);
+    ASSERT_NEAR((9 * 8) / 128.0f, v->u, 1e-6f); /* U+00E9: column 9 of row 4 of the block */
+    ASSERT_NEAR((128 + 4 * 12) / 256.0f, v->v, 1e-6f);
+    v = prts_array_at(&b->verts, 6);
+    ASSERT_NEAR((('?' - 32) % 16 * 8) / 128.0f, v->u, 1e-6f);
+    ASSERT_NEAR((('?' - 32) / 16 * 12) / 256.0f, v->v, 1e-6f);
+    /* a full text field drops a character that did not fit whole */
+    char buf[4] = "ab";
+    bool changed = false, submitted;
+    int full = -1;
+    for (int frame = 0; frame < 2; frame++) {
+        prts_ui_input in = pointer(1, 1, false);
+        in.text = frame == 1 ? "\xc3\xa9" : NULL;
+        prts_ui_feed(ui, PRTS_UI_SCREEN, &in);
+        prts_ui_begin(ui, PRTS_UI_SCREEN);
+        ASSERT_TRUE(prts_ui_window_begin(ui, "Field", 0, 0, 200, 100, PRTS_UI_WIN_DEFAULT));
+        ASSERT_TRUE(prts_ui_row(ui, 1, &full, 0));
+        ASSERT_TRUE(prts_ui_textbox(ui, "field", buf, (int)sizeof(buf), true, &changed, &submitted));
+        prts_ui_window_end(ui);
+        prts_ui_end(ui);
+    }
+    ASSERT_TRUE(changed);
+    ASSERT_STREQ("ab", buf);
+    /* a whole character is kept */
+    char wide[8] = "ab";
+    for (int frame = 0; frame < 2; frame++) {
+        prts_ui_input in = pointer(1, 1, false);
+        in.text = frame == 1 ? "\xc3\xa9" : NULL;
+        prts_ui_feed(ui, PRTS_UI_SCREEN, &in);
+        prts_ui_begin(ui, PRTS_UI_SCREEN);
+        ASSERT_TRUE(prts_ui_window_begin(ui, "Field", 0, 0, 200, 100, PRTS_UI_WIN_DEFAULT));
+        ASSERT_TRUE(prts_ui_row(ui, 1, &full, 0));
+        ASSERT_TRUE(prts_ui_textbox(ui, "field", wide, (int)sizeof(wide), true, &changed, &submitted));
+        prts_ui_window_end(ui);
+        prts_ui_end(ui);
+    }
+    ASSERT_STREQ("ab\xc3\xa9", wide);
+    prts_ui_destroy(ui);
 }
 
 UTEST(ui, widgets_build_a_clipped_batch_and_react_to_input)
@@ -278,7 +410,7 @@ UTEST(ui, world_surfaces)
     ASSERT_FALSE(prts_ui_find_widget(ui, 99, "x", &out.right.x, &out.right.y));
     /* custom font metrics are used for text */
     prts_ui_font f = *prts_ui_get_font(ui);
-    f.advance['A' - f.first] = 9;
+    f.advance['A' - f.ranges[0].first] = 9;
     prts_ui_set_font(ui, &f);
     ASSERT_EQ(9, prts_ui_text_width(prts_ui_get_font(ui), "A", -1));
     prts_ui_destroy(ui);

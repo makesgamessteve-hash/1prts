@@ -9,7 +9,8 @@
 #define PRTS_UI_SCREEN 0 /* surface 0 is the screen overlay */
 #define PRTS_UI_MAX_SURFACES PRTS_GFX_UI_SLOTS
 #define PRTS_UI_NAME_MAX 48
-#define PRTS_UI_FONT_GLYPHS 96
+#define PRTS_UI_FONT_GLYPHS 256 /* characters across all ranges of a font */
+#define PRTS_UI_FONT_RANGES 8
 
 typedef enum prts_ui_icon {
     PRTS_UI_ICON_WHITE = 0,
@@ -25,20 +26,40 @@ typedef enum prts_ui_icon {
 const char *prts_ui_icon_name(prts_ui_icon icon);
 bool prts_ui_icon_parse(const char *name, prts_ui_icon *out);
 
-/* A bitmap font: an atlas of fixed cells for the characters first..first+count-1, with a
- * per-character advance, plus icon rectangles in the same atlas. */
+/* A block of consecutive characters (Unicode code points first..first+count-1) laid out in
+ * `columns` cells per row from the cell at x, y of the atlas. Their advances start at
+ * advance[glyph] of the font. */
+typedef struct prts_ui_font_range {
+    int first, count, x, y, glyph;
+} prts_ui_font_range;
+
+/* A bitmap font: an atlas of fixed cells for one or more ranges of characters, with a
+ * per-character advance, plus icon rectangles in the same atlas. Text is UTF-8; characters
+ * outside every range (and malformed bytes) are drawn as '?'. */
 typedef struct prts_ui_font {
     char texture[128];
     int atlas_w, atlas_h;
     int height;      /* glyph height in pixels (with descenders) */
     int line_height; /* distance between lines */
-    int cell_w, cell_h, columns, first, count;
+    int cell_w, cell_h, columns;
+    int range_count;
+    prts_ui_font_range ranges[PRTS_UI_FONT_RANGES];
     unsigned char advance[PRTS_UI_FONT_GLYPHS];
     int icons[PRTS_UI_ICON_COUNT][4]; /* x, y, w, h */
 } prts_ui_font;
 
 /* Fixed-width fallback metrics used until (or if) a font is loaded from data. */
 void prts_ui_font_default(prts_ui_font *f);
+/* Adds a range of count characters from code point first at atlas cell x, y; their advances
+ * (count of them, or all 6 if NULL) are appended. False if the font has no room left. */
+bool prts_ui_font_add_range(prts_ui_font *f, int first, int count, int x, int y, const unsigned char *advance);
+/* Index into f->advance of code point cp, or -1 if no range holds it. src (if not NULL)
+ * gets the glyph's atlas rectangle (x, y, advance, height). */
+int prts_ui_font_glyph(const prts_ui_font *f, int cp, int src[4]);
+/* Decodes one UTF-8 character of s (at most n bytes; n < 0: up to the terminator). Returns
+ * the bytes it takes (1 to 4; 0 only at the end) and sets *cp, or -1 for a malformed
+ * sequence (which then takes its lead byte and any continuation bytes that fit it). */
+int prts_utf8_decode(const char *s, int n, int *cp);
 /* Width of len bytes of UTF-8 text (len < 0: up to the terminator). */
 int prts_ui_text_width(const prts_ui_font *f, const char *text, int len);
 

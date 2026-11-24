@@ -64,7 +64,25 @@ static void int_pair(lua_State *L, int t, const char *key, int *a, int *b)
     lua_pop(L, 1);
 }
 
-/* Reads the metrics table (fonts/ui.lua, plain data) on top of the stack into f. */
+/* Adds the range of characters from `first` whose advances are the list on top of the stack. */
+static void read_range(lua_State *L, prts_ui_font *f, int first, int x, int y)
+{
+    unsigned char advance[PRTS_UI_FONT_GLYPHS];
+    int n = PRTS_MIN((int)lua_rawlen(L, -1), PRTS_UI_FONT_GLYPHS);
+    for (int i = 0; i < n; i++) {
+        lua_rawgeti(L, -1, i + 1);
+        advance[i] = (unsigned char)PRTS_CLAMP((int)lua_tointeger(L, -1), 0, 255);
+        lua_pop(L, 1);
+    }
+    if (!prts_ui_font_add_range(f, first, n, x, y, advance)) {
+        prts_log_warn("fonts/ui.lua: the range from %d is empty or does not fit (at most %d ranges, %d characters)",
+                      first, PRTS_UI_FONT_RANGES, PRTS_UI_FONT_GLYPHS);
+    }
+}
+
+/* Reads the metrics table (fonts/ui.lua, plain data) on top of the stack into f. The
+ * characters are either `ranges = { { first, x, y, advance = {...} }, ... }` or (one range at
+ * the atlas origin) `first` and `advance`. */
 static void read_font(lua_State *L, prts_ui_font *f)
 {
     int t = lua_gettop(L);
@@ -76,16 +94,26 @@ static void read_font(lua_State *L, prts_ui_font *f)
     f->height = int_field(L, t, "height", f->height);
     f->line_height = int_field(L, t, "line_height", f->line_height);
     f->columns = PRTS_MAX(1, int_field(L, t, "columns", f->columns));
-    f->first = int_field(L, t, "first", f->first);
-    if (lua_getfield(L, t, "advance") == LUA_TTABLE) {
-        f->count = PRTS_MIN((int)lua_rawlen(L, -1), PRTS_UI_FONT_GLYPHS);
-        for (int i = 0; i < f->count; i++) {
-            lua_rawgeti(L, -1, i + 1);
-            f->advance[i] = (unsigned char)PRTS_CLAMP((int)lua_tointeger(L, -1), 0, 255);
+    bool ranges = lua_getfield(L, t, "ranges") == LUA_TTABLE;
+    if (ranges) {
+        f->range_count = 0;
+        int n = (int)lua_rawlen(L, -1);
+        for (int i = 1; i <= n; i++) {
+            if (lua_rawgeti(L, -1, i) == LUA_TTABLE) {
+                int r = lua_gettop(L);
+                int first = int_field(L, r, "first", 32), x = int_field(L, r, "x", 0), y = int_field(L, r, "y", 0);
+                if (lua_getfield(L, r, "advance") == LUA_TTABLE) read_range(L, f, first, x, y);
+                lua_pop(L, 1);
+            }
             lua_pop(L, 1);
         }
     }
     lua_pop(L, 1);
+    if (!ranges && lua_getfield(L, t, "advance") == LUA_TTABLE) { /* the older form: one range */
+        f->range_count = 0;
+        read_range(L, f, int_field(L, t, "first", 32), 0, 0);
+    }
+    if (!ranges) lua_pop(L, 1);
     if (lua_getfield(L, t, "icons") == LUA_TTABLE) {
         for (int i = 0; i < PRTS_UI_ICON_COUNT; i++) {
             if (lua_getfield(L, -1, prts_ui_icon_name((prts_ui_icon)i)) == LUA_TTABLE) {

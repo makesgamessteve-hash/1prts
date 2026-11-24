@@ -335,7 +335,7 @@ during play belong on surfaces in the world.
 | `prts.ui.draw_text(text, x, y [, { align, scale, color }])` | Draws text over the widgets, also outside windows. `align` is `"left"` (default), `"center"` or `"right"` of `x`; `scale` is a whole number from 1 to 8 (default 1). |
 | `prts.ui.draw_rect(x, y, w, h [, color])` | A filled rectangle over the widgets. |
 | `prts.ui.draw_icon(name, x, y, w, h [, color])` | An icon of the UI font stretched over the rectangle: `"white"`, `"check"`, `"close"`, `"collapsed"`, `"expanded"`, `"disc"` or `"ring"`. Errors on any other name. |
-| `prts.ui.text_width(text)` | Width of `text` in pixels at scale 1. Works outside a frame too. |
+| `prts.ui.text_width(text)` | Width of `text` (UTF-8) in pixels at scale 1. The UI font has ASCII and the Latin-1 Supplement (U+00A0–U+00FF: German, French, Spanish and similar letters); any other character, and malformed UTF-8, is drawn and measured as `?`. Works outside a frame too. |
 | `prts.ui.font()` | `{ height, line_height }` of the UI font (`fonts/ui.lua`). |
 | `prts.ui.size()` | `w, h` of the surface being drawn, or of the screen outside a frame. |
 | `prts.ui.set_modal(on)` | Menu mode: while on, the pointer belongs to the menu, game actions read as released (except actions defined with `always = true`, such as `menu`) and world surfaces ignore the commander's view. |

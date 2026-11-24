@@ -274,6 +274,59 @@ UTEST(boot, broken_font_uses_fallback_metrics)
     prts_engine_destroy(e);
 }
 
+UTEST(boot, font_metrics_load_ranges_of_characters)
+{
+    /* the base font: ASCII and the Latin-1 Supplement, as two ranges */
+    prts_engine_config cfg;
+    config(&cfg, FIX "/user");
+    prts_engine *e = start(&cfg);
+    ASSERT_TRUE(e != NULL);
+    const prts_ui_font *f = prts_ui_get_font(e->ui);
+    ASSERT_EQ(128, f->atlas_w);
+    ASSERT_EQ(256, f->atlas_h);
+    ASSERT_EQ(2, f->range_count);
+    ASSERT_EQ(32, f->ranges[0].first);
+    ASSERT_EQ(95, f->ranges[0].count);
+    ASSERT_EQ(160, f->ranges[1].first);
+    ASSERT_EQ(96, f->ranges[1].count);
+    ASSERT_EQ(128, f->ranges[1].y);
+    int src[4];
+    ASSERT_EQ(95 + 0xfc - 160, prts_ui_font_glyph(f, 0xfc, src)); /* u with diaeresis */
+    ASSERT_EQ(12 * 8, src[0]);
+    ASSERT_EQ(128 + 5 * 12, src[1]);
+    int sum = 0;
+    const int word[] = {'G', 'r', 0xfc, 0xdf, 'e'};
+    for (size_t i = 0; i < PRTS_ARRAY_COUNT(word); i++) sum += f->advance[prts_ui_font_glyph(f, word[i], NULL)];
+    ASSERT_EQ(sum, prts_ui_text_width(f, "Gr\xc3\xbc\xc3\x9f" "e", -1));
+    prts_engine_destroy(e);
+    /* the older form (first and one advance list) is one range at the atlas origin */
+    config(&cfg, FIX "/user");
+    cfg.mods[cfg.mod_count++] = "legacy_font";
+    e = start(&cfg);
+    ASSERT_TRUE(e != NULL);
+    f = prts_ui_get_font(e->ui);
+    ASSERT_EQ(128, f->atlas_h);
+    ASSERT_EQ(1, f->range_count);
+    ASSERT_EQ(32, f->ranges[0].first);
+    ASSERT_EQ(95, f->ranges[0].count);
+    ASSERT_EQ(0, f->ranges[0].y);
+    ASSERT_EQ(-1, prts_ui_font_glyph(f, 0xfc, NULL));
+    ASSERT_EQ(6, prts_ui_text_width(f, "\xc3\xbc", -1)); /* drawn as '?' */
+    prts_engine_destroy(e);
+    /* odd entries are skipped; a range without characters does not count */
+    config(&cfg, FIX "/user");
+    cfg.mods[cfg.mod_count++] = "odd_font";
+    e = start(&cfg);
+    ASSERT_TRUE(e != NULL);
+    f = prts_ui_get_font(e->ui);
+    ASSERT_EQ(1, f->range_count);
+    ASSERT_EQ(65, f->ranges[0].first);
+    ASSERT_EQ(3, f->ranges[0].count);
+    ASSERT_EQ(8 + 9, prts_ui_text_width(f, "BC", -1));
+    ASSERT_EQ(0, prts_ui_text_width(f, "?", -1)); /* no '?' in this font: nothing */
+    prts_engine_destroy(e);
+}
+
 UTEST(surfaces, eye_ray_and_touch_drive_a_world_surface)
 {
     prts_engine_config cfg;

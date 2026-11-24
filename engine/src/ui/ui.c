@@ -74,15 +74,15 @@ void prts_ui_font_default(prts_ui_font *f)
 {
     memset(f, 0, sizeof(*f));
     snprintf(f->texture, sizeof(f->texture), "%s", "fonts/ui.png");
-    f->atlas_w = f->atlas_h = 128;
+    f->atlas_w = 128;
+    f->atlas_h = 256;
     f->height = 9;
     f->line_height = 11;
     f->cell_w = 8;
     f->cell_h = 12;
     f->columns = 16;
-    f->first = 32;
-    f->count = 95;
-    for (int i = 0; i < f->count; i++) f->advance[i] = 6;
+    prts_ui_font_add_range(f, 32, 95, 0, 0, NULL);    /* printable ASCII */
+    prts_ui_font_add_range(f, 160, 96, 0, 128, NULL); /* Latin-1 Supplement */
     for (int i = 0; i < PRTS_UI_ICON_COUNT; i++) {
         f->icons[i][0] = 40;
         f->icons[i][1] = 80;
@@ -90,20 +90,92 @@ void prts_ui_font_default(prts_ui_font *f)
     }
 }
 
-/* Glyph index for byte c (UTF-8 continuation bytes give -1, unknown characters '?'). */
-static int glyph_of(const prts_ui_font *f, unsigned char c)
+bool prts_ui_font_add_range(prts_ui_font *f, int first, int count, int x, int y, const unsigned char *advance)
 {
-    if ((c & 0xc0) == 0x80) return -1;
-    int g = (int)c - f->first;
-    if (g < 0 || g >= f->count) g = '?' - f->first;
-    return g >= 0 && g < f->count ? g : -1;
+    const prts_ui_font_range *last = f->range_count > 0 ? &f->ranges[f->range_count - 1] : NULL;
+    int used = last ? last->glyph + last->count : 0;
+    if (f->range_count >= PRTS_UI_FONT_RANGES || first < 0 || count < 1 || count > PRTS_UI_FONT_GLYPHS - used) {
+        return false;
+    }
+    prts_ui_font_range *r = &f->ranges[f->range_count++];
+    r->first = first;
+    r->count = count;
+    r->x = x;
+    r->y = y;
+    r->glyph = used;
+    for (int i = 0; i < count; i++) f->advance[used + i] = advance ? advance[i] : 6;
+    return true;
+}
+
+int prts_ui_font_glyph(const prts_ui_font *f, int cp, int src[4])
+{
+    for (int k = 0; k < f->range_count; k++) {
+        const prts_ui_font_range *r = &f->ranges[k];
+        int i = cp - r->first;
+        if (i < 0 || i >= r->count) continue;
+        int g = r->glyph + i;
+        if (src) {
+            int columns = PRTS_MAX(f->columns, 1);
+            src[0] = r->x + (i % columns) * f->cell_w;
+            src[1] = r->y + (i / columns) * f->cell_h;
+            src[2] = f->advance[g];
+            src[3] = f->height;
+        }
+        return g;
+    }
+    return -1;
+}
+
+int prts_utf8_decode(const char *s, int n, int *cp)
+{
+    const unsigned char *u = (const unsigned char *)s;
+    *cp = -1;
+    if (n == 0 || (n < 0 && u[0] == 0)) return 0;
+    unsigned c = u[0], v, lo = 0x80, hi = 0xbf;
+    int need;
+    if (c < 0x80) {
+        *cp = (int)c;
+        return 1;
+    } else if (c >= 0xc2 && c <= 0xdf) {
+        need = 1;
+        v = c & 0x1f;
+    } else if (c >= 0xe0 && c <= 0xef) {
+        need = 2;
+        v = c & 0x0f;
+        if (c == 0xe0) lo = 0xa0; /* overlong */
+        if (c == 0xed) hi = 0x9f; /* surrogates */
+    } else if (c >= 0xf0 && c <= 0xf4) {
+        need = 3;
+        v = c & 0x07;
+        if (c == 0xf0) lo = 0x90; /* overlong */
+        if (c == 0xf4) hi = 0x8f; /* beyond U+10FFFF */
+    } else {
+        return 1; /* a continuation byte without a lead, or a byte UTF-8 never uses */
+    }
+    int i = 1;
+    for (; i <= need && (n < 0 || i < n); i++) {
+        unsigned b = u[i]; /* a terminator is no continuation byte: the loop stops there */
+        if (b < lo || b > hi) break;
+        v = (v << 6) | (b & 0x3f);
+        lo = 0x80;
+        hi = 0xbf;
+    }
+    if (i > need) *cp = (int)v;
+    return i;
+}
+
+/* Glyph (advance index) for code point cp, '?' for characters the font lacks, or -1. */
+static int glyph_of(const prts_ui_font *f, int cp, int src[4])
+{
+    int g = prts_ui_font_glyph(f, cp, src);
+    return g >= 0 ? g : prts_ui_font_glyph(f, '?', src);
 }
 
 int prts_ui_text_width(const prts_ui_font *f, const char *text, int len)
 {
-    int w = 0;
-    for (int i = 0; len < 0 ? text[i] != '\0' : i < len; i++) {
-        int g = glyph_of(f, (unsigned char)text[i]);
+    int w = 0, cp, k;
+    for (int i = 0; (k = prts_utf8_decode(text + i, len < 0 ? -1 : len - i, &cp)) > 0; i += k) {
+        int g = glyph_of(f, cp, NULL);
         if (g >= 0) w += f->advance[g];
     }
     return w;
@@ -409,14 +481,12 @@ static void push_atlas(const prts_ui_font *f, prts_array *out, float x, float y,
 static void push_text(const prts_ui_font *f, prts_array *out, const char *text, float x, float y, int scale,
                       const unsigned char rgba[4], const mu_Rect *clip)
 {
-    for (const char *p = text; *p; p++) {
-        int g = glyph_of(f, (unsigned char)*p);
+    int cp, k, src[4];
+    for (const char *p = text; (k = prts_utf8_decode(p, -1, &cp)) > 0; p += k) {
+        int g = glyph_of(f, cp, src);
         if (g < 0) continue;
         int adv = f->advance[g];
-        if (*p != ' ') {
-            int src[4] = {(g % f->columns) * f->cell_w, (g / f->columns) * f->cell_h, adv, f->height};
-            push_atlas(f, out, x, y, (float)(adv * scale), (float)(f->height * scale), src, rgba, clip);
-        }
+        if (cp != ' ') push_atlas(f, out, x, y, (float)(adv * scale), (float)(f->height * scale), src, rgba, clip);
         x += (float)(adv * scale);
     }
 }
@@ -696,6 +766,16 @@ bool prts_ui_slider(prts_ui *ui, const char *id, float *value, float lo, float h
     return true;
 }
 
+/* A full text field takes only the bytes of typed text that fit: drops a character that was
+ * cut off at the end, so the text stays valid UTF-8. */
+static void drop_cut_character(char *buf)
+{
+    int len = (int)strlen(buf), j = len, cp;
+    while (j > 0 && len - j < 3 && ((unsigned char)buf[j - 1] & 0xc0) == 0x80) j--;
+    if (j == 0 || ((unsigned char)buf[j - 1] & 0xc0) != 0xc0) return;
+    if (j - 1 + prts_utf8_decode(buf + j - 1, -1, &cp) == len && cp < 0) buf[j - 1] = '\0';
+}
+
 bool prts_ui_textbox(prts_ui *ui, const char *id, char *buf, int size, bool focus, bool *changed, bool *submitted)
 {
     mu_Context *m = ctx_for(ui, true);
@@ -704,6 +784,7 @@ bool prts_ui_textbox(prts_ui *ui, const char *id, char *buf, int size, bool focu
     mu_Rect r = mu_layout_next(m);
     if (focus) mu_set_focus(m, mid);
     int res = mu_textbox_raw(m, buf, size, mid, r, 0);
+    if (res & MU_RES_CHANGE) drop_cut_character(buf);
     *changed = (res & MU_RES_CHANGE) != 0;
     *submitted = (res & MU_RES_SUBMIT) != 0;
     record_widget(ui, id, NULL, r);
