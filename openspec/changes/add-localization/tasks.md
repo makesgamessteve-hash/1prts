@@ -7,4 +7,4 @@
 
 ## 2. The font
 
-- [ ] 2.1 Latin-1 glyphs, UTF-8 decoding, two glyph ranges; C tests in `test_ui.c` (spec *Umlauts on screen*)
+- [x] 2.1 Latin-1 glyphs, UTF-8 decoding, two glyph ranges; C tests `ui.utf8_decoding`, `ui.latin1_text_is_drawn_from_its_block`, `boot.font_metrics_load_ranges_of_characters` (spec *Umlauts on screen*)

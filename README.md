@@ -163,6 +163,7 @@ of them. The look is retro 3D: low-poly models, sprites and voxels.
 | ![The war table in the deuteranopia palette](docs/screenshots/96_war_table_deuteranopia.png) | ![The war table in high contrast](docs/screenshots/97_war_table_high_contrast.png) | ![Left-handed touch buttons](docs/screenshots/98_touch_left_handed.png) |
 | ![The Access options](docs/screenshots/99_options_access.png) | ![The Custodians at a ruin of the Imperium](docs/screenshots/100_custodians_at_a_ruin.png) | ![The council of the four peoples in Caldrith's throne hall](docs/screenshots/101_council_of_four_peoples.png) |
 | ![The Concord of the Meres](docs/screenshots/102_the_concord_of_the_meres.png) | ![The campaign screen](docs/screenshots/103_campaign_screen.png) | ![The map editor](docs/screenshots/104_map_editor.png) |
+| ![The options in German](docs/screenshots/105_options_in_german.png) | | |
 | ![Great hall](docs/screenshots/12_hall_benches_braziers.png) | ![Forge](docs/screenshots/05_forge.png) | ![Front-end menu](docs/screenshots/13_front_end_menu.png) |
 
 ## Read this first

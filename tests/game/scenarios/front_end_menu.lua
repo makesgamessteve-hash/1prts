@@ -30,7 +30,7 @@ return {
     -- credits: entries of the base game, of the enabled mod and the third-party code
     t.ui_click("Credits")
     t.expect(t.ui_has("Stone wall texture - The Banner & Bastion Contributors (CC-BY-4.0)"), "base entry").is_true()
-    t.expect(t.ui_has("Banner & Bastion UI pixel font (atlas)"), "the font is credited").is_true()
+    t.expect(t.ui_has("Banner & Bastion UI pixel font (atlas: ASCII and Latin-1 Supplement glyphs, UI icons)"), "the font is credited").is_true()
     t.expect(t.ui_has("Mod: credits_demo"), "mod section").is_true()
     t.expect(t.ui_has("Demo heraldry banner - A Test Modder (CC-BY-4.0)"), "mod entry").is_true()
     t.expect(t.ui_has("microui 2.02 - MIT"), "third-party code").is_true()

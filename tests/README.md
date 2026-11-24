@@ -296,3 +296,4 @@ is missing. References are C unit tests (`suite.case`), test files and scripts (
 | localization | A missing translation | `tests/game/scenarios/localization.lua`, `data/base/scripts/tests/test_i18n.lua` |
 | modding-guide | A mod starts with the game | `tests/game/scenarios/example_mod.lua` |
 | modding-guide | The example mod works | `tests/game/scenarios/example_mod.lua` |
+| localization | Umlauts on screen | `engine/tests/test_ui.c` (`ui.utf8_decoding`, `ui.latin1_text_is_drawn_from_its_block`), `engine/tests/test_engine_ui.c` (`boot.font_metrics_load_ranges_of_characters`) |

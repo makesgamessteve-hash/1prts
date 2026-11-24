@@ -37,7 +37,7 @@ return {
     ["Prologue when a map starts from the menu"] = "Prolog, wenn eine Karte aus dem Menü startet",
     ["Language"] = "Sprache", ["Custodians in skirmish"] = "Hüter im Gefecht",
     ["Off"] = "Aus", ["Neutral"] = "Neutral", ["Hostile"] = "Feindlich",
-    ["Camera motion (bob, dips, shake)"] = "Kamerabewegung (Wippen, Stöße, Wackeln)",
+    ["Camera motion (bob, dips, shake)"] = "Kamerabewegung",
     ["War table colours"] = "Farben des Kriegstischs", ["Map text"] = "Kartentext", ["Normal"] = "Normal",
     ["Large"] = "Groß", ["Game speed"] = "Spielgeschwindigkeit", ["Performance"] = "Leistung",
     ["Low"] = "Niedrig", ["Medium"] = "Mittel", ["High"] = "Hoch", ["Touch buttons"] = "Touch-Knöpfe",
@@ -120,6 +120,7 @@ return {
   },
   patterns = {
     { "^(%[[^%]]+%]) (.+)$", "%1 %2" },                  -- a prompt after its key glyph
+    { "^%[([^%]]+)%]$", "[%1]" },                        -- the chosen tab
     { "^Talk to (.+)$", "Mit %1 sprechen" },
     { "^Take the (.+)$", "%1 übernehmen" },
     { "^Leave the (.+)$", "%1 verlassen" },
